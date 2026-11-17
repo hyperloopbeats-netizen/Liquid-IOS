@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Outfit", system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+:root {
+  --syn-hue: 174;
+  --syn-accent: #14b8a6;
+  --syn-secondary: #38bdf8;
+  --syn-border: rgba(56, 189, 248, 0.24);
+  --syn-border-strong: rgba(56, 189, 248, 0.48);
+  --syn-glow: rgba(20, 184, 166, 0.16);
+  --syn-surface: rgba(10, 15, 28, 0.78);
+  --syn-surface-elevated: rgba(12, 19, 36, 0.90);
+  --syn-panel: rgba(6, 10, 20, 0.72);
+  --syn-bg-a: rgba(14, 165, 233, 0.14);
+  --syn-bg-b: rgba(16, 185, 129, 0.12);
+  --syn-bg-c: rgba(99, 102, 241, 0.12);
+  --syn-intensity: 0.2;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: var(--font-sans);
+}
+
+.aether-wallpaper {
+  background:
+    radial-gradient(60% 55% at 15% 18%, var(--syn-bg-a), transparent 70%),
+    radial-gradient(55% 50% at 85% 20%, var(--syn-bg-b), transparent 70%),
+    radial-gradient(60% 55% at 50% 88%, var(--syn-bg-c), transparent 72%),
+    linear-gradient(155deg, #04070f 0%, #070c18 52%, #050811 100%);
+  transition: background 0.6s ease;
+}
+
+.aether-glass {
+  background: var(--syn-surface);
+  border: 1px solid var(--syn-border);
+  box-shadow: 0 20px 50px -16px rgba(0, 0, 0, 0.75), 0 0 24px -8px var(--syn-glow);
+}
+
+.aether-glass-bar {
+  background: var(--syn-surface-elevated);
+  border-bottom: 1px solid var(--syn-border);
+}
+
+.aether-panel {
+  background: var(--syn-panel);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.aether-dock {
+  background: var(--syn-surface-elevated);
+  border: 1px solid var(--syn-border);
+  box-shadow: 0 20px 44px -10px rgba(0, 0, 0, 0.8), 0 0 28px -10px var(--syn-glow);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-mono-tabular {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.28);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

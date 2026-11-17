@@ -1,0 +1,6 @@
+{
+  "name": "Aether OS",
+  "description": "The Autonomous Cognitive Workstation featuring a multi-model AI agent swarm, IndexedDB virtual filesystem, dynamic audio-visual synesthesia kernel, and voice-controlled OS navigation.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
