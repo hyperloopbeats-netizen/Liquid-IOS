@@ -18,7 +18,9 @@ export function AgentSwarmApp({ onOpenFileInDrive, onRunFileInSandbox }: AgentSw
   const [cognitionReply, setCognitionReply] = useState('');
   const [cognitionBusy, setCognitionBusy] = useState(false);
   const [scanningAll, setScanningAll] = useState(false);
-  const [categoryFilter, setCategoryFilter] = useState<'all' | 'core' | 'upgrade'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<
+    'all' | 'core' | 'upgrade' | 'brain-sorter' | 'unificator-support' | 'aimspace-assist'
+  >('all');
 
   useEffect(() => {
     const unsub = swarmEngine.subscribe((d, f) => {
@@ -50,6 +52,24 @@ export function AgentSwarmApp({ onOpenFileInDrive, onRunFileInSandbox }: AgentSw
   const handleRunUpgrades = async () => {
     setScanningAll(true);
     await swarmEngine.runUpgradeDaemons();
+    setScanningAll(false);
+  };
+
+  const handleRunSorters = async () => {
+    setScanningAll(true);
+    await swarmEngine.runBrainSorterDaemons();
+    setScanningAll(false);
+  };
+
+  const handleRunSupport = async () => {
+    setScanningAll(true);
+    await swarmEngine.runUnificatorSupportDaemons();
+    setScanningAll(false);
+  };
+
+  const handleRunAimSpace50 = async () => {
+    setScanningAll(true);
+    await swarmEngine.runAimSpaceAssistDaemons();
     setScanningAll(false);
   };
 
@@ -89,13 +109,40 @@ export function AgentSwarmApp({ onOpenFileInDrive, onRunFileInSandbox }: AgentSw
       <div className="aether-panel rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shrink-0">
         <div>
           <h2 className="font-display text-sm font-semibold text-slate-100">
-            13-Daemon AI Agent Swarm (3 Core + 10 Heal & Upgrade)
+            {daemons.length}-Daemon AI Agent Swarm (3 Core + 10 Upgrade + 10 Sorters + 20 Support + 50 AIM Space)
           </h2>
           <p className="text-[11px] text-slate-400 mt-0.5">
-            Cloud Gemini: {geminiOnline === null ? 'Checking...' : geminiOnline ? 'Connected (Server-Side)' : 'Unavailable'} · Local Ollama & Edge AST Mesh
+            Cloud Gemini: {geminiOnline === null ? 'Checking...' : geminiOnline ? 'Connected (Server-Side)' : 'Unavailable'} · Local Ollama &amp; Edge AST Mesh
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={handleRunAimSpace50}
+            disabled={scanningAll}
+            className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/45 text-amber-100 font-semibold inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50 whitespace-nowrap"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Run 50 AIM Space</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleRunSupport}
+            disabled={scanningAll}
+            className="px-3 py-1.5 rounded-lg bg-violet-500/20 hover:bg-violet-500/30 border border-violet-400/45 text-violet-100 font-semibold inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50 whitespace-nowrap"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Run 20 Support</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleRunSorters}
+            disabled={scanningAll}
+            className="px-3 py-1.5 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-400/45 text-indigo-100 font-semibold inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50 whitespace-nowrap"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Run 10 Sorters</span>
+          </button>
           <button
             type="button"
             onClick={handleRunUpgrades}
@@ -103,7 +150,7 @@ export function AgentSwarmApp({ onOpenFileInDrive, onRunFileInSandbox }: AgentSw
             className="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/45 text-emerald-100 font-semibold inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50 whitespace-nowrap"
           >
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Run 10 Upgrade Daemons</span>
+            <span>Run 10 Upgrades</span>
           </button>
           <button
             type="button"
@@ -112,7 +159,7 @@ export function AgentSwarmApp({ onOpenFileInDrive, onRunFileInSandbox }: AgentSw
             className="px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/40 text-cyan-100 font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 whitespace-nowrap"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${scanningAll ? 'animate-spin' : ''}`} />
-            <span>{scanningAll ? 'Scanning...' : 'Run All (13)'}</span>
+            <span>{scanningAll ? 'Scanning...' : `Run All (${daemons.length})`}</span>
           </button>
         </div>
       </div>
@@ -121,10 +168,13 @@ export function AgentSwarmApp({ onOpenFileInDrive, onRunFileInSandbox }: AgentSw
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-3">
         {/* Left: Daemons Configuration */}
         <div className="lg:col-span-5 flex flex-col gap-2.5 overflow-y-auto pr-1">
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex flex-wrap items-center gap-1.5 shrink-0">
             {(
               [
                 ['all', `All (${daemons.length})`],
+                ['aimspace-assist', 'AIM Space Assist (50)'],
+                ['unificator-support', 'Unificator Support (20)'],
+                ['brain-sorter', 'Master Sorters (10)'],
                 ['upgrade', 'Heal & Upgrade (10)'],
                 ['core', 'Core Audit (3)'],
               ] as const

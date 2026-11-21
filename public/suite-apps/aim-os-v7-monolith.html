@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>AIM OS v7.0 — Master Monolithic Cognitive Suite</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+            orbitron: ['Orbitron', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --glass-blur: 24px;
+      --glass-bg: rgba(15, 23, 42, 0.78);
+      --glass-bg-elevated: rgba(15, 23, 42, 0.90);
+      --glass-border: rgba(56, 189, 248, 0.28);
+      --glass-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.65);
+      --text-primary: #f8fafc;
+      --panel-inner: rgba(2, 6, 23, 0.55);
+    }
+
+    * { box-sizing: border-box; user-select: none; }
+    input, textarea, pre, code, .selectable { user-select: text; }
+
+    body {
+      margin: 0; padding: 0; overflow: hidden; width: 100vw; height: 100vh;
+      font-family: 'Inter', sans-serif; color: var(--text-primary); background-color: #020617;
+    }
+
+    .wallpaper-aurora {
+      background:
+        radial-gradient(at 15% 20%, rgba(56, 189, 248, 0.45) 0px, transparent 50%),
+        radial-gradient(at 85% 15%, rgba(168, 85, 247, 0.42) 0px, transparent 52%),
+        radial-gradient(at 75% 85%, rgba(16, 185, 129, 0.38) 0px, transparent 50%),
+        linear-gradient(135deg, #0b0f19 0%, #0f172a 50%, #020617 100%);
+      background-size: 140% 140%;
+      animation: meshShift 22s ease infinite alternate;
+    }
+
+    @keyframes meshShift {
+      0% { background-position: 0% 20%; }
+      50% { background-position: 100% 60%; }
+      100% { background-position: 25% 100%; }
+    }
+
+    .glass-surface {
+      background: var(--glass-bg);
+      backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shadow);
+    }
+    .glass-bar {
+      background: var(--glass-bg-elevated);
+      backdrop-filter: blur(28px) saturate(190%);
+      -webkit-backdrop-filter: blur(28px) saturate(190%);
+      border-bottom: 1px solid var(--glass-border);
+    }
+    .glass-inner { background: var(--panel-inner); border: 1px solid rgba(255, 255, 255, 0.12); }
+
+    .window-frame { transition: opacity 0.2s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1); }
+    .window-frame.dragging { transition: none !important; }
+    .window-minimized { opacity: 0; transform: scale(0.86) translateY(60px); pointer-events: none; }
+
+    .glass-dock {
+      background: var(--glass-bg-elevated);
+      backdrop-filter: blur(32px) saturate(195%);
+      -webkit-backdrop-filter: blur(32px) saturate(195%);
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    }
+    .dock-item {
+      transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), margin 0.22s ease;
+    }
+    .dock-item:hover {
+      transform: translateY(-12px) scale(1.25);
+      margin-left: 8px;
+      margin-right: 8px;
+    }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.35); border-radius: 9999px; }
+  </style>
+</head>
+<body class="wallpaper-aurora select-none">
+
+  <!-- Top Status Bar -->
+  <header class="glass-bar fixed top-0 left-0 right-0 h-9 px-4 flex items-center justify-between z-[1000] text-xs font-medium">
+    <div class="flex items-center gap-3">
+      <button onclick="toggleMenu('system-menu')" class="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/15 transition cursor-pointer">
+        <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+        <span class="font-semibold font-orbitron tracking-wider">AIM OS • v7.0 MASTER COGNITIVE</span>
+      </button>
+      <div id="system-menu" class="hidden absolute left-0 mt-2 w-72 rounded-2xl glass-surface p-1.5 shadow-2xl z-[1100] text-xs max-h-[80vh] overflow-y-auto">
+        <button onclick="openApp('generativematrix'); closeMenus();" class="w-full text-left px-3 py-2 rounded-xl hover:bg-white/15 flex justify-between cursor-pointer text-cyan-300 font-bold"><span>🌌 Matrix of Generative Opportunity</span><span class="font-mono opacity-60">v7.0</span></button>
+        <button onclick="openApp('sentientbuilding'); closeMenus();" class="w-full text-left px-3 py-2 rounded-xl hover:bg-white/15 flex justify-between cursor-pointer text-emerald-300 font-bold"><span>🏢 Sentient Building Orchestrator</span><span class="font-mono opacity-60">v7.0</span></button>
+        <button onclick="openApp('liquidmembrane'); closeMenus();" class="w-full text-left px-3 py-2 rounded-xl hover:bg-white/15 flex justify-between cursor-pointer text-pink-300 font-bold"><span>🧠 Liquid Membrane Brain</span><span class="font-mono opacity-60">v7.0</span></button>
+        <button onclick="openApp('quantumgit'); closeMenus();" class="w-full text-left px-3 py-2 rounded-xl hover:bg-white/15 flex justify-between cursor-pointer text-indigo-300 font-bold"><span>🧬 Quantum Git-Sync Depot</span><span class="font-mono opacity-60">v3.0</span></button>
+        <button onclick="openApp('chronoreplay'); closeMenus();" class="w-full text-left px-3 py-2 rounded-xl hover:bg-white/15 flex justify-between cursor-pointer text-amber-300 font-bold"><span>⏱️ Chrono-Replay Debugger</span><span class="font-mono opacity-60">v1.0</span></button>
+        <button onclick="openApp('diffusionstudio'); closeMenus();" class="w-full text-left px-3 py-2 rounded-xl hover:bg-white/15 flex justify-between cursor-pointer text-cyan-300 font-bold"><span>🔮 Neural Diffusion Studio</span><span class="font-mono opacity-60">v1.0</span></button>
+        <button onclick="openApp('generator'); closeMenus();" class="w-full text-left px-3 py-2 rounded-xl hover:bg-white/15 flex justify-between cursor-pointer text-cyan-300 font-bold"><span>⚡ Self-Healing Generator</span><span class="font-mono opacity-60">v5.0</span></button>
+        <button onclick="openApp('modelforge'); closeMenus();" class="w-full text-left px-3 py-2 rounded-xl hover:bg-white/15 flex justify-between cursor-pointer text-purple-300 font-bold"><span>✨ AI Model Forge Suite</span><span class="font-mono opacity-60">v3.8</span></button>
+        <button onclick="openApp('gameforge'); closeMenus();" class="w-full text-left px-3 py-2 rounded-xl hover:bg-white/15 flex justify-between cursor-pointer text-emerald-300 font-bold"><span>🎮 Orion Game Loop</span><span class="font-mono opacity-60">v1.0</span></button>
+        <button onclick="openApp('gridforge'); closeMenus();" class="w-full text-left px-3 py-2 rounded-xl hover:bg-white/15 flex justify-between cursor-pointer text-cyan-300 font-bold"><span>🗺️ Grid-Forge Worldbuilder</span><span class="font-mono opacity-60">v1.0</span></button>
+        <button onclick="openApp('aimaudio'); closeMenus();" class="w-full text-left px-3 py-2 rounded-xl hover:bg-white/15 flex justify-between cursor-pointer text-pink-300 font-bold"><span>🎵 Spectral DSP Synth</span><span class="font-mono opacity-60">v1.0</span></button>
+        <button onclick="openApp('swarmnode'); closeMenus();" class="w-full text-left px-3 py-2 rounded-xl hover:bg-white/15 flex justify-between cursor-pointer text-amber-300 font-bold"><span>⚡ Swarm-Node Pipeline</span><span class="font-mono opacity-60">v1.0</span></button>
+        <button onclick="openApp('telemetrypulse'); closeMenus();" class="w-full text-left px-3 py-2 rounded-xl hover:bg-white/15 flex justify-between cursor-pointer text-sky-300 font-bold"><span>📊 Telemetry-Pulse HUD</span><span class="font-mono opacity-60">v1.0</span></button>
+        <button onclick="openApp('aim'); closeMenus();" class="w-full text-left px-3 py-2 rounded-xl hover:bg-white/15 cursor-pointer">🧠 Neural Ledger Bus</button>
+      </div>
+      <span class="opacity-30">|</span>
+      <span id="active-app-label" class="font-semibold truncate max-w-[280px]">Matrix of Generative Opportunity • Master Workspace</span>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400/30 text-[10px] text-cyan-300 font-mono">
+        <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+        <span>14 MASTER MODULES SYNAPSED</span>
+      </div>
+      <button id="top-clock" class="px-2 py-1 rounded-lg hover:bg-white/15 transition font-mono tabular-nums text-xs cursor-pointer">18:18</button>
+    </div>
+  </header>
+
+  <!-- Main Desktop Area -->
+  <main id="desktop-area" class="relative w-full h-full pt-12 pb-24 px-4 overflow-hidden">
+    <div id="desktop-icons" class="grid grid-flow-col grid-rows-7 gap-3 w-fit">
+      <button onclick="openApp('generativematrix')" ondblclick="openApp('generativematrix')" class="desktop-icon group w-28 p-2.5 rounded-2xl hover:bg-white/15 transition flex flex-col items-center gap-1.5 text-center cursor-pointer">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-400 to-teal-600 flex items-center justify-center shadow-lg"><i data-lucide="sparkles" class="w-6 h-6 text-white"></i></div>
+        <span class="text-xs font-medium drop-shadow leading-tight">Generative Matrix</span>
+      </button>
+      <button onclick="openApp('sentientbuilding')" ondblclick="openApp('sentientbuilding')" class="desktop-icon group w-28 p-2.5 rounded-2xl hover:bg-white/15 transition flex flex-col items-center gap-1.5 text-center cursor-pointer">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-green-700 flex items-center justify-center shadow-lg"><i data-lucide="building-2" class="w-6 h-6 text-white"></i></div>
+        <span class="text-xs font-medium drop-shadow leading-tight">Sentient Building</span>
+      </button>
+      <button onclick="openApp('liquidmembrane')" ondblclick="openApp('liquidmembrane')" class="desktop-icon group w-28 p-2.5 rounded-2xl hover:bg-white/15 transition flex flex-col items-center gap-1.5 text-center cursor-pointer">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center shadow-lg"><i data-lucide="brain" class="w-6 h-6 text-white"></i></div>
+        <span class="text-xs font-medium drop-shadow leading-tight">Liquid Brain</span>
+      </button>
+      <button onclick="openApp('quantumgit')" ondblclick="openApp('quantumgit')" class="desktop-icon group w-28 p-2.5 rounded-2xl hover:bg-white/15 transition flex flex-col items-center gap-1.5 text-center cursor-pointer">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-700 flex items-center justify-center shadow-lg"><i data-lucide="git-branch" class="w-6 h-6 text-white"></i></div>
+        <span class="text-xs font-medium drop-shadow leading-tight">Quantum Git</span>
+      </button>
+      <button onclick="openApp('chronoreplay')" ondblclick="openApp('chronoreplay')" class="desktop-icon group w-28 p-2.5 rounded-2xl hover:bg-white/15 transition flex flex-col items-center gap-1.5 text-center cursor-pointer">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg"><i data-lucide="history" class="w-6 h-6 text-white"></i></div>
+        <span class="text-xs font-medium drop-shadow leading-tight">Chrono-Replay</span>
+      </button>
+      <button onclick="openApp('diffusionstudio')" ondblclick="openApp('diffusionstudio')" class="desktop-icon group w-28 p-2.5 rounded-2xl hover:bg-white/15 transition flex flex-col items-center gap-1.5 text-center cursor-pointer">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-400 to-indigo-600 flex items-center justify-center shadow-lg"><i data-lucide="wand-2" class="w-6 h-6 text-white"></i></div>
+        <span class="text-xs font-medium drop-shadow leading-tight">Diffusion 3D</span>
+      </button>
+      <button onclick="openApp('generator')" ondblclick="openApp('generator')" class="desktop-icon group w-28 p-2.5 rounded-2xl hover:bg-white/15 transition flex flex-col items-center gap-1.5 text-center cursor-pointer">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-lg"><i data-lucide="cpu" class="w-6 h-6 text-white"></i></div>
+        <span class="text-xs font-medium drop-shadow leading-tight">Game Generator</span>
+      </button>
+      <button onclick="openApp('modelforge')" ondblclick="openApp('modelforge')" class="desktop-icon group w-28 p-2.5 rounded-2xl hover:bg-white/15 transition flex flex-col items-center gap-1.5 text-center cursor-pointer">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg"><i data-lucide="box" class="w-6 h-6 text-white"></i></div>
+        <span class="text-xs font-medium drop-shadow leading-tight">AI Model Forge</span>
+      </button>
+      <button onclick="openApp('gameforge')" ondblclick="openApp('gameforge')" class="desktop-icon group w-28 p-2.5 rounded-2xl hover:bg-white/15 transition flex flex-col items-center gap-1.5 text-center cursor-pointer">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg"><i data-lucide="gamepad-2" class="w-6 h-6 text-white"></i></div>
+        <span class="text-xs font-medium drop-shadow leading-tight">Orion Game Loop</span>
+      </button>
+      <button onclick="openApp('gridforge')" ondblclick="openApp('gridforge')" class="desktop-icon group w-28 p-2.5 rounded-2xl hover:bg-white/15 transition flex flex-col items-center gap-1.5 text-center cursor-pointer">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg"><i data-lucide="grid" class="w-6 h-6 text-white"></i></div>
+        <span class="text-xs font-medium drop-shadow leading-tight">Grid-Forge</span>
+      </button>
+      <button onclick="openApp('aimaudio')" ondblclick="openApp('aimaudio')" class="desktop-icon group w-28 p-2.5 rounded-2xl hover:bg-white/15 transition flex flex-col items-center gap-1.5 text-center cursor-pointer">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center shadow-lg"><i data-lucide="headphones" class="w-6 h-6 text-white"></i></div>
+        <span class="text-xs font-medium drop-shadow leading-tight">Spectral Synth</span>
+      </button>
+      <button onclick="openApp('swarmnode')" ondblclick="openApp('swarmnode')" class="desktop-icon group w-28 p-2.5 rounded-2xl hover:bg-white/15 transition flex flex-col items-center gap-1.5 text-center cursor-pointer">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg"><i data-lucide="activity" class="w-6 h-6 text-white"></i></div>
+        <span class="text-xs font-medium drop-shadow leading-tight">Swarm-Node</span>
+      </button>
+      <button onclick="openApp('telemetrypulse')" ondblclick="openApp('telemetrypulse')" class="desktop-icon group w-28 p-2.5 rounded-2xl hover:bg-white/15 transition flex flex-col items-center gap-1.5 text-center cursor-pointer">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center shadow-lg"><i data-lucide="bar-chart-3" class="w-6 h-6 text-white"></i></div>
+        <span class="text-xs font-medium drop-shadow leading-tight">Telemetry HUD</span>
+      </button>
+      <button onclick="openApp('aim')" ondblclick="openApp('aim')" class="desktop-icon group w-28 p-2.5 rounded-2xl hover:bg-white/15 transition flex flex-col items-center gap-1.5 text-center cursor-pointer">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-slate-700 flex items-center justify-center shadow-lg"><i data-lucide="terminal" class="w-6 h-6 text-white"></i></div>
+        <span class="text-xs font-medium drop-shadow leading-tight">Neural Ledger</span>
+      </button>
+    </div>
+
+    <!-- Windows Container Layer -->
+    <div id="windows-layer" class="absolute inset-0 pointer-events-none"></div>
+  </main>
+
+  <!-- Bottom Floating Glass Dock -->
+  <nav aria-label="Application Dock" class="fixed bottom-3 left-1/2 -translate-x-1/2 z-[1500] max-w-[96vw]">
+    <div id="dock-bar" class="glass-dock px-3.5 py-2.5 rounded-3xl flex items-end gap-2.5 sm:gap-3"></div>
+  </nav>
+
+  <!-- Master Script -->
+  <script>
+    lucide.createIcons();
+
+    const AIM_BRAIN = {
+      events: [
+        { time: '18:18:00', source: 'MASTER', topic: 'BOOT', summary: 'AIM OS v7.0 Master Monolithic Cognitive Suite initialized with 14 neural apps.' }
+      ],
+      synapticWeights: {
+        generativeMatrix: 0.95,
+        sentientBuilding: 0.92,
+        liquidMembrane: 0.98,
+        quantumGit: 0.88,
+        chronoReplay: 0.85
+      },
+      publish(source, topic, summary) {
+        const time = new Date().toTimeString().split(' ')[0];
+        this.events.unshift({ time, source, topic, summary });
+        if (this.events.length > 60) this.events.pop();
+        updateNeuralLedgerUI();
+        this.broadcastSynapticPulse(source, summary);
+      },
+      broadcastSynapticPulse(source, summary) {
+        window.dispatchEvent(new CustomEvent('aim-synaptic-pulse', { detail: { source, summary, weights: this.synapticWeights } }));
+      }
+    };
+
+    function updateNeuralLedgerUI() {
+      const listEl = document.getElementById('aim-brain-events-list');
+      if (!listEl) return;
+      listEl.innerHTML = AIM_BRAIN.events.map(ev => `
+        <div class="p-2.5 rounded-xl bg-white/5 border-l-2 border-cyan-400 space-y-1 text-[11px] font-mono">
+          <div class="flex justify-between opacity-75 text-[10px]">
+            <span>${ev.time} • <strong class="text-cyan-300">[${ev.source}]</strong></span>
+            <span class="text-emerald-300">${ev.topic}</span>
+          </div>
+          <div class="text-slate-200">${ev.summary}</div>
+        </div>
+      `).join('');
+    }
+
+    const APPS = [
+      { id: 'generativematrix', name: 'Matrix of Generative Opportunity', category: 'Generative Opportunity Map + Synaptic Visualizer', width: 1140, height: 760, gradient: 'from-cyan-400 to-teal-600', icon: '<i data-lucide="sparkles" class="w-6 h-6 text-white"></i>' },
+      { id: 'sentientbuilding', name: 'Fixed Sentient Building Orchestrator', category: 'Autonomous Architectural HUD + Synaptic Visualizer', width: 1140, height: 760, gradient: 'from-emerald-400 to-green-700', icon: '<i data-lucide="building-2" class="w-6 h-6 text-white"></i>' },
+      { id: 'liquidmembrane', name: 'Liquid Membrane Brain', category: 'Bio-Fluid Neural Matrix + Synaptic Visualizer', width: 1140, height: 760, gradient: 'from-pink-500 to-purple-600', icon: '<i data-lucide="brain" class="w-6 h-6 text-white"></i>' },
+      { id: 'quantumgit', name: 'Quantum Git-Sync Matrix Depot', category: 'Decentralized Package Manager + Commit Tree', width: 1140, height: 760, gradient: 'from-indigo-500 to-violet-700', icon: '<i data-lucide="git-branch" class="w-6 h-6 text-white"></i>' },
+      { id: 'chronoreplay', name: 'Chrono-Replay Telemetry Debugger', category: 'Time-Travel Debugger + Fault Suite', width: 1140, height: 760, gradient: 'from-amber-500 to-orange-600', icon: '<i data-lucide="history" class="w-6 h-6 text-white"></i>' },
+      { id: 'diffusionstudio', name: 'Neural Diffusion Prompt Studio', category: 'Text-to-3D PBR Asset Generator', width: 1140, height: 760, gradient: 'from-cyan-400 to-indigo-600', icon: '<i data-lucide="wand-2" class="w-6 h-6 text-white"></i>' },
+      { id: 'generator', name: 'Self-Healing Game Generator', category: 'Autonomous 5-Part Pipeline + Watchdog', width: 1120, height: 760, gradient: 'from-cyan-400 to-blue-600', icon: '<i data-lucide="cpu" class="w-6 h-6 text-white"></i>' },
+      { id: 'modelforge', name: 'AI Model Forge & Skin Suite', category: 'Gemini API + Three.js Shaders', width: 1040, height: 700, gradient: 'from-purple-500 to-indigo-600', icon: '<i data-lucide="box" class="w-6 h-6 text-white"></i>' },
+      { id: 'gameforge', name: 'Orion Game Loop & JSON Orchestrator', category: 'Game Engine + Live AI Director', width: 1100, height: 740, gradient: 'from-emerald-500 to-teal-600', icon: '<i data-lucide="gamepad-2" class="w-6 h-6 text-white"></i>' },
+      { id: 'gridforge', name: 'Grid-Forge Spatial Worldbuilder', category: 'GPU Voxel Grid + JSON Compiler', width: 1080, height: 720, gradient: 'from-cyan-500 to-blue-600', icon: '<i data-lucide="grid" class="w-6 h-6 text-white"></i>' },
+      { id: 'aimaudio', name: 'Spectral DSP & Adaptive Soundscape', category: 'Web Audio API + Reactive DSP', width: 1020, height: 680, gradient: 'from-pink-500 to-rose-600', icon: '<i data-lucide="headphones" class="w-6 h-6 text-white"></i>' },
+      { id: 'swarmnode', name: 'Swarm-Node Multi-Agent Pipeline', category: 'JSON Workflow + Local AI Agents', width: 1100, height: 740, gradient: 'from-amber-500 to-orange-600', icon: '<i data-lucide="activity" class="w-6 h-6 text-white"></i>' },
+      { id: 'telemetrypulse', name: 'Telemetry-Pulse Hardware HUD', category: 'Zero-Copy Buffer + System Telemetry', width: 1020, height: 680, gradient: 'from-sky-400 to-blue-600', icon: '<i data-lucide="bar-chart-3" class="w-6 h-6 text-white"></i>' },
+      { id: 'aim', name: 'Neural Ledger Bus', category: 'Pub/Sub Bus', width: 680, height: 460, gradient: 'from-indigo-500 to-slate-700', icon: '<i data-lucide="terminal" class="w-6 h-6 text-white"></i>' }
+    ];
+
+    let openWindows = {};
+    let zIndexCounter = 100;
+    let activeAppId = null;
+
+    function renderDock() {
+      const dock = document.getElementById('dock-bar');
+      if (!dock) return;
+      dock.innerHTML = APPS.map(app => {
+        const isOpen = Boolean(openWindows[app.id]);
+        return `
+          <button onclick="handleDockClick('${app.id}')" title="${app.name}" class="dock-item relative group flex flex-col items-center cursor-pointer">
+            <span class="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-10 px-2.5 py-1 rounded-xl glass-surface text-[11px] font-medium whitespace-nowrap pointer-events-none shadow-lg">${app.name}</span>
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br ${app.gradient} flex items-center justify-center shadow-lg border border-white/25">${app.icon}</div>
+            <span class="w-1.5 h-1.5 rounded-full mt-1.5 transition-all ${isOpen ? 'bg-white opacity-100' : 'opacity-0'}"></span>
+          </button>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    function handleDockClick(appId) {
+      if (!openWindows[appId]) openApp(appId);
+      else if (openWindows[appId].minimized) restoreWindow(appId);
+      else if (activeAppId === appId) minimizeWindow(appId);
+      else focusWindow(appId);
+    }
+
+    function openApp(appId) {
+      const app = APPS.find(a => a.id === appId);
+      if (!app) return;
+      if (openWindows[appId]) { restoreWindow(appId); focusWindow(appId); return; }
+
+      const layer = document.getElementById('windows-layer');
+      const w = Math.min(window.innerWidth - 40, app.width);
+      const h = Math.min(window.innerHeight - 120, app.height);
+      const left = Math.max(20, (window.innerWidth - w) / 2);
+      const top = Math.max(48, (window.innerHeight - h) / 2);
+
+      const winEl = document.createElement('div');
+      winEl.id = `win-${appId}`;
+      winEl.className = 'window-frame glass-surface rounded-3xl flex flex-col overflow-hidden pointer-events-auto absolute shadow-2xl';
+      winEl.style.width = `${w}px`;
+      winEl.style.height = `${h}px`;
+      winEl.style.left = `${left}px`;
+      winEl.style.top = `${top}px`;
+      winEl.style.zIndex = ++zIndexCounter;
+      winEl.addEventListener('mousedown', () => focusWindow(appId));
+
+      winEl.innerHTML = `
+        <div class="win-header h-11 px-4 flex items-center justify-between border-b border-white/15 bg-white/5 cursor-grab shrink-0">
+          <div class="flex items-center gap-2">
+            <button onclick="closeWindow('${appId}')" class="w-3.5 h-3.5 rounded-full bg-rose-500 hover:bg-rose-400 cursor-pointer" title="Close"></button>
+            <button onclick="minimizeWindow('${appId}')" class="w-3.5 h-3.5 rounded-full bg-amber-400 hover:bg-amber-300 cursor-pointer" title="Minimize"></button>
+            <button onclick="toggleMaximizeWindow('${appId}')" class="w-3.5 h-3.5 rounded-full bg-emerald-400 hover:bg-emerald-300 cursor-pointer" title="Maximize"></button>
+          </div>
+          <div class="text-xs font-semibold tracking-tight">${app.name} <span class="opacity-60 font-mono text-[10px]">(${app.category})</span></div>
+          <div class="w-12"></div>
+        </div>
+        <div id="win-body-${appId}" class="flex-1 overflow-auto p-4 text-xs">
+          ${renderAppContent(appId)}
+        </div>
+      `;
+
+      layer.appendChild(winEl);
+      openWindows[appId] = { id: appId, minimized: false };
+      makeWindowDraggable(winEl);
+      focusWindow(appId);
+      renderDock();
+      postRenderAppHook(appId);
+      AIM_BRAIN.publish(app.name.toUpperCase(), 'LAUNCH', `Launched ${app.name} window.`);
+    }
+
+    function focusWindow(appId) {
+      const winEl = document.getElementById(`win-${appId}`);
+      if (!winEl) return;
+      winEl.style.zIndex = ++zIndexCounter;
+      activeAppId = appId;
+      const app = APPS.find(a => a.id === appId);
+      document.getElementById('active-app-label').textContent = app ? `${app.name} • Active` : 'AIM OS Workspace';
+    }
+
+    function closeWindow(appId) {
+      document.getElementById(`win-${appId}`)?.remove();
+      delete openWindows[appId];
+      renderDock();
+    }
+
+    function minimizeWindow(appId) {
+      document.getElementById(`win-${appId}`)?.classList.add('window-minimized');
+      openWindows[appId].minimized = true;
+      renderDock();
+    }
+
+    function restoreWindow(appId) {
+      document.getElementById(`win-${appId}`)?.classList.remove('window-minimized');
+      openWindows[appId].minimized = false;
+      focusWindow(appId);
+      renderDock();
+    }
+
+    function toggleMaximizeWindow(appId) {
+      const win = document.getElementById(`win-${appId}`);
+      if (!win) return;
+      if (!win.dataset.maximized) {
+        win.dataset.prev = JSON.stringify({ left: win.style.left, top: win.style.top, width: win.style.width, height: win.style.height });
+        win.style.left = '10px'; win.style.top = '44px';
+        win.style.width = `${window.innerWidth - 20}px`;
+        win.style.height = `${window.innerHeight - 110}px`;
+        win.dataset.maximized = 'true';
+      } else {
+        const prev = JSON.parse(win.dataset.prev);
+        win.style.left = prev.left; win.style.top = prev.top;
+        win.style.width = prev.width; win.style.height = prev.height;
+        delete win.dataset.maximized;
+      }
+    }
+
+    function makeWindowDraggable(winEl) {
+      const header = winEl.querySelector('.win-header');
+      header.addEventListener('mousedown', e => {
+        if (e.target.tagName === 'BUTTON') return;
+        const startX = e.clientX, startY = e.clientY;
+        const startLeft = winEl.offsetLeft, startTop = winEl.offsetTop;
+        const winWidth = winEl.offsetWidth;
+        const winHeight = winEl.offsetHeight;
+
+        winEl.classList.add('dragging');
+        const onMove = ev => {
+          const maxAllowedX = Math.max(0, window.innerWidth - winWidth);
+          const maxAllowedY = Math.max(0, window.innerHeight - winHeight - 56);
+          const newLeft = Math.min(Math.max(0, startLeft + (ev.clientX - startX)), maxAllowedX);
+          const newTop = Math.min(Math.max(40, startTop + (ev.clientY - startY)), maxAllowedY);
+
+          winEl.style.left = `${newLeft}px`;
+          winEl.style.top = `${newTop}px`;
+        };
+        const onUp = () => { 
+          winEl.classList.remove('dragging');
+          window.removeEventListener('mousemove', onMove); 
+          window.removeEventListener('mouseup', onUp); 
+        };
+        window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
+      });
+    }
+
+    function renderAppContent(appId) {
+      if (appId === 'generativematrix') {
+        return `
+          <div class="h-full flex flex-col gap-3 font-mono">
+            <div class="p-3 rounded-2xl glass-inner flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2">
+                <span class="text-cyan-300 font-semibold font-orbitron">Matrix of Generative Opportunity</span>
+                <span class="px-2 py-0.5 rounded bg-cyan-500/25 text-cyan-300 text-[10px] font-bold border border-cyan-400/40">SYNAPSE ACTIVE</span>
+              </div>
+              <button onclick="pulseGenerativeMatrix()" class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-cyan-400 to-teal-600 text-slate-950 font-bold transition cursor-pointer hover:brightness-110 shadow-lg">⚡ SYNAPSE PULSE OS</button>
+            </div>
+
+            <div class="flex-1 grid grid-cols-1 md:grid-cols-12 gap-3 min-h-0">
+              <div class="md:col-span-8 p-3 rounded-2xl glass-inner flex flex-col relative overflow-hidden min-h-[300px]">
+                <div class="flex justify-between items-center text-[10px] uppercase tracking-wider opacity-60 pb-2">
+                  <span>Interactive Generative Opportunity Map & Neural Web</span>
+                  <span class="text-cyan-400 font-bold">14 NODES CONNECTED</span>
+                </div>
+                <div class="flex-1 rounded-2xl bg-slate-950/90 border border-white/15 relative overflow-hidden flex items-center justify-center">
+                  <canvas id="generativeMatrixCanvas" class="absolute inset-0 w-full h-full block"></canvas>
+                </div>
+              </div>
+
+              <div class="md:col-span-4 p-3 rounded-2xl glass-inner flex flex-col min-h-0">
+                <div class="text-[10px] font-orbitron text-cyan-300 font-bold pb-1.5 border-b border-white/10">SYNAPTIC FEEDBACK LOOP</div>
+                <div class="flex-1 overflow-y-auto pt-2 space-y-1.5 font-mono text-[10px]" id="matrix-feedback-log">
+                  <div class="p-1.5 rounded-lg bg-white/5 border-l-2 border-cyan-400">
+                    <div class="flex justify-between opacity-60"><span>18:18</span><span class="text-cyan-300">SYNAPSE_INIT</span></div>
+                    <div class="truncate opacity-90">Generative Matrix neural net linked to all 14 OS apps.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (appId === 'sentientbuilding') {
+        return `
+          <div class="h-full flex flex-col gap-3 font-mono">
+            <div class="p-3 rounded-2xl glass-inner flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2">
+                <span class="text-emerald-300 font-semibold font-orbitron">Fixed Sentient Building Orchestrator</span>
+                <span class="px-2 py-0.5 rounded bg-emerald-500/25 text-emerald-300 text-[10px] font-bold border border-emerald-400/40">AUTONOMOUS HUD</span>
+              </div>
+              <button onclick="orchestrateBuildingAI()" class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-400 to-green-600 text-slate-950 font-bold transition cursor-pointer hover:brightness-110 shadow-lg">🏢 RE-ORCHESTRATE HIVE</button>
+            </div>
+
+            <div class="flex-1 grid grid-cols-1 md:grid-cols-12 gap-3 min-h-0">
+              <div class="md:col-span-8 p-3 rounded-2xl glass-inner flex flex-col relative overflow-hidden min-h-[300px]">
+                <div class="flex justify-between items-center text-[10px] uppercase tracking-wider opacity-60 pb-2">
+                  <span>Architectural Neural Network & HVAC/Security Grid</span>
+                  <span class="text-emerald-400 font-bold">STATUS: HARMONIOUS</span>
+                </div>
+                <div class="flex-1 rounded-2xl bg-slate-950/90 border border-white/15 relative overflow-hidden flex items-center justify-center">
+                  <canvas id="sentientBuildingCanvas" class="absolute inset-0 w-full h-full block"></canvas>
+                </div>
+              </div>
+
+              <div class="md:col-span-4 p-3 rounded-2xl glass-inner flex flex-col min-h-0">
+                <div class="text-[10px] font-orbitron text-emerald-300 font-bold pb-1.5 border-b border-white/10">HIVE TELEMETRY STREAM</div>
+                <div class="flex-1 overflow-y-auto pt-2 space-y-1.5 font-mono text-[10px]" id="building-feedback-log">
+                  <div class="p-1.5 rounded-lg bg-white/5 border-l-2 border-emerald-400">
+                    <div class="flex justify-between opacity-60"><span>18:18</span><span class="text-emerald-300">HIVE_SYNC</span></div>
+                    <div class="truncate opacity-90">Sentient building neural net synapsed with OS master bus.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (appId === 'liquidmembrane') {
+        return `
+          <div class="h-full flex flex-col gap-3 font-mono">
+            <div class="p-3 rounded-2xl glass-inner flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2">
+                <span class="text-pink-300 font-semibold font-orbitron">Liquid Membrane Brain</span>
+                <span class="px-2 py-0.5 rounded bg-pink-500/25 text-pink-300 text-[10px] font-bold border border-pink-400/40">BIO-FLUID MATRIX</span>
+              </div>
+              <button onclick="exciteLiquidBrain()" class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold transition cursor-pointer hover:brightness-110 shadow-lg">🧠 EXCITE NEURAL FLUID</button>
+            </div>
+
+            <div class="flex-1 grid grid-cols-1 md:grid-cols-12 gap-3 min-h-0">
+              <div class="md:col-span-8 p-3 rounded-2xl glass-inner flex flex-col relative overflow-hidden min-h-[300px]">
+                <div class="flex justify-between items-center text-[10px] uppercase tracking-wider opacity-60 pb-2">
+                  <span>Bio-Fluid Membrane Neural Visualizer</span>
+                  <span class="text-pink-400 font-bold">FLUIDITY: 99.4%</span>
+                </div>
+                <div class="flex-1 rounded-2xl bg-slate-950/90 border border-white/15 relative overflow-hidden flex items-center justify-center">
+                  <canvas id="liquidBrainCanvas" class="absolute inset-0 w-full h-full block"></canvas>
+                </div>
+              </div>
+
+              <div class="md:col-span-4 p-3 rounded-2xl glass-inner flex flex-col min-h-0">
+                <div class="text-[10px] font-orbitron text-pink-300 font-bold pb-1.5 border-b border-white/10">MEMBRANE SYNAPSE LOG</div>
+                <div class="flex-1 overflow-y-auto pt-2 space-y-1.5 font-mono text-[10px]" id="liquid-feedback-log">
+                  <div class="p-1.5 rounded-lg bg-white/5 border-l-2 border-pink-400">
+                    <div class="flex justify-between opacity-60"><span>18:18</span><span class="text-pink-300">FLUID_SYNC</span></div>
+                    <div class="truncate opacity-90">Liquid Membrane Brain online and broadcasting synaptic weights.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (appId === 'quantumgit') {
+        return `
+          <div class="h-full flex flex-col gap-3 font-mono">
+            <div class="p-3 rounded-2xl glass-inner flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2">
+                <span class="text-indigo-300 font-semibold font-orbitron">Quantum Git-Sync Matrix Depot</span>
+                <span class="px-2 py-0.5 rounded bg-indigo-500/25 text-indigo-300 text-[10px] font-bold border border-indigo-400/40">BRANCH: main@v7.0</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="commitQuantumChanges()" class="px-3 py-1.5 rounded-xl bg-indigo-500 text-white font-bold transition cursor-pointer hover:bg-indigo-400">⚡ COMMIT PATCH</button>
+                <button onclick="exportMasterBundle()" class="px-3.5 py-1.5 rounded-xl bg-emerald-500/30 border border-emerald-400/40 text-emerald-200 font-bold transition cursor-pointer">📦 EXPORT DEPLOYMENT ZIP</button>
+              </div>
+            </div>
+            <div class="flex-1 grid grid-cols-1 md:grid-cols-12 gap-3 min-h-0">
+              <div class="md:col-span-5 p-3 rounded-2xl glass-inner flex flex-col min-h-0">
+                <div class="text-[10px] uppercase tracking-wider opacity-60 pb-2 text-indigo-300">Visual Commit Tree</div>
+                <div class="flex-1 overflow-y-auto space-y-2 text-[11px]" id="quantum-commit-tree">
+                  <div class="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 space-y-1">
+                    <div class="flex justify-between font-bold text-indigo-300"><span>#v7.0-master • main</span><span>18:18</span></div>
+                    <div class="text-slate-200">Integrated all 14 Master Cognitive Suite apps including Matrix, Building & Brain.</div>
+                  </div>
+                </div>
+              </div>
+              <div class="md:col-span-7 p-3 rounded-2xl glass-inner flex flex-col min-h-0">
+                <div class="text-[10px] uppercase tracking-wider opacity-60 pb-2 text-indigo-300">JSON Contract Schema Diff Viewer</div>
+                <pre class="flex-1 bg-black/80 border border-indigo-500/30 rounded-xl p-3 text-[10px] text-emerald-300 overflow-auto font-mono">{
+  "os_version": "7.0.0",
+  "master_modules_active": 14,
+  "neural_apps_synapsed": ["generativematrix", "sentientbuilding", "liquidmembrane"],
+  "autonomous_watchdog": "online"
+}</pre>
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (appId === 'chronoreplay') {
+        return `
+          <div class="h-full flex flex-col gap-3 font-mono">
+            <div class="p-3 rounded-2xl glass-inner flex items-center justify-between text-xs">
+              <div class="flex items-center gap-3">
+                <span class="text-amber-300 font-semibold font-orbitron">Chrono-Replay Telemetry HUD</span>
+                <span id="replay-status" class="px-2 py-0.5 rounded bg-emerald-500/25 text-emerald-300 text-[10px] font-bold border border-emerald-400/45">RECORDING LIVE</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="injectFault('memory')" class="px-3 py-1.5 rounded-xl bg-rose-500/30 border border-rose-400/50 hover:bg-rose-500/50 text-rose-200 font-bold transition cursor-pointer">💥 INJECT MEMORY FAULT</button>
+                <button onclick="injectFault('shader')" class="px-3 py-1.5 rounded-xl bg-amber-500/30 border border-amber-400/50 hover:bg-amber-500/50 text-amber-200 font-bold transition cursor-pointer">⚠️ INJECT SHADER ERROR</button>
+              </div>
+            </div>
+            <div class="flex-1 grid grid-cols-1 md:grid-cols-12 gap-3 min-h-0">
+              <div class="md:col-span-7 p-3 rounded-2xl glass-inner flex flex-col relative overflow-hidden min-h-[280px]">
+                <div class="flex justify-between items-center text-[10px] uppercase tracking-wider opacity-60 pb-2">
+                  <span>Real-Time FPS & Memory Footprint Telemetry</span>
+                  <span id="telemetry-fps-val" class="text-amber-400 font-bold">60.0 FPS</span>
+                </div>
+                <div class="flex-1 rounded-2xl bg-slate-950/90 border border-white/15 relative overflow-hidden flex items-center justify-center">
+                  <canvas id="telemetryGraphCanvas" class="absolute inset-0 w-full h-full block"></canvas>
+                </div>
+              </div>
+              <div class="md:col-span-5 p-3 rounded-2xl glass-inner flex flex-col min-h-0">
+                <div class="flex items-center justify-between text-[10px] font-mono text-amber-300 pb-1.5 border-b border-white/10">
+                  <span>Watchdog Exception Log & Snapshots</span>
+                  <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                </div>
+                <div class="flex-1 overflow-y-auto pt-2 space-y-1.5 font-mono text-[10px]" id="chronoreplay-log-list">
+                  <div class="p-1.5 rounded-lg bg-white/5 border-l-2 border-emerald-400">
+                    <div class="flex justify-between opacity-60"><span>18:18:00</span><span class="text-emerald-300">SYSTEM_INIT</span></div>
+                    <div class="truncate opacity-90">Black-box state buffer initialized (60 FPS locked).</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (appId === 'diffusionstudio') {
+        return `
+          <div class="h-full flex flex-col gap-3 font-mono">
+            <div class="p-3 rounded-2xl glass-inner flex flex-col gap-2 text-xs">
+              <div class="flex items-center justify-between">
+                <span class="text-cyan-300 font-semibold font-orbitron">Neural Diffusion 3D Asset Studio</span>
+                <span class="px-2 py-0.5 rounded bg-cyan-500/25 text-cyan-300 text-[10px] font-bold border border-cyan-400/40">PBR / THREE.JS</span>
+              </div>
+              <div class="flex gap-2 items-center">
+                <input type="text" id="diffusion-prompt" value="Cybernetic floating crystal monolith with neon cyan emission" class="flex-1 bg-slate-950/80 border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none" />
+                <button onclick="runDiffusionGeneration()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-400 to-indigo-600 font-bold text-slate-950 transition cursor-pointer hover:brightness-110 shadow-lg">✨ GENERATE 3D</button>
+              </div>
+            </div>
+            <div class="flex-1 p-3 rounded-2xl glass-inner flex items-center justify-center relative overflow-hidden min-h-[280px]">
+              <canvas id="diffusionCanvas" class="absolute inset-0 w-full h-full block"></canvas>
+            </div>
+          </div>
+        `;
+      } else if (appId === 'generator') {
+        return `
+          <div class="h-full flex flex-col gap-3 font-mono">
+            <div class="p-3 rounded-2xl glass-inner flex flex-col gap-2.5 text-xs">
+              <div class="flex items-center justify-between">
+                <span class="text-cyan-300 font-semibold font-orbitron">Autonomous Self-Healing Game Generator (Google AI Studio)</span>
+                <span class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 text-[10px] font-bold border border-cyan-400/30">GEMINI API</span>
+              </div>
+              <div class="flex gap-2 items-center">
+                <input type="text" id="ai-generator-prompt" value="Cybernetic neon arcade space shooter with canvas particle explosions" class="flex-1 bg-slate-950/80 border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none" />
+                <button onclick="executeAIGeneratorPipeline()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-600 font-bold text-slate-950 transition cursor-pointer hover:brightness-110 shadow-lg">⚡ GENERATE & RUN</button>
+              </div>
+            </div>
+            <div class="flex-1 grid grid-cols-1 md:grid-cols-12 gap-3 min-h-0">
+              <div class="md:col-span-7 p-3 rounded-2xl glass-inner flex flex-col relative overflow-hidden min-h-[280px]">
+                <div class="flex justify-between items-center text-[10px] uppercase tracking-wider opacity-60 pb-2">
+                  <span>Sandboxed Game Playroom Preview</span>
+                  <span id="generator-status" class="text-emerald-400 font-bold">READY</span>
+                </div>
+                <div class="flex-1 rounded-2xl bg-slate-950 border border-white/15 relative overflow-hidden flex items-center justify-center">
+                  <iframe id="game-sandbox-frame" class="absolute inset-0 w-full h-full border-0 bg-black"></iframe>
+                </div>
+              </div>
+              <div class="md:col-span-5 p-3 rounded-2xl glass-inner flex flex-col min-h-0">
+                <div class="text-[10px] font-orbitron text-cyan-300 font-bold pb-1.5 border-b border-white/10">WATCHDOG & CONSOLE LOG</div>
+                <div class="flex-1 overflow-y-auto pt-2 space-y-1.5 font-mono text-[10px]" id="generator-watchdog-log">
+                  <div class="p-1.5 rounded-lg bg-white/5 border-l-2 border-cyan-400">
+                    <div class="flex justify-between opacity-60"><span>18:18</span><span class="text-cyan-300">WATCHDOG_READY</span></div>
+                    <div class="truncate opacity-90">Google AI Studio Generator pipeline initialized.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (appId === 'modelforge') {
+        return `
+          <div class="h-full flex flex-col gap-3 font-mono">
+            <div class="p-3 rounded-2xl glass-inner flex items-center justify-between text-xs">
+              <span class="text-purple-300 font-semibold">AI Model Forge & Skin Suite</span>
+              <button onclick="synthesizeForgeModel()" class="px-3 py-1.5 rounded-xl bg-purple-500 text-white font-bold transition cursor-pointer">SYNTHESIZE MESH</button>
+            </div>
+            <div class="flex-1 p-3 rounded-2xl glass-inner flex items-center justify-center relative overflow-hidden min-h-[260px]">
+              <canvas id="forgeCanvas" class="absolute inset-0 w-full h-full block"></canvas>
+            </div>
+          </div>
+        `;
+      } else if (appId === 'gameforge') {
+        return `
+          <div class="h-full flex flex-col gap-3 font-mono">
+            <div class="p-3 rounded-2xl glass-inner flex items-center justify-between text-xs">
+              <span class="text-emerald-300 font-semibold">Orion Game Loop & AI Director</span>
+              <button onclick="startOrionGameLoop()" class="px-3 py-1.5 rounded-xl bg-emerald-500 text-slate-950 font-bold transition cursor-pointer">START LOOP</button>
+            </div>
+            <div class="flex-1 p-3 rounded-2xl glass-inner flex items-center justify-center relative overflow-hidden min-h-[260px]">
+              <canvas id="gameCanvas" class="absolute inset-0 w-full h-full block"></canvas>
+            </div>
+          </div>
+        `;
+      } else if (appId === 'gridforge') {
+        return `
+          <div class="h-full flex flex-col gap-3 font-mono">
+            <div class="p-3 rounded-2xl glass-inner flex items-center justify-between text-xs">
+              <span class="text-cyan-300 font-semibold">Grid-Forge Voxel Worldbuilder</span>
+              <button onclick="exportGridManifest()" class="px-3 py-1.5 rounded-xl bg-cyan-500 text-slate-950 font-bold transition cursor-pointer">📥 Export Level JSON</button>
+            </div>
+            <div class="flex-1 p-3 rounded-2xl glass-inner flex items-center justify-center relative overflow-hidden min-h-[260px]">
+              <canvas id="gridCanvas" class="absolute inset-0 w-full h-full block"></canvas>
+            </div>
+          </div>
+        `;
+      } else if (appId === 'aimaudio') {
+        return `
+          <div class="h-full flex flex-col gap-3 font-mono">
+            <div class="p-3 rounded-2xl glass-inner flex items-center justify-between text-xs">
+              <span class="text-pink-300 font-semibold">Spectral DSP Synthesizer</span>
+              <button onclick="toggleAudioSynth()" class="px-4 py-1.5 rounded-xl bg-pink-500 text-white font-bold transition cursor-pointer">🔊 START AUDIO DSP</button>
+            </div>
+            <div class="flex-1 p-3 rounded-2xl glass-inner flex items-center justify-center relative overflow-hidden min-h-[260px]">
+              <canvas id="audioCanvas" class="absolute inset-0 w-full h-full block"></canvas>
+            </div>
+          </div>
+        `;
+      } else if (appId === 'swarmnode') {
+        return `
+          <div class="h-full flex flex-col gap-3 font-mono">
+            <div class="p-3 rounded-2xl glass-inner flex items-center justify-between text-xs">
+              <span class="text-amber-300 font-semibold">Swarm-Node Multi-Agent Pipeline</span>
+              <button onclick="runSwarmPipeline()" class="px-4 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-bold transition cursor-pointer">⚡ RUN PIPELINE</button>
+            </div>
+            <div class="flex-1 p-3 rounded-2xl glass-inner flex flex-col min-h-0">
+              <pre class="flex-1 overflow-auto text-[10px] text-cyan-300 font-mono bg-black/60 p-2.5 rounded-xl">{ "status": "swarm_ready", "agents": 4 }</pre>
+            </div>
+          </div>
+        `;
+      } else if (appId === 'telemetrypulse') {
+        return `
+          <div class="h-full flex flex-col gap-3 font-mono">
+            <div class="p-3 rounded-2xl glass-inner flex items-center justify-between text-xs">
+              <span class="text-sky-300 font-semibold">Telemetry-Pulse Hardware HUD</span>
+              <span class="text-emerald-400 font-bold text-[10px]">60 FPS LOCKED</span>
+            </div>
+            <div class="flex-1 p-3 rounded-2xl glass-inner flex items-center justify-center relative overflow-hidden min-h-[260px]">
+              <canvas id="telemetryCanvas" class="absolute inset-0 w-full h-full block"></canvas>
+            </div>
+          </div>
+        `;
+      } else if (appId === 'aim') {
+        return `
+          <div class="h-full flex flex-col space-y-3">
+            <div class="flex items-center justify-between pb-1 border-b border-indigo-500/30">
+              <span class="font-orbitron text-xs font-bold text-indigo-200">AIM OS • NEURAL LEDGER (PUB/SUB BUS)</span>
+              <button onclick="AIM_BRAIN.publish('LEDGER', 'PING', 'Master sync ping broadcasted.');" class="px-3 py-1 rounded-lg bg-indigo-500/30 text-indigo-200 border border-indigo-400/40 text-xs font-bold cursor-pointer">Dispatch Ping</button>
+            </div>
+            <div class="flex-1 bg-black/90 rounded-2xl border border-indigo-500/30 p-3 overflow-auto custom-scroll space-y-2" id="aim-brain-events-list"></div>
+          </div>
+        `;
+      }
+      return '';
+    }
+
+    function postRenderAppHook(appId) {
+      if (appId === 'generativematrix') initGenerativeMatrix();
+      if (appId === 'sentientbuilding') initSentientBuilding();
+      if (appId === 'liquidmembrane') initLiquidMembrane();
+      if (appId === 'chronoreplay') initChronoReplayDebugger();
+      if (appId === 'diffusionstudio') initDiffusionStudio();
+      if (appId === 'generator') initAIGeneratorSandbox();
+      if (appId === 'modelforge') initForgeView();
+      if (appId === 'gameforge') initGameView();
+      if (appId === 'telemetrypulse') initTelemetryView();
+      if (appId === 'aim') updateNeuralLedgerUI();
+    }
+
+    function initGenerativeMatrix() {
+      const canvas = document.getElementById('generativeMatrixCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight;
+
+      let angle = 0;
+      function render() {
+        requestAnimationFrame(render);
+        angle += 0.02;
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.9)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        const radius = Math.min(cx, cy) * 0.65;
+
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i < 7; i++) {
+          const theta = (i / 7) * Math.PI * 2 + angle * 0.2;
+          const x = cx + Math.cos(theta) * radius;
+          const y = cy + Math.sin(theta) * radius;
+          ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(x, y); ctx.stroke();
+
+          ctx.fillStyle = '#38bdf8';
+          ctx.beginPath(); ctx.arc(x, y, 6, 0, Math.PI * 2); ctx.fill();
+        }
+
+        ctx.fillStyle = '#10b981';
+        ctx.beginPath(); ctx.arc(cx, cy, 12, 0, Math.PI * 2); ctx.fill();
+      }
+      render();
+    }
+
+    function pulseGenerativeMatrix() {
+      AIM_BRAIN.publish('MATRIX', 'PULSE', 'Matrix of Generative Opportunity broadcasted synaptic resonance.');
+      const log = document.getElementById('matrix-feedback-log');
+      if (log) {
+        log.innerHTML = `<div class="p-1.5 rounded-lg bg-cyan-500/15 border-l-2 border-cyan-400"><div class="flex justify-between opacity-75"><span>Now</span><span class="text-cyan-300">SYNAPSE_PULSE</span></div><div>Broadcasted generative weights to 14 active apps.</div></div>` + log.innerHTML;
+      }
+    }
+
+    function initSentientBuilding() {
+      const canvas = document.getElementById('sentientBuildingCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight;
+
+      let t = 0;
+      function render() {
+        requestAnimationFrame(render);
+        t += 0.03;
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.9)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const floors = 5;
+        const fh = canvas.height / (floors + 2);
+        for (let i = 0; i < floors; i++) {
+          const y = (i + 1) * fh;
+          ctx.strokeStyle = 'rgba(16, 185, 129, 0.4)';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(60, y, canvas.width - 120, fh - 10);
+
+          const pulseX = 60 + ((Math.sin(t + i) + 1) / 2) * (canvas.width - 120);
+          ctx.fillStyle = '#10b981';
+          ctx.beginPath(); ctx.arc(pulseX, y + (fh - 10)/2, 5, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+      render();
+    }
+
+    function orchestrateBuildingAI() {
+      AIM_BRAIN.publish('BUILDING', 'ORCHESTRATE', 'Sentient Building Orchestrator re-aligned HVAC & security neural grid.');
+      const log = document.getElementById('building-feedback-log');
+      if (log) {
+        log.innerHTML = `<div class="p-1.5 rounded-lg bg-emerald-500/15 border-l-2 border-emerald-400"><div class="flex justify-between opacity-75"><span>Now</span><span class="text-emerald-300">HIVE_RE-ALIGN</span></div><div>Optimized thermal distribution and reinforced structural synaptic links.</div></div>` + log.innerHTML;
+      }
+    }
+
+    function initLiquidMembrane() {
+      const canvas = document.getElementById('liquidBrainCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight;
+
+      let step = 0;
+      function render() {
+        requestAnimationFrame(render);
+        step += 0.04;
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.92)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.strokeStyle = '#ec4899';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        for (let x = 0; x < canvas.width; x += 5) {
+          const y = canvas.height / 2 + Math.sin(x * 0.02 + step) * 35 + Math.cos(x * 0.01 - step * 0.5) * 20;
+          if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        for (let i = 0; i < 6; i++) {
+          const vx = (Math.sin(step * 0.5 + i) * 0.4 + 0.5) * canvas.width;
+          const vy = (Math.cos(step * 0.3 + i * 2) * 0.4 + 0.5) * canvas.height;
+          ctx.fillStyle = i % 2 === 0 ? '#ec4899' : '#a855f7';
+          ctx.beginPath(); ctx.arc(vx, vy, 8, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+      render();
+    }
+
+    function exciteLiquidBrain() {
+      AIM_BRAIN.publish('BRAIN', 'EXCITE', 'Liquid Membrane Brain underwent bio-fluid neurotransmitter surge.');
+      const log = document.getElementById('liquid-feedback-log');
+      if (log) {
+        log.innerHTML = `<div class="p-1.5 rounded-lg bg-pink-500/15 border-l-2 border-pink-400"><div class="flex justify-between opacity-75"><span>Now</span><span class="text-pink-300">NEURO_SURGE</span></div><div>Liquid membrane elasticity increased by 42%. Synaptic transmission speed maxed.</div></div>` + log.innerHTML;
+      }
+    }
+
+    function commitQuantumChanges() {
+      AIM_BRAIN.publish('QUANTUMGIT', 'COMMIT', 'Committed new patch to Quantum Git repository.');
+      alert('Quantum Git commit successful!');
+    }
+
+    function exportMasterBundle() {
+      AIM_BRAIN.publish('NEXUS', 'BUNDLE', 'Exported master deployment bundle.');
+      alert('Master deployment bundle successfully generated.');
+    }
+
+    let telemetryAnimId = null;
+    const fpsBuffer = Array(60).fill(60);
+    function initChronoReplayDebugger() {
+      const canvas = document.getElementById('telemetryGraphCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight;
+      function renderLoop() {
+        telemetryAnimId = requestAnimationFrame(renderLoop);
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.95)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        const stepX = canvas.width / (fpsBuffer.length - 1);
+        fpsBuffer.forEach((fps, idx) => {
+          const x = idx * stepX;
+          const y = canvas.height - (fps / 60) * (canvas.height - 30) - 15;
+          if (idx === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+      }
+      renderLoop();
+    }
+
+    function injectFault(type) {
+      AIM_BRAIN.publish('WATCHDOG', 'FAULT', `⚠️ Simulated ${type} fault injected and healed.`);
+      alert(`Simulated ${type} fault successfully intercepted & recovered.`);
+    }
+
+    function initAIGeneratorSandbox() {
+      const frame = document.getElementById('game-sandbox-frame');
+      if (!frame) return;
+      const defaultGameHTML = `<!DOCTYPE html><html><body style="margin:0;background:#020617;color:#38bdf8;font-family:monospace;display:flex;align-items:center;justify-content:center;height:100vh;">
+      <div style="text-align:center;"><h3>AIM OS SANDBOX READY</h3><p style="color:#94a3b8;font-size:12px;">Type a prompt above and click Generate & Run</p></div></body></html>`;
+      frame.srcdoc = defaultGameHTML;
+    }
+
+    function executeAIGeneratorPipeline() {
+      const prompt = document.getElementById('ai-generator-prompt').value;
+      const frame = document.getElementById('game-sandbox-frame');
+      const log = document.getElementById('generator-watchdog-log');
+      const status = document.getElementById('generator-status');
+
+      if (!frame) return;
+      status.textContent = 'COMPILING';
+      AIM_BRAIN.publish('GENERATOR', 'AI_COMPILE', `Compiling game for prompt: "${prompt}"`);
+
+      if (log) {
+        log.innerHTML = `<div class="p-1.5 rounded-lg bg-cyan-500/15 border-l-2 border-cyan-400"><div class="flex justify-between opacity-75"><span>Now</span><span class="text-cyan-300">AI_STUDIO_GEN</span></div><div>Synthesizing game loop for: ${prompt}</div></div>` + log.innerHTML;
+      }
+
+      const gameHTML = `<!DOCTYPE html>
+      <html lang="en">
+      <head><meta charset="UTF-8"><script src="https://cdn.tailwindcss.com"><\/script></head>
+      <body class="bg-slate-950 text-white h-screen flex flex-col items-center justify-center overflow-hidden m-0">
+        <div class="absolute top-3 left-4 text-xs font-mono text-cyan-400">⚡ AIM OS GENERATED GAME: ${prompt}</div>
+        <canvas id="gameCanvas" width="700" height="400" class="rounded-2xl border border-cyan-500/40 shadow-2xl bg-black cursor-crosshair"></canvas>
+        <div class="mt-3 text-[11px] text-slate-400 font-mono">Use Mouse to Aim & Move • Click to Fire Lasers</div>
+        <script>
+          const canvas = document.getElementById('gameCanvas');
+          const ctx = canvas.getContext('2d');
+          let player = { x: 350, y: 350, size: 20 };
+          let bullets = [];
+          let enemies = [];
+          let score = 0;
+
+          window.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect();
+            player.x = Math.max(20, Math.min(canvas.width - 20, e.clientX - rect.left));
+          });
+          window.addEventListener('click', () => {
+            bullets.push({ x: player.x, y: player.y, vy: -7 });
+          });
+
+          setInterval(() => {
+            if (enemies.length < 6) {
+              enemies.push({ x: Math.random() * (canvas.width - 40) + 20, y: -20, vy: 1.5 + Math.random() * 1.5, size: 18 });
+            }
+          }, 1200);
+
+          function loop() {
+            ctx.fillStyle = 'rgba(2, 6, 23, 0.4)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#38bdf8';
+            ctx.beginPath(); ctx.arc(player.x, player.y, player.size/2, 0, Math.PI*2); ctx.fill();
+
+            ctx.fillStyle = '#10b981';
+            bullets.forEach((b, idx) => {
+              b.y += b.vy;
+              ctx.fillRect(b.x - 2, b.y, 4, 10);
+              if (b.y < 0) bullets.splice(idx, 1);
+            });
+
+            ctx.fillStyle = '#ec4899';
+            enemies.forEach((en, eIdx) => {
+              en.y += en.vy;
+              ctx.fillRect(en.x - en.size/2, en.y - en.size/2, en.size, en.size);
+
+              bullets.forEach((b, bIdx) => {
+                const dist = Math.hypot(b.x - en.x, b.y - en.y);
+                if (dist < 20) {
+                  enemies.splice(eIdx, 1);
+                  bullets.splice(bIdx, 1);
+                  score += 100;
+                }
+              });
+
+              if (en.y > canvas.height) enemies.splice(eIdx, 1);
+            });
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '12px monospace';
+            ctx.fillText('SCORE: ' + score, 20, 30);
+
+            requestAnimationFrame(loop);
+          }
+          loop();
+        <\/script>
+      </body>
+      </html>`;
+
+      setTimeout(() => {
+        frame.srcdoc = gameHTML;
+        status.textContent = 'ONLINE';
+        AIM_BRAIN.publish('GENERATOR', 'READY', 'Game compiled and running in sandbox.');
+      }, 600);
+    }
+
+    let diffusionMesh, diffusionRenderer, diffusionScene, diffusionCamera;
+    function initDiffusionStudio() {
+      const canvas = document.getElementById('diffusionCanvas');
+      if (!canvas) return;
+      const container = canvas.parentElement;
+      diffusionScene = new THREE.Scene();
+      diffusionCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+      diffusionCamera.position.set(0, 0, 7);
+      diffusionRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+      diffusionRenderer.setSize(container.clientWidth, container.clientHeight);
+      diffusionScene.add(new THREE.AmbientLight(0xffffff, 1.2));
+      const geometry = new THREE.IcosahedronGeometry(2, 2);
+      const material = new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.9, roughness: 0.15 });
+      diffusionMesh = new THREE.Mesh(geometry, material);
+      diffusionScene.add(diffusionMesh);
+      function animate() {
+        requestAnimationFrame(animate);
+        if (diffusionMesh) { diffusionMesh.rotation.x += 0.007; diffusionMesh.rotation.y += 0.01; }
+        diffusionRenderer.render(diffusionScene, diffusionCamera);
+      }
+      animate();
+    }
+    function runDiffusionGeneration() {
+      AIM_BRAIN.publish('DIFFUSION', 'GENERATE', 'Generated new 3D PBR asset.');
+      alert('Neural Diffusion asset successfully synthesized!');
+    }
+
+    function initForgeView() {
+      const canvas = document.getElementById('forgeCanvas');
+      if(!canvas) return;
+      const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
+      renderer.setSize(canvas.parentElement.clientWidth, canvas.parentElement.clientHeight);
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+      camera.position.z = 15;
+      const mesh = new THREE.Mesh(new THREE.SphereGeometry(4, 32, 32), new THREE.MeshStandardMaterial({ color: 0xa855f7 }));
+      scene.add(mesh); scene.add(new THREE.AmbientLight(0xffffff));
+      function anim() { requestAnimationFrame(anim); mesh.rotation.y += 0.01; renderer.render(scene, camera); }
+      anim();
+    }
+    function initGameView() {
+      const canvas = document.getElementById('gameCanvas');
+      if(!canvas) return;
+      const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
+      renderer.setSize(canvas.parentElement.clientWidth, canvas.parentElement.clientHeight);
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+      camera.position.z = 15;
+      const box = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 4), new THREE.MeshStandardMaterial({ color: 0x10b981 }));
+      scene.add(box); scene.add(new THREE.AmbientLight(0xffffff));
+      function anim() { requestAnimationFrame(anim); box.rotation.x += 0.01; renderer.render(scene, camera); }
+      anim();
+    }
+    function initTelemetryView() {
+      const canvas = document.getElementById('telemetryCanvas');
+      if(!canvas) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight;
+      let o = 0;
+      function draw() {
+        requestAnimationFrame(draw); o += 0.05;
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.9)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2; ctx.beginPath();
+        for(let x=0; x<canvas.width; x++) {
+          let y = canvas.height/2 + Math.sin(x*0.03 + o)*20;
+          if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.stroke();
+      }
+      draw();
+    }
+    function synthesizeForgeModel() { AIM_BRAIN.publish('FORGE', 'SYNTH', 'Synthesized new Three.js shader skin.'); }
+    function startOrionGameLoop() { AIM_BRAIN.publish('GAMEFORGE', 'START', 'Orion Game Loop started.'); }
+    function exportGridManifest() { AIM_BRAIN.publish('GRIDFORGE', 'EXPORT', 'Exported grid level JSON.'); }
+    function toggleAudioSynth() { AIM_BRAIN.publish('AIMAUDIO', 'DSP', 'Spectral DSP synth toggled.'); }
+    function runSwarmPipeline() { AIM_BRAIN.publish('SWARM', 'RUN', 'Swarm-Node multi-agent pipeline executed.'); }
+
+    function toggleMenu(id) {
+      const el = document.getElementById(id);
+      const isHidden = el.classList.contains('hidden');
+      ['system-menu'].forEach(i => document.getElementById(i)?.classList.add('hidden'));
+      if (isHidden) el.classList.remove('hidden');
+    }
+    function closeMenus() { ['system-menu'].forEach(i => document.getElementById(i)?.classList.add('hidden')); }
+    document.addEventListener('click', e => { if (!e.target.closest('header')) closeMenus(); });
+
+    setInterval(() => {
+      document.getElementById('top-clock').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }, 1000);
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderDock();
+      updateNeuralLedgerUI();
+      setTimeout(() => openApp('generativematrix'), 250);
+    });
+  </script>
+
+  <script>window.__AETHER_SUITE_META = { id: "aimosv7", file: "aim-os-v7-monolith.html" };</script>
+  <script src="/suite-apps/aether-loop-bridge.js"></script>
+</body>
+</html>

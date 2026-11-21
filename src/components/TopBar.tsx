@@ -65,7 +65,10 @@ export function TopBar({
   }, []);
 
   return (
-    <header className="aether-glass-bar fixed top-0 left-0 right-0 h-11 px-4 flex items-center justify-between gap-4 z-[1200] text-xs">
+    <header
+      id="aether-top-bar"
+      className="aether-glass-bar fixed top-0 left-0 right-0 pt-[env(safe-area-inset-top)] min-h-11 px-4 flex items-center justify-between gap-4 z-[1200] text-xs"
+    >
       <div className="flex items-center gap-3 min-w-0" ref={menuRef}>
         <button
           type="button"

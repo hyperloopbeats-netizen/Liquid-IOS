@@ -61,6 +61,7 @@ class SynesthesiaKernelEngine {
   private timeBuffer: Uint8Array<ArrayBuffer> | null = null;
   private rafId: number | null = null;
   private lastUiNotify = 0;
+  private driftHueOverride: number | null = null;
   private listeners = new Set<SynesthesiaListener>();
 
   private state: SynesthesiaState = {
@@ -132,6 +133,11 @@ class SynesthesiaKernelEngine {
   setReactivity(val: number): void {
     this.state.reactivity = Math.max(0.1, Math.min(2.5, val));
     this.notify(true);
+  }
+
+  setHue(hue: number | null): void {
+    this.driftHueOverride = hue === null ? null : ((Math.round(hue) % 360) + 360) % 360;
+    this.applyCssTheme();
   }
 
   private ensureAudioContext(): { ctx: AudioContext; analyser: AnalyserNode } {
@@ -313,7 +319,10 @@ class SynesthesiaKernelEngine {
     const palette = PHASE_PALETTES[this.state.resolvedPhase];
     const energy = this.state.rms;
     const load = this.state.systemLoad;
-    const hueShift = Math.round(palette.baseHue + energy * 48 + load * 26) % 360;
+    const hueShift =
+      this.driftHueOverride !== null
+        ? this.driftHueOverride
+        : Math.round(palette.baseHue + energy * 48 + load * 26) % 360;
     this.state.activeHue = hueShift;
 
     const borderAlpha = (0.20 + energy * 0.32 + load * 0.12).toFixed(3);

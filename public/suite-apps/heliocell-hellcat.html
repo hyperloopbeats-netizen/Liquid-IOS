@@ -1,0 +1,2227 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HelioCell HELLCAT EDITION // Liquid Solar Battery OS (by XimiK)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --hc-bg: #050406;
+      --hc-surface: rgba(16, 6, 10, 0.84);
+      --hc-border: rgba(244, 63, 94, 0.34);
+      --hc-crimson: #ef4444;
+      --hc-blood: #991b1b;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background-color: var(--hc-bg);
+      color: #fff1f2;
+      font-family: 'Inter', system-ui, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    .pb-safe {
+      padding-bottom: max(0.625rem, env(safe-area-inset-bottom));
+    }
+
+    .font-mono-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .glass-surface {
+      background: linear-gradient(155deg, rgba(24, 7, 13, 0.88) 0%, rgba(9, 4, 7, 0.92) 100%);
+      backdrop-filter: blur(18px) saturate(160%);
+      -webkit-backdrop-filter: blur(18px) saturate(160%);
+      border: 1px solid rgba(251, 113, 133, 0.28);
+      box-shadow:
+        0 14px 36px rgba(0, 0, 0, 0.68),
+        0 0 24px rgba(220, 38, 38, 0.12),
+        inset 0 1px 0 rgba(254, 205, 211, 0.18);
+    }
+
+    /* Liquid Flack Blood Tape Ribbons */
+    .blood-tape {
+      position: relative;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 14% 35%, rgba(254, 205, 211, 0.32) 0%, transparent 18%),
+        radial-gradient(circle at 52% 72%, rgba(255, 255, 255, 0.16) 0%, transparent 14%),
+        radial-gradient(circle at 83% 28%, rgba(251, 113, 133, 0.28) 0%, transparent 22%),
+        linear-gradient(90deg, #450a0a 0%, #991b1b 24%, #dc2626 50%, #7f1d1d 78%, #3b0712 100%);
+      border: 1px solid rgba(254, 205, 211, 0.34);
+      box-shadow:
+        0 4px 18px rgba(185, 28, 28, 0.32),
+        inset 0 1.5px 1px rgba(255, 241, 242, 0.35),
+        inset 0 -2px 4px rgba(20, 2, 6, 0.78);
+    }
+
+    .blood-tape::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        radial-gradient(2.5px 2.5px at 9% 50%, rgba(255, 228, 230, 0.75) 50%, transparent 55%),
+        radial-gradient(3.5px 3.5px at 31% 32%, rgba(254, 205, 211, 0.55) 50%, transparent 55%),
+        radial-gradient(2px 2px at 64% 68%, rgba(255, 241, 242, 0.7) 50%, transparent 55%),
+        radial-gradient(4px 4px at 88% 54%, rgba(248, 113, 113, 0.65) 50%, transparent 55%);
+      background-size: 160px 100%;
+      animation: bloodFlowShift 6s linear infinite;
+      opacity: 0.78;
+    }
+
+    .blood-tape::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: 38%;
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(255, 241, 242, 0.24) 0%, rgba(255, 241, 242, 0.0) 100%);
+    }
+
+    @keyframes bloodFlowShift {
+      0% { background-position: 0 0; }
+      100% { background-position: 160px 0; }
+    }
+
+    /* Tactile Crimson & Carbon Buttons */
+    .app-btn {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(38, 12, 19, 0.92) 0%, rgba(16, 5, 9, 0.96) 100%);
+      border: 1px solid rgba(244, 63, 94, 0.34);
+      box-shadow:
+        0 2px 6px rgba(0, 0, 0, 0.65),
+        inset 0 1px 0 rgba(254, 205, 211, 0.16);
+      transition: transform 0.11s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .app-btn:hover {
+      background: linear-gradient(180deg, rgba(69, 14, 27, 0.95) 0%, rgba(28, 7, 13, 0.98) 100%);
+      border-color: rgba(251, 113, 133, 0.68);
+      box-shadow:
+        0 4px 12px rgba(225, 29, 72, 0.25),
+        inset 0 1px 0 rgba(255, 228, 230, 0.28);
+    }
+
+    .app-btn:active {
+      transform: translateY(1px) scale(0.975);
+      box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.8),
+        inset 0 2px 5px rgba(0, 0, 0, 0.65);
+    }
+
+    .app-btn-active {
+      background: linear-gradient(180deg, rgba(220, 38, 38, 0.72) 0%, rgba(127, 29, 29, 0.86) 100%);
+      border-color: rgba(254, 205, 211, 0.85);
+      color: #ffffff;
+      box-shadow:
+        0 0 18px rgba(239, 68, 68, 0.42),
+        inset 0 1px 0 rgba(255, 241, 242, 0.42);
+    }
+
+    .app-btn-chem {
+      background: linear-gradient(180deg, rgba(153, 27, 27, 0.78) 0%, rgba(69, 10, 10, 0.92) 100%);
+      border-color: rgba(251, 113, 133, 0.78);
+      color: #ffe4e6;
+      box-shadow:
+        0 0 14px rgba(220, 38, 38, 0.3),
+        inset 0 1px 0 rgba(255, 228, 230, 0.3);
+    }
+
+    .app-btn-warn {
+      background: linear-gradient(180deg, rgba(185, 28, 28, 0.64) 0%, rgba(87, 13, 24, 0.88) 100%);
+      border-color: rgba(253, 164, 175, 0.78);
+      color: #fff1f2;
+    }
+
+    .app-btn-danger {
+      background: linear-gradient(180deg, rgba(244, 63, 94, 0.86) 0%, rgba(136, 19, 55, 0.95) 100%);
+      border-color: rgba(255, 228, 230, 0.92);
+      color: #ffffff;
+      box-shadow: 0 0 22px rgba(244, 63, 94, 0.52);
+    }
+
+    .sheet-scroll::-webkit-scrollbar {
+      width: 5px;
+    }
+    .sheet-scroll::-webkit-scrollbar-track {
+      background: rgba(20, 4, 9, 0.4);
+    }
+    .sheet-scroll::-webkit-scrollbar-thumb {
+      background: rgba(244, 63, 94, 0.48);
+      border-radius: 999px;
+    }
+
+    input[type="range"].clean-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.14);
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"].clean-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      background: #ef4444;
+      border: 2px solid #ffe4e6;
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.82);
+    }
+    input[type="range"].clean-slider::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      background: #ef4444;
+      border: 2px solid #ffe4e6;
+    }
+
+    #viewport-host {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      touch-action: none;
+    }
+    #viewport-host canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body class="h-screen w-screen overflow-hidden bg-[#050406] text-rose-50">
+  <!-- Full-Screen 3D Viewport -->
+  <div id="viewport-host" aria-label="HelioCell Hellcat Liquid Solar Battery 3D Viewport"></div>
+
+  <!-- Minimal Non-Overlapping HUD -->
+  <div class="fixed inset-0 z-10 pointer-events-none flex flex-col justify-between p-2.5 sm:p-4 pb-safe">
+    <!-- Compact Top Bar -->
+    <header class="pointer-events-auto glass-surface rounded-2xl px-3 py-2 flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2 min-w-0">
+        <span id="originBeacon" class="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_10px_#f43f5e] shrink-0"></span>
+        <h1 class="text-xs sm:text-sm font-extrabold tracking-tight text-white truncate">
+          HelioCell HELLCAT OS
+        </h1>
+        <span id="topModePill" class="px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-mono-num font-bold app-btn-active shrink-0">
+          M4 • Solar Track
+        </span>
+        <span id="topSocPill" class="px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-mono-num font-bold app-btn-chem shrink-0">
+          SoC 42%
+        </span>
+        <span id="topScalePill" class="px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-mono-num font-bold app-btn-warn shrink-0">
+          1×
+        </span>
+      </div>
+
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button id="topCutawayBtn" type="button" class="app-btn app-btn-warn px-2.5 py-1.5 rounded-xl text-[11px] font-semibold">
+          Cutaway
+        </button>
+        <button id="topExplodeBtn" type="button" class="app-btn px-2.5 py-1.5 rounded-xl text-[11px] font-semibold text-rose-100">
+          Explode
+        </button>
+        <button id="topResetBtn" type="button" class="app-btn px-2.5 py-1.5 rounded-xl text-[11px] font-semibold text-rose-200">
+          Reset View
+        </button>
+        <button id="topRebootBtn" type="button" class="app-btn app-btn-danger px-2.5 py-1.5 rounded-xl text-[11px] font-bold">
+          Reboot OS
+        </button>
+      </div>
+    </header>
+
+    <!-- Single Collapsible Sheet (Only ONE Open at a Time) -->
+    <section id="appSheet" class="hidden pointer-events-auto glass-surface rounded-2xl p-4 w-full max-w-md mx-auto my-auto max-h-[70vh] overflow-y-auto sheet-scroll flex flex-col gap-3">
+      <div class="blood-tape rounded-xl px-3 py-2 flex items-center justify-between gap-2">
+        <div class="min-w-0">
+          <div id="sheetTitle" class="text-sm font-bold text-white truncate">Liquid Battery &amp; PID</div>
+          <div id="sheetSubtitle" class="text-[11px] text-rose-100/90 truncate">Photo-isomer SoC, chemical discharge &amp; ΔT</div>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button id="collapseSheetBtn" type="button" aria-label="Collapse or expand sheet" class="app-btn px-2.5 py-1 rounded-xl text-xs font-mono-num font-semibold text-rose-100">
+            [−]
+          </button>
+          <button id="closeSheetBtn" type="button" aria-label="Close sheet" class="app-btn px-3 py-1 rounded-xl text-xs font-mono-num font-semibold text-rose-100">
+            Close
+          </button>
+        </div>
+      </div>
+
+      <div id="sheetContentWrapper" class="flex flex-col gap-3">
+        <!-- SHEET 1: BATTERY & PID -->
+        <div id="sheet-pid" class="sheet-body hidden flex-col gap-3">
+          <div class="grid grid-cols-3 gap-1.5">
+            <button type="button" data-dispatch="charge" class="disp-btn app-btn py-1.5 px-2 rounded-xl text-[11px] font-mono-num font-semibold text-rose-200">
+              Photo Charge
+            </button>
+            <button type="button" data-dispatch="hybrid" class="disp-btn app-btn app-btn-active py-1.5 px-2 rounded-xl text-[11px] font-mono-num font-semibold">
+              Hybrid Loop
+            </button>
+            <button type="button" data-dispatch="discharge" class="disp-btn app-btn py-1.5 px-2 rounded-xl text-[11px] font-mono-num font-semibold text-red-200">
+              Chem Discharge
+            </button>
+          </div>
+
+          <!-- Live Dual-Trace SoC & Chemical Discharge Sparkline -->
+          <div class="bg-black/55 rounded-xl p-2 border border-rose-500/30 flex flex-col gap-1.5">
+            <div class="flex items-center justify-between text-[11px] font-mono-num">
+              <span class="text-rose-200 font-semibold">SoC &amp; Chem Discharge Trace</span>
+              <span class="flex items-center gap-2.5 text-[10px]">
+                <span class="text-rose-400">● SoC %</span>
+                <span class="text-amber-300">● Chem kW</span>
+              </span>
+            </div>
+            <canvas id="socSparkline" class="w-full h-20 rounded-lg bg-[#090205] border border-rose-900/50 block"></canvas>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <div class="flex justify-between text-xs font-mono-num">
+              <label for="fluxSlider" class="text-rose-100">Solar Flux</label>
+              <span id="fluxLabel" class="font-bold text-rose-300">860 W/m²</span>
+            </div>
+            <input id="fluxSlider" type="range" min="0" max="1100" step="10" value="860" class="clean-slider" />
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <div class="flex justify-between text-xs font-mono-num">
+              <label for="dischargeSlider" class="text-rose-100">Catalyst / Discharge Rate</label>
+              <span id="dischargeLabel" class="font-bold text-red-400">35%</span>
+            </div>
+            <input id="dischargeSlider" type="range" min="0" max="100" step="5" value="35" class="clean-slider" />
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <div class="flex justify-between text-xs font-mono-num">
+              <label for="ambSlider" class="text-rose-100">Ambient Temp</label>
+              <span id="ambLabel" class="font-bold text-rose-200">22.0°C</span>
+            </div>
+            <input id="ambSlider" type="range" min="-15" max="45" step="0.5" value="22" class="clean-slider" />
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <div class="flex justify-between text-xs font-mono-num">
+              <label for="dtSlider" class="text-rose-100">Target ΔT</label>
+              <span id="dtLabel" class="font-bold text-rose-300">28.0°C</span>
+            </div>
+            <input id="dtSlider" type="range" min="5" max="50" step="0.5" value="28" class="clean-slider" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 font-mono-num text-xs bg-white/5 rounded-xl p-2.5 border border-rose-500/20">
+            <div>Liquid SoC: <strong id="pidSoc" class="text-rose-400">42.0%</strong></div>
+            <div>Stored Chem: <strong id="pidStoredWh" class="text-red-300">340 Wh</strong></div>
+            <div>Chem Release: <strong id="pidChemRelease" class="text-amber-300">120 W</strong></div>
+            <div>Actual ΔT: <strong id="pidActualDt" class="text-white">28.0°C</strong></div>
+            <div>PWM / Valve: <strong id="pidActuators" class="text-rose-300">64% • 0°</strong></div>
+            <div>Flow: <strong id="pidFlow" class="text-red-200">4.60 L/m</strong></div>
+            <div>TEG Output: <strong id="pidTeg" class="text-rose-300">14.2 W</strong></div>
+            <div>Total Power: <strong id="pidTotalPower" class="text-amber-200">2.52 kW</strong></div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button id="pidResetBtn" type="button" class="app-btn px-3 py-2 rounded-xl text-xs font-semibold text-rose-100 flex-1">
+              Reset
+            </button>
+            <button id="pidAudioBtn" type="button" class="app-btn px-3 py-2 rounded-xl text-xs font-semibold text-rose-200 flex-1">
+              Synth: OFF
+            </button>
+            <button id="pidCsvBtn" type="button" class="app-btn px-3 py-2 rounded-xl text-xs font-semibold text-red-200 flex-1">
+              Export CSV
+            </button>
+          </div>
+        </div>
+
+        <!-- SHEET 2: 7 MODES -->
+        <div id="sheet-modes" class="sheet-body hidden flex-col gap-3">
+          <div class="grid grid-cols-3 gap-1.5">
+            <button type="button" data-cart="smooth" class="cart-btn app-btn py-2 px-2 rounded-xl text-xs font-semibold text-rose-100">
+              Smooth Bore
+            </button>
+            <button type="button" data-cart="pass1" class="cart-btn app-btn app-btn-active py-2 px-2 rounded-xl text-xs font-semibold">
+              Pass 1 Vanes
+            </button>
+            <button type="button" data-cart="pass2" class="cart-btn app-btn py-2 px-2 rounded-xl text-xs font-semibold text-rose-100">
+              Pass 2 Pockets
+            </button>
+          </div>
+
+          <div id="modeButtonsGrid" class="grid grid-cols-2 gap-1.5"></div>
+
+          <div class="flex flex-col gap-1.5 pt-1 border-t border-rose-500/20">
+            <div class="blood-tape rounded-lg px-2.5 py-1 text-[11px] font-mono-num uppercase text-white font-bold">
+              Fault &amp; Telemetry Flags
+            </div>
+            <div id="flagButtonsGrid" class="flex flex-wrap gap-1.5"></div>
+          </div>
+        </div>
+
+        <!-- SHEET 3: MODELS HD & 3 MOVIE MOVE SYSTEMS -->
+        <div id="sheet-models" class="sheet-body hidden flex-col gap-3">
+          <div id="modelButtonsGrid" class="grid grid-cols-2 gap-1.5"></div>
+
+          <div class="flex flex-col gap-1.5 pt-1 border-t border-rose-500/20">
+            <div class="blood-tape rounded-lg px-2.5 py-1 text-[11px] font-mono-num uppercase text-white font-bold">
+              3 Hellcat Movie Camera Moves
+            </div>
+            <div id="movieMoveGrid" class="grid grid-cols-3 gap-1.5"></div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-1.5">
+            <button id="sheetHdBtn" type="button" class="app-btn py-2 px-2 rounded-xl text-xs font-semibold text-rose-200">
+              HD Inspect: OFF
+            </button>
+            <button id="sheetIsolateBtn" type="button" class="app-btn app-btn-active py-2 px-2 rounded-xl text-xs font-semibold">
+              Isolate: ON
+            </button>
+            <button id="sheetTurnBtn" type="button" class="app-btn py-2 px-2 rounded-xl text-xs font-semibold text-rose-200">
+              Turntable: OFF
+            </button>
+          </div>
+        </div>
+
+        <!-- SHEET 4: SCALE -->
+        <div id="sheet-scale" class="sheet-body hidden flex-col gap-3">
+          <div id="scaleButtonsGrid" class="grid grid-cols-3 gap-2"></div>
+          <div id="scaleInfoBox" class="font-mono-num text-xs bg-white/5 rounded-xl p-2.5 border border-rose-500/20 text-rose-100">
+            1× Unit • SoC 42.0% • 340 Wh stored • 4.60 L/m
+          </div>
+        </div>
+
+        <!-- SHEET 5: 50 DAEMONS & MOVIE MOVES -->
+        <div id="sheet-daemons" class="sheet-body hidden flex-col gap-3">
+          <div class="flex flex-col gap-1.5">
+            <div class="blood-tape rounded-lg px-2.5 py-1 text-[11px] font-mono-num uppercase text-white font-bold flex items-center justify-between">
+              <span>Movie Move Rig</span>
+              <span id="activeMoveBadge" class="text-rose-100">MANUAL ORBIT</span>
+            </div>
+            <div id="daemonMovieMoveGrid" class="grid grid-cols-4 gap-1.5"></div>
+          </div>
+
+          <div class="flex flex-wrap gap-1">
+            <button type="button" data-dfilter="ALL" class="dfilter-btn app-btn app-btn-active px-2 py-1 rounded-lg text-[10px] font-mono-num font-bold">ALL (50)</button>
+            <button type="button" data-dfilter="OPT" class="dfilter-btn app-btn px-2 py-1 rounded-lg text-[10px] font-mono-num">OPT</button>
+            <button type="button" data-dfilter="CHM" class="dfilter-btn app-btn px-2 py-1 rounded-lg text-[10px] font-mono-num">CHM</button>
+            <button type="button" data-dfilter="HYD" class="dfilter-btn app-btn px-2 py-1 rounded-lg text-[10px] font-mono-num">HYD</button>
+            <button type="button" data-dfilter="SAF" class="dfilter-btn app-btn px-2 py-1 rounded-lg text-[10px] font-mono-num">SAF</button>
+            <button type="button" data-dfilter="SCL" class="dfilter-btn app-btn px-2 py-1 rounded-lg text-[10px] font-mono-num">SCL</button>
+            <button type="button" data-dfilter="MOV" class="dfilter-btn app-btn px-2 py-1 rounded-lg text-[10px] font-mono-num">MOV</button>
+          </div>
+
+          <div id="daemonCardsList" class="flex flex-col gap-1 font-mono-num text-[11px] max-h-40 overflow-y-auto sheet-scroll pr-0.5"></div>
+
+          <div class="flex flex-col gap-1 pt-1 border-t border-rose-500/20">
+            <div class="text-[11px] font-mono-num uppercase text-rose-300 font-semibold">Recent Daemon Actions</div>
+            <div id="daemonLogList" class="flex flex-col gap-1 font-mono-num text-[11px] max-h-24 overflow-y-auto sheet-scroll"></div>
+          </div>
+
+          <form id="daemonCmdForm" class="flex items-center gap-1.5">
+            <input id="daemonCmdInput" type="text" autocomplete="off" spellcheck="false" placeholder="move dolly | crane | chase | off | soc 85 | reboot" class="flex-1 bg-white/10 border border-rose-500/30 focus:border-rose-300 rounded-xl px-2.5 py-1.5 font-mono-num text-xs text-white outline-none min-w-0" />
+            <button type="submit" class="app-btn app-btn-active px-3 py-1.5 rounded-xl text-xs font-mono-num font-semibold shrink-0">
+              Send
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bottom Dock: Big Crimson-Carbon Buttons + Blood-Tape Daemon Strip -->
+    <div class="pointer-events-auto flex flex-col gap-1.5">
+      <nav aria-label="Primary App Controls" class="glass-surface rounded-2xl p-1.5 grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+        <button type="button" data-sheet="pid" class="dock-btn app-btn py-2.5 px-2 rounded-xl text-xs font-bold tracking-wide text-white">
+          BATTERY &amp; PID
+        </button>
+        <button type="button" data-sheet="modes" class="dock-btn app-btn py-2.5 px-2 rounded-xl text-xs font-bold tracking-wide text-rose-200">
+          7 MODES
+        </button>
+        <button type="button" data-sheet="models" class="dock-btn app-btn py-2.5 px-2 rounded-xl text-xs font-bold tracking-wide text-red-200">
+          MODELS HD
+        </button>
+        <button type="button" data-sheet="scale" class="dock-btn app-btn py-2.5 px-2 rounded-xl text-xs font-bold tracking-wide text-rose-200">
+          SCALE
+        </button>
+        <button id="dockBlueprintBtn" type="button" class="app-btn app-btn-active py-2.5 px-2 rounded-xl text-xs font-bold tracking-wide">
+          BLUEPRINT
+        </button>
+        <button type="button" data-sheet="daemons" class="dock-btn app-btn py-2.5 px-2 rounded-xl text-xs font-bold tracking-wide text-red-200">
+          50 DAEMONS
+        </button>
+      </nav>
+
+      <div class="blood-tape rounded-xl px-3 py-1.5 flex items-center justify-between gap-2 text-[11px] font-mono-num">
+        <div class="flex items-center gap-2 min-w-0 z-[1]">
+          <span id="daemonPulseDot" class="w-2 h-2 rounded-full bg-rose-200 shrink-0"></span>
+          <span id="daemonStripText" class="text-white font-semibold truncate drop-shadow">
+            HELLCAT 50 DAEMONS • SoC 42.0% • ΔT +0.0°C • FLOW 4.60 L/m • RIG 1×
+          </span>
+        </div>
+        <span id="clockTag" class="text-rose-100 font-bold shrink-0 z-[1]">T+0.0s</span>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // -----------------------------------------------------------------------
+    // 1. CONSTANTS, 50 DAEMONS, 3 MOVIE MOVE SYSTEMS & INITIAL OS STATE
+    // -----------------------------------------------------------------------
+    const SCALES = [1, 2, 5, 10, 100, 1000];
+    const SCALE_META = {
+      1:    { name: '1× Unit',     vis: 1.00, camMult: 1.00, farm: false, bays: 0  },
+      2:    { name: '2× Twin',     vis: 1.00, camMult: 1.15, farm: false, bays: 1  },
+      5:    { name: '5× Cluster',  vis: 0.92, camMult: 1.45, farm: false, bays: 4  },
+      10:   { name: '10× Bank',    vis: 0.86, camMult: 1.75, farm: false, bays: 9  },
+      100:  { name: '100× Array',  vis: 0.82, camMult: 2.15, farm: true,  bays: 20 },
+      1000: { name: '1,000× Farm', vis: 0.78, camMult: 2.55, farm: true,  bays: 32 },
+    };
+
+    const MODELS = {
+      all:         { label: 'Full Hellcat Rig',  pos: [0.0, 5.4, 11.4],  target: [0.0, 1.15, 0.0] },
+      collector:   { label: 'Photo-Charge Cone', pos: [-5.1, 3.1, 4.6],  target: [-2.65, 2.1, 0.0] },
+      pump_valve:  { label: 'Pump & Valve',      pos: [0.35, 1.85, 3.85], target: [0.05, 0.45, 0.85] },
+      pcm_dhw_teg: { label: 'LiqBatt/PCM/TEG',   pos: [5.4, 3.05, 4.7],  target: [3.15, 1.3, -0.25] },
+      cartridges:  { label: 'Cartridges',        pos: [-4.5, 2.85, 3.9], target: [-2.55, 2.1, 0.12] },
+      cad_rig:     { label: 'Blueprint CAD',     pos: [-1.8, 6.4, 9.2],  target: [-0.4, 1.25, -0.2] },
+      multiscale:  { label: 'Scale Array',       pos: [0.0, 9.2, 18.5],  target: [0.0, 1.0, -1.5] },
+    };
+    const MODEL_KEYS = Object.keys(MODELS);
+
+    const MODES = {
+      M0: { code: 'M0', name: 'Safe Hold',    pwm: 0,  valve: 90, fault: true },
+      M1: { code: 'M1', name: 'Lockout',      pwm: 0,  valve: 90, fault: false },
+      M2: { code: 'M2', name: 'Standby',      pwm: 0,  valve: 0,  fault: false },
+      M3: { code: 'M3', name: 'Prime/Cond',   pwm: 72, valve: 35, fault: false },
+      M4: { code: 'M4', name: 'Solar Track',  pwm: 64, valve: 0,  fault: false },
+      M5: { code: 'M5', name: 'Cooldown',     pwm: 54, valve: 50, fault: false },
+      M6: { code: 'M6', name: 'Calibrate',    pwm: 52, valve: 15, fault: false },
+    };
+    const MODE_KEYS = Object.keys(MODES);
+
+    const FLAGS = {
+      NONE:         0,
+      BUBBLE_PURGE: 1 << 0,
+      FOUL_SWEEP:   1 << 1,
+      CLOUD_HOLD:   1 << 2,
+      HEAT_DUMP:    1 << 3,
+      BROWNOUT:     1 << 4,
+      LEAK_TRIP:    1 << 5,
+      OVERTEMP:     1 << 6,
+    };
+
+    const FLAG_LIST = [
+      { bit: FLAGS.BUBBLE_PURGE, label: 'Bubbles' },
+      { bit: FLAGS.FOUL_SWEEP,   label: 'ΔP Foul' },
+      { bit: FLAGS.CLOUD_HOLD,   label: 'Cloud Hold' },
+      { bit: FLAGS.HEAT_DUMP,    label: 'Heat Dump' },
+      { bit: FLAGS.BROWNOUT,     label: 'Brownout' },
+      { bit: FLAGS.LEAK_TRIP,    label: 'Leak Trip' },
+      { bit: FLAGS.OVERTEMP,     label: 'Overtemp' },
+    ];
+
+    // 3 Hyper-Realistic Movie Camera Move Systems
+    const MOVIE_MOVES = {
+      none:  { code: 'OFF',   label: 'Manual Orbit' },
+      dolly: { code: 'DOLLY', label: '1. Dolly Rack' },
+      crane: { code: 'CRANE', label: '2. Crane Arc' },
+      chase: { code: 'CHASE', label: '3. Flow Chase' },
+    };
+
+    // 50 Background Daemons (D01..D50) across 6 subsystems
+    const DAEMON_DEFS = [
+      // OPT (10)
+      ['D01', 'OPT', 'SOLAR_FLUX_SENSE'],
+      ['D02', 'OPT', 'CONE_CONCENTRATOR'],
+      ['D03', 'OPT', 'V_REFLECT_OPTICS'],
+      ['D04', 'OPT', 'PHOTO_ISOMER_YIELD'],
+      ['D05', 'OPT', 'QUANTUM_FLUX_GATE'],
+      ['D06', 'OPT', 'CART_VANE_TURB'],
+      ['D07', 'OPT', 'POCKET_RESIDENCE'],
+      ['D08', 'OPT', 'CLOUD_TRANSIENT_DET'],
+      ['D09', 'OPT', 'CAUSTIC_FOCUS_LOCK'],
+      ['D10', 'OPT', 'SPECTRAL_ABSORBER'],
+      // CHM (10)
+      ['D11', 'CHM', 'SOC_INTEGRATOR'],
+      ['D12', 'CHM', 'ISOMER_ENTHALPY_MAP'],
+      ['D13', 'CHM', 'CATALYST_DISPATCH'],
+      ['D14', 'CHM', 'EXOTHERM_RELEASE'],
+      ['D15', 'CHM', 'DARK_RELAX_DECAY'],
+      ['D16', 'CHM', 'PCM_LATENT_BUFFER'],
+      ['D17', 'CHM', 'DHW_EXCHANGER_CTL'],
+      ['D18', 'CHM', 'THERMAL_HEAD_SUM'],
+      ['D19', 'CHM', 'DELTA_T_PID_SOLVER'],
+      ['D20', 'CHM', 'CHEMICAL_SOC_GUARD'],
+      // HYD (10)
+      ['D21', 'HYD', 'PWM_PUMP_DRIVER'],
+      ['D22', 'HYD', 'LOOP_FLOW_SOLVER'],
+      ['D23', 'HYD', 'HEAD_LOSS_DP_CALC'],
+      ['D24', 'HYD', 'FOULING_SWEEP_CTL'],
+      ['D25', 'HYD', 'DIVERTER_VALVE_SERVO'],
+      ['D26', 'HYD', 'LINE_PRESSURE_MON'],
+      ['D27', 'HYD', 'BUBBLE_PURGE_PULSE'],
+      ['D28', 'HYD', 'TRACER_PHASE_SYNC'],
+      ['D29', 'HYD', 'SEEBECK_TEG_HARVEST'],
+      ['D30', 'HYD', 'BUS_VOLTAGE_REG'],
+      // SAF (8)
+      ['D31', 'SAF', 'LEAK_DRIP_WATCH'],
+      ['D32', 'SAF', 'OVERTEMP_LIMITER'],
+      ['D33', 'SAF', 'M0_SAFE_HOLD_LATCH'],
+      ['D34', 'SAF', 'BROWNOUT_THROTTLE'],
+      ['D35', 'SAF', 'VALVE_SLEW_CLAMP'],
+      ['D36', 'SAF', 'MODE_TRANSITION_CHK'],
+      ['D37', 'SAF', 'THERMAL_RUNAWAY_CHK'],
+      ['D38', 'SAF', 'HEARTBEAT_WATCHDOG'],
+      // SCL (6)
+      ['D39', 'SCL', 'FRACTAL_SCALE_MULT'],
+      ['D40', 'SCL', 'BAY_INSTANCE_SYNC'],
+      ['D41', 'SCL', 'FARM_TOWER_ARRAY'],
+      ['D42', 'SCL', 'CAD_BLUEPRINT_GRID'],
+      ['D43', 'SCL', 'CUTAWAY_EXPLODE_LERP'],
+      ['D44', 'SCL', 'CSV_TELEMETRY_BUF'],
+      // MOV (6 - Movie Camera Move Systems)
+      ['D45', 'MOV', 'DOLLY_TRACK_SOLVER'],
+      ['D46', 'MOV', 'RACK_FOCUS_TARGET'],
+      ['D47', 'MOV', 'CRANE_BOOM_ARC'],
+      ['D48', 'MOV', 'GIMBAL_HORIZON_LOCK'],
+      ['D49', 'MOV', 'FLOW_CHASE_TANGENT'],
+      ['D50', 'MOV', 'ORBIT_OVERRIDE_BLEND'],
+    ];
+
+    const UNIT_CAPACITY_WH = 810.0;
+    const MAX_CHEM_RELEASE_W = 420.0;
+    const SPARK_MAX_POINTS = 90;
+
+    function createInitialAppState() {
+      return {
+        openSheet: null,
+        sheetCollapsed: false,
+        daemonFilter: 'ALL',
+        scale: 1,
+        model: 'all',
+        movieMove: 'none', // 'none' | 'dolly' | 'crane' | 'chase'
+        movePhase: 0,
+        hdInspect: false,
+        hdIsolate: true,
+        turntable: false,
+        blueprint: true,
+        cutaway: true,
+        exploded: false,
+        cartridge: 'pass1',
+        mode: 'M4',
+        dispatchMode: 'hybrid',
+        flags: FLAGS.NONE,
+
+        flux: 860,
+        dischargeRatePct: 35,
+        tAmbient: 22.0,
+        targetDt: 28.0,
+
+        soc: 0.42,
+        chemReleaseW: 120.0,
+        photoChargeW: 165.0,
+
+        pidErr: 0,
+        pidIntegral: 14,
+        pidPrevErr: 0,
+        cmdPwm: 64,
+        pwm: 64,
+        valveCmd: 0,
+        valveAct: 0,
+
+        flow: 4.6,
+        dpKpa: 15.0,
+        dpExpKpa: 15.0,
+        pressBar: 1.42,
+        tIn: 41.5,
+        tOut: 69.5,
+        tReturn: 43.0,
+        vBus: 24.0,
+        tegWatts: 14.2,
+        thermalKw: 2.4,
+
+        elapsed: 0,
+        csvAccum: 0,
+        sparkAccum: 0,
+        csvRows: [],
+        socHistory: [0.42],
+        chemNormHistory: [120 / MAX_CHEM_RELEASE_W],
+        audioOn: false,
+
+        daemonTimers: { pid: 0, therm: 0, guard: 0, cam: 0 },
+        daemonStatus: {
+          pid: 'SoC 42.0% • ΔT +0.0°C',
+          therm: '4.60 L/m • +120W chem',
+          guard: 'NOMINAL • 24.0V',
+          cam: '1× • Manual Orbit',
+        },
+        daemonReadouts: Object.fromEntries(DAEMON_DEFS.map(([id]) => [id, 'READY'])),
+        daemonLogs: [],
+      };
+    }
+
+    let app = createInitialAppState();
+
+    function logDaemon(name, msg) {
+      app.daemonLogs.unshift({ t: `T+${app.elapsed.toFixed(1)}s`, name, msg });
+      if (app.daemonLogs.length > 32) app.daemonLogs.pop();
+      if (app.openSheet === 'daemons') renderDaemonLogs();
+    }
+
+    function fmtFlow(unitLpm) {
+      const v = unitLpm * app.scale;
+      if (v >= 1000) return `${(v / 1000).toFixed(2)} kL/m`;
+      if (v >= 100) return `${v.toFixed(1)} L/m`;
+      return `${v.toFixed(2)} L/m`;
+    }
+
+    function fmtWatts(unitW) {
+      const v = unitW * app.scale;
+      if (v >= 1e6) return `${(v / 1e6).toFixed(2)} MW`;
+      if (v >= 1000) return `${(v / 1000).toFixed(2)} kW`;
+      return `${v.toFixed(1)} W`;
+    }
+
+    function fmtWh(unitWh) {
+      const v = unitWh * app.scale;
+      if (v >= 1e6) return `${(v / 1e6).toFixed(2)} MWh`;
+      if (v >= 1000) return `${(v / 1000).toFixed(2)} kWh`;
+      return `${Math.round(v)} Wh`;
+    }
+
+    // -----------------------------------------------------------------------
+    // 2. THREE.JS 3D HELLCAT SCENE, LIQUID BATTERY CORE & MOVIE CAMERA RIG
+    // -----------------------------------------------------------------------
+    const host = document.getElementById('viewport-host');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x050305);
+    scene.fog = new THREE.FogExp2(0x090205, 0.0085);
+
+    const camera = new THREE.PerspectiveCamera(44, host.clientWidth / Math.max(1, host.clientHeight), 0.1, 220);
+    camera.position.set(...MODELS.all.pos);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setSize(host.clientWidth, host.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
+    renderer.shadowMap.enabled = true;
+    host.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+    controls.target.set(...MODELS.all.target);
+    controls.minDistance = 1.6;
+    controls.maxDistance = 58;
+
+    // If user manually drags/zooms while a movie camera move is active, yield cleanly to OrbitControls
+    controls.addEventListener('start', () => {
+      if (app.movieMove !== 'none') {
+        const prev = MOVIE_MOVES[app.movieMove].label;
+        app.movieMove = 'none';
+        if (app.openSheet === 'models') renderModelsSheet();
+        if (app.openSheet === 'daemons') renderDaemonMovieControls();
+        logDaemon('D50', `Orbit override → released ${prev}`);
+      }
+    });
+
+    scene.add(new THREE.AmbientLight(0x7f1d1d, 0.54));
+    const sunLight = new THREE.SpotLight(0xff5252, 4.2, 55, Math.PI / 4.8, 0.42, 1.05);
+    sunLight.position.set(-5.8, 8.6, 4.2);
+    sunLight.target.position.set(-2.6, 2.1, 0);
+    sunLight.castShadow = true;
+    scene.add(sunLight, sunLight.target);
+
+    const rimLight = new THREE.DirectionalLight(0xf43f5e, 1.5);
+    rimLight.position.set(8, 7, -6);
+    scene.add(rimLight);
+
+    const hdSpot = new THREE.SpotLight(0xffe4e6, 1.15, 24, Math.PI / 4, 0.5, 1.0);
+    hdSpot.position.set(0, 6.5, 5.5);
+    scene.add(hdSpot, hdSpot.target);
+
+    const skyMat = new THREE.ShaderMaterial({
+      side: THREE.BackSide,
+      depthWrite: false,
+      uniforms: {
+        uTop: { value: new THREE.Color(0x040102) },
+        uHorizon: { value: new THREE.Color(0x2a050c) },
+        uSolar: { value: new THREE.Color(0xef4444) },
+        uFlux: { value: 0.78 },
+      },
+      vertexShader: `
+        varying vec3 vPos;
+        void main() {
+          vec4 wp = modelMatrix * vec4(position, 1.0);
+          vPos = wp.xyz;
+          gl_Position = projectionMatrix * viewMatrix * wp;
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 uTop;
+        uniform vec3 uHorizon;
+        uniform vec3 uSolar;
+        uniform float uFlux;
+        varying vec3 vPos;
+        void main() {
+          vec3 d = normalize(vPos);
+          float h = clamp(d.y * 1.45, 0.0, 1.0);
+          vec3 col = mix(uHorizon, uTop, pow(h, 0.62));
+          col += uSolar * exp(-abs(d.y) * 8.5) * (0.08 + uFlux * 0.28);
+          gl_FragColor = vec4(col, 1.0);
+        }
+      `,
+    });
+    scene.add(new THREE.Mesh(new THREE.SphereGeometry(120, 32, 24), skyMat));
+
+    function glassMat(color, thickness = 0.45) {
+      return new THREE.MeshPhysicalMaterial({
+        color,
+        transmission: 0.85,
+        transparent: true,
+        opacity: 1,
+        roughness: 0.05,
+        metalness: 0.0,
+        ior: 1.5,
+        thickness,
+        clearcoat: 1.0,
+        envMapIntensity: 1.5,
+      });
+    }
+
+    const glazingMat = glassMat(0xffccd5, 0.45);
+    const warmTankMat = glassMat(0xfecdd3, 0.55);
+    const coolTankMat = glassMat(0xfca5a5, 0.55);
+
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0x120609, metalness: 0.86, roughness: 0.24 });
+    const brassMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, metalness: 0.88, roughness: 0.22 });
+    const aluMat = new THREE.MeshPhysicalMaterial({ color: 0xfca5a5, metalness: 0.92, roughness: 0.14, clearcoat: 0.78 });
+    const absorberMat = new THREE.MeshStandardMaterial({ color: 0x1b0609, metalness: 0.8, roughness: 0.34, emissive: 0x7f1d1d, emissiveIntensity: 0.36 });
+    const foamMat = new THREE.MeshStandardMaterial({ color: 0x14070b, roughness: 0.75, metalness: 0.14 });
+    const vaneMat = new THREE.MeshPhysicalMaterial({ color: 0xef4444, metalness: 0.82, roughness: 0.15, clearcoat: 1.0 });
+    const pocketMat = new THREE.MeshPhysicalMaterial({ color: 0xf43f5e, metalness: 0.68, roughness: 0.2, clearcoat: 0.95 });
+
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(140, 140),
+      new THREE.MeshStandardMaterial({ color: 0x070204, metalness: 0.35, roughness: 0.48 })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -0.35;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    const testPad = new THREE.Mesh(
+      new THREE.CylinderGeometry(16, 16.5, 0.12, 64),
+      new THREE.MeshStandardMaterial({ color: 0x130509, metalness: 0.65, roughness: 0.32 })
+    );
+    testPad.position.set(0, -0.30, 0);
+    scene.add(testPad);
+
+    const causticMat = new THREE.MeshBasicMaterial({
+      color: 0xff2e4c, transparent: true, opacity: 0.32, blending: THREE.AdditiveBlending, depthWrite: false
+    });
+    const causticDisc = new THREE.Mesh(new THREE.CircleGeometry(1.4, 48), causticMat);
+    causticDisc.rotation.x = -Math.PI / 2;
+    causticDisc.position.set(-3.4, -0.33, 0.4);
+    scene.add(causticDisc);
+
+    const rigGroup = new THREE.Group();
+    scene.add(rigGroup);
+
+    const subGroups = {};
+    function regSubGroup(id, obj, home, expOffset) {
+      obj.position.copy(home);
+      rigGroup.add(obj);
+      subGroups[id] = { obj, home: home.clone(), exploded: home.clone().add(new THREE.Vector3(...expOffset)) };
+    }
+
+    // Tapered Collector + Photo-Charging Cartridges
+    const collectorGroup = new THREE.Group();
+    const intakeCone = new THREE.Mesh(new THREE.CylinderGeometry(0.56, 1.18, 1.15, 36, 1, true), glazingMat);
+    intakeCone.rotation.z = -Math.PI / 2;
+    intakeCone.position.x = -1.65;
+    collectorGroup.add(intakeCone);
+
+    const intakeRim = new THREE.Mesh(new THREE.TorusGeometry(1.18, 0.045, 14, 48), frameMat);
+    intakeRim.rotation.y = Math.PI / 2;
+    intakeRim.position.x = -2.21;
+    collectorGroup.add(intakeRim);
+
+    const throatCollar = new THREE.Mesh(new THREE.TorusGeometry(0.58, 0.04, 14, 36), brassMat);
+    throatCollar.rotation.y = Math.PI / 2;
+    throatCollar.position.x = -1.08;
+    collectorGroup.add(throatCollar);
+
+    const rayConeMat = new THREE.MeshBasicMaterial({
+      color: 0xff3b5c, transparent: true, opacity: 0.24, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false
+    });
+    const rayCone = new THREE.Mesh(new THREE.ConeGeometry(1.08, 2.35, 32, 1, true), rayConeMat);
+    rayCone.rotation.z = -Math.PI / 2;
+    rayCone.position.x = -1.05;
+    collectorGroup.add(rayCone);
+
+    const foamShell = new THREE.Group();
+    const fBack = new THREE.Mesh(new THREE.BoxGeometry(2.5, 1.5, 0.24), foamMat);
+    fBack.position.set(0.05, 0, -0.62);
+    const fTop = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.24, 1.3), foamMat);
+    fTop.position.set(0.05, 0.64, 0);
+    const fBot = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.24, 1.3), foamMat);
+    fBot.position.set(0.05, -0.64, 0);
+    foamShell.add(fBack, fTop, fBot);
+    collectorGroup.add(foamShell);
+
+    const vReflector = new THREE.Mesh(new THREE.CylinderGeometry(0.76, 0.76, 2.35, 3, 1, true, 0, Math.PI), aluMat);
+    vReflector.rotation.z = Math.PI / 2;
+    vReflector.rotation.x = Math.PI * 0.55;
+    vReflector.position.x = 0.05;
+    collectorGroup.add(vReflector);
+
+    const absorberTube = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 2.85, 28), absorberMat);
+    absorberTube.rotation.z = Math.PI / 2;
+    absorberTube.position.x = 0.12;
+    collectorGroup.add(absorberTube);
+
+    const pass1Vanes = new THREE.Group();
+    for (let i = -2; i <= 2; i++) {
+      const vane = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.92, 0.045), vaneMat);
+      vane.position.set(i * 0.36, 0, 0.12);
+      vane.rotation.z = Math.PI / 4;
+      vane.rotation.y = i * 0.25;
+      pass1Vanes.add(vane);
+    }
+    collectorGroup.add(pass1Vanes);
+
+    const pass2Pockets = new THREE.Group();
+    for (let p = 0; p < 6; p++) {
+      const pocket = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.14, 0.14), pocketMat);
+      pocket.position.set(-0.75 + p * 0.34, (p % 2 === 0 ? 1 : -1) * 0.44, 0.26);
+      pass2Pockets.add(pocket);
+    }
+    collectorGroup.add(pass2Pockets);
+
+    const frontGlass = new THREE.Mesh(new THREE.BoxGeometry(2.5, 1.48, 0.06), glazingMat);
+    frontGlass.position.set(0.05, 0, 0.64);
+    collectorGroup.add(frontGlass);
+
+    regSubGroup('collector', collectorGroup, new THREE.Vector3(-2.6, 2.1, 0.0), [-0.85, 0.85, 0.25]);
+
+    // Pump + Diverter Valve
+    const pumpGroup = new THREE.Group();
+    const pumpVolute = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 0.72, 28), glazingMat);
+    pumpVolute.rotation.x = Math.PI / 2;
+    pumpGroup.add(pumpVolute);
+
+    const impeller = new THREE.Group();
+    for (let b = 0; b < 4; b++) {
+      const blade = new THREE.Mesh(new THREE.BoxGeometry(0.74, 0.08, 0.11), aluMat);
+      blade.rotation.z = (b * Math.PI) / 4;
+      impeller.add(blade);
+    }
+    pumpGroup.add(impeller);
+
+    const valveGroup = new THREE.Group();
+    valveGroup.position.set(1.55, 0.42, 0);
+    const valveHandle = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.1, 0.14), vaneMat);
+    valveHandle.position.y = 0.22;
+    const collarMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, emissive: 0xe11d48, emissiveIntensity: 0.5 });
+    const collarMesh = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.042, 12, 24), collarMat);
+    collarMesh.rotation.x = Math.PI / 2;
+    collarMesh.position.y = 0.12;
+    valveGroup.add(valveHandle, collarMesh);
+    pumpGroup.add(valveGroup);
+
+    regSubGroup('pump', pumpGroup, new THREE.Vector3(-0.7, 0.35, 0.85), [-0.45, -0.35, 0.95]);
+
+    // Liquid Solar Battery Tank + Live Crimson SoC Core + DHW + TEG
+    const handoffGroup = new THREE.Group();
+    const pcmTank = new THREE.Mesh(new THREE.CylinderGeometry(0.82, 0.82, 2.0, 36), warmTankMat);
+    pcmTank.position.set(0, 0, -0.7);
+    handoffGroup.add(pcmTank);
+
+    const socCoreMat = new THREE.MeshStandardMaterial({
+      color: 0xdc2626,
+      emissive: 0x991b1b,
+      emissiveIntensity: 0.75,
+      transparent: true,
+      opacity: 0.78,
+      roughness: 0.16,
+    });
+    const socCoreMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.68, 0.68, 1.76, 32), socCoreMat);
+    socCoreMesh.position.set(0, 0, -0.7);
+    handoffGroup.add(socCoreMesh);
+
+    const coilPts = [];
+    for (let i = 0; i <= 64; i++) {
+      const t = i / 64;
+      const a = t * Math.PI * 8;
+      coilPts.push(new THREE.Vector3(Math.cos(a) * 0.46, (t - 0.5) * 1.5, -0.7 + Math.sin(a) * 0.46));
+    }
+    handoffGroup.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(coilPts), 72, 0.032, 8, false), brassMat));
+
+    const dhwStage = new THREE.Mesh(new THREE.BoxGeometry(1.25, 1.45, 0.95), coolTankMat);
+    dhwStage.position.set(1.75, -0.15, 0.35);
+    handoffGroup.add(dhwStage);
+
+    const tegMat = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0x991b1b, emissiveIntensity: 0.55, metalness: 0.68, roughness: 0.22 });
+    const tegMesh = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.24, 0.75), tegMat);
+    tegMesh.position.set(1.75, 0.74, 0.35);
+    handoffGroup.add(tegMesh);
+
+    regSubGroup('handoff', handoffGroup, new THREE.Vector3(2.4, 1.35, -0.35), [1.15, 0.65, -0.75]);
+
+    // Closed Loop + Crimson Blood Tracers
+    const loopCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-4.2, 2.1, 0.0),
+      new THREE.Vector3(-1.2, 2.1, 0.0),
+      new THREE.Vector3(2.4, 1.6, -1.05),
+      new THREE.Vector3(4.15, 1.2, 0.0),
+      new THREE.Vector3(1.6, 0.35, 0.85),
+      new THREE.Vector3(-0.7, 0.35, 0.85),
+      new THREE.Vector3(-4.2, 1.0, 0.2),
+      new THREE.Vector3(-4.2, 2.1, 0.0),
+    ], true);
+    const loopPipe = new THREE.Mesh(new THREE.TubeGeometry(loopCurve, 128, 0.055, 12, true), glassMat(0xfda4af, 0.32));
+    rigGroup.add(loopPipe);
+
+    const tracers = [];
+    for (let i = 0; i < 64; i++) {
+      const m = new THREE.Mesh(new THREE.SphereGeometry(0.082, 10, 10), new THREE.MeshBasicMaterial({ color: 0xff3b5c }));
+      rigGroup.add(m);
+      tracers.push({ mesh: m, u: i / 64 });
+    }
+
+    // 3D CAD Blueprint & Dimension Lines
+    const bpGroup = new THREE.Group();
+    scene.add(bpGroup);
+    const bpLineVerts = [];
+    for (let g = -10; g <= 10; g += 2) {
+      bpLineVerts.push(-10, -0.225, g, 10, -0.225, g);
+      bpLineVerts.push(g, -0.225, -10, g, -0.225, 10);
+    }
+    bpLineVerts.push(-4.81, 3.25, 0, 1.3, 3.25, 0);
+    bpLineVerts.push(-4.81, 3.1, 0, -4.81, 3.4, 0);
+    bpLineVerts.push(1.3, 3.1, 0, 1.3, 3.4, 0);
+    bpLineVerts.push(-5.2, 2.1, 0, 5.4, 2.1, 0);
+    bpLineVerts.push(2.4, -0.2, -1.05, 2.4, 2.75, -1.05);
+    const bpGeo = new THREE.BufferGeometry();
+    bpGeo.setAttribute('position', new THREE.Float32BufferAttribute(bpLineVerts, 3));
+    bpGroup.add(new THREE.LineSegments(bpGeo, new THREE.LineBasicMaterial({ color: 0xf43f5e, transparent: true, opacity: 0.45 })));
+
+    // Multi-Scale Array Instances
+    const maxBays = 32;
+    const bayInst = new THREE.InstancedMesh(
+      new THREE.BoxGeometry(2.3, 1.25, 1.15),
+      new THREE.MeshPhysicalMaterial({ color: 0xdc2626, metalness: 0.72, roughness: 0.22, transparent: true, opacity: 0.74 }),
+      maxBays
+    );
+    bayInst.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    scene.add(bayInst);
+
+    const farmInst = new THREE.InstancedMesh(
+      new THREE.CylinderGeometry(0.14, 0.22, 1.5, 12),
+      new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0x991b1b, emissiveIntensity: 0.45 }),
+      48
+    );
+    farmInst.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    scene.add(farmInst);
+
+    // Crimson Leak Drips & Purge Flack Particles
+    const dummy = new THREE.Object3D();
+    const dripMesh = new THREE.InstancedMesh(
+      new THREE.SphereGeometry(0.034, 10, 10),
+      new THREE.MeshPhysicalMaterial({ color: 0xe11d48, transmission: 0.75, transparent: true, opacity: 0.92 }),
+      28
+    );
+    dripMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    rigGroup.add(dripMesh);
+    const drips = Array.from({ length: 28 }, () => ({ active: false, pos: new THREE.Vector3(), vy: 0 }));
+
+    const bubbleMesh = new THREE.InstancedMesh(
+      new THREE.SphereGeometry(0.026, 8, 8),
+      new THREE.MeshStandardMaterial({ color: 0xffccd5, emissive: 0xe11d48, emissiveIntensity: 0.55, transparent: true, opacity: 0.84 }),
+      140
+    );
+    bubbleMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    rigGroup.add(bubbleMesh);
+    const bubbles = Array.from({ length: 140 }, () => ({ active: false, pos: new THREE.Vector3(), phase: Math.random() * 6 }));
+
+    let dripAcc = 0;
+    let bubbleAcc = 0;
+
+    function rebuildScaleVisuals() {
+      const meta = SCALE_META[app.scale] || SCALE_META[1];
+      rigGroup.scale.setScalar(meta.vis);
+      rigGroup.position.set(0, 0, meta.farm ? 3.8 : 0);
+      bpGroup.scale.setScalar(meta.vis);
+      bpGroup.position.set(0, 0, meta.farm ? 3.8 : 0);
+
+      for (let i = 0; i < maxBays; i++) {
+        if (i < meta.bays) {
+          const row = Math.floor(i / 5);
+          const col = i % 5;
+          dummy.position.set(-7.2 + col * 3.6 + (row % 2) * 1.0, 1.25, (meta.farm ? 0.5 : -2.6) - row * 2.35);
+          dummy.rotation.set(0, 0.12, 0);
+          dummy.scale.setScalar(0.88);
+        } else {
+          dummy.position.set(0, -50, 0);
+          dummy.rotation.set(0, 0, 0);
+          dummy.scale.setScalar(0.0001);
+        }
+        dummy.updateMatrix();
+        bayInst.setMatrixAt(i, dummy.matrix);
+      }
+      bayInst.instanceMatrix.needsUpdate = true;
+
+      for (let t = 0; t < 48; t++) {
+        if (meta.farm && t < (app.scale === 1000 ? 48 : 24)) {
+          const ang = (t / (app.scale === 1000 ? 48 : 24)) * Math.PI * 2;
+          const rad = 11.5 + (t % 3) * 2.6;
+          dummy.position.set(Math.cos(ang) * rad, 0.4, Math.sin(ang) * rad - 2.0);
+          dummy.rotation.set(0, -ang, 0);
+          dummy.scale.set(1, app.scale === 1000 ? 1.3 : 0.85, 1);
+        } else {
+          dummy.position.set(0, -50, 0);
+          dummy.rotation.set(0, 0, 0);
+          dummy.scale.setScalar(0.0001);
+        }
+        dummy.updateMatrix();
+        farmInst.setMatrixAt(t, dummy.matrix);
+      }
+      farmInst.instanceMatrix.needsUpdate = true;
+    }
+
+    function applySceneVisibility() {
+      const m = app.model;
+      const iso = app.hdIsolate && m !== 'all';
+
+      collectorGroup.visible = !iso || m === 'collector' || m === 'cartridges';
+      pumpGroup.visible = !iso || m === 'pump_valve';
+      handoffGroup.visible = !iso || m === 'pcm_dhw_teg';
+      loopPipe.visible = !iso || m === 'pump_valve' || m === 'pcm_dhw_teg';
+
+      if (m === 'cartridges') {
+        frontGlass.visible = false;
+        foamShell.visible = false;
+        vReflector.visible = false;
+        pass1Vanes.visible = true;
+        pass2Pockets.visible = true;
+      } else {
+        frontGlass.visible = !app.cutaway;
+        foamShell.visible = true;
+        vReflector.visible = true;
+        pass1Vanes.visible = app.cartridge === 'pass1' || app.cartridge === 'pass2';
+        pass2Pockets.visible = app.cartridge === 'pass2';
+      }
+
+      if (m === 'cad_rig') {
+        app.blueprint = true;
+        bpGroup.visible = true;
+        document.getElementById('dockBlueprintBtn').classList.add('app-btn-active');
+      }
+
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, app.hdInspect ? 2.5 : 2.0));
+      hdSpot.intensity = app.hdInspect ? 3.2 : 0.9;
+    }
+
+    function focusModel(modelKey) {
+      app.model = modelKey;
+      applySceneVisibility();
+      const spec = MODELS[modelKey] || MODELS.all;
+      const zoom = app.hdInspect && modelKey !== 'all' ? 0.72 : 1.0;
+      camera.position.set(
+        spec.target[0] + (spec.pos[0] - spec.target[0]) * zoom,
+        spec.target[1] + (spec.pos[1] - spec.target[1]) * zoom,
+        spec.target[2] + (spec.pos[2] - spec.target[2]) * zoom
+      );
+      controls.target.set(...spec.target);
+      controls.update();
+      if (app.openSheet === 'models') renderModelsSheet();
+    }
+
+    // -----------------------------------------------------------------------
+    // 3. 50 BACKGROUND DAEMONS & 3 MOVIE CAMERA MOVE SYSTEMS
+    // -----------------------------------------------------------------------
+    const desiredCamPos = new THREE.Vector3();
+    const desiredCamTarget = new THREE.Vector3();
+    const chasePt = new THREE.Vector3();
+    const chaseAhead = new THREE.Vector3();
+
+    function applyMovieCameraMove(dt) {
+      if (app.movieMove === 'none') return;
+      const scaleMult = SCALE_META[app.scale]?.camMult || 1.0;
+      const zOff = rigGroup.position.z;
+
+      if (app.movieMove === 'dolly') {
+        app.movePhase += dt * 0.55;
+        const s = 0.5 - 0.5 * Math.cos(app.movePhase); // smooth 0..1..0 dolly rack
+        desiredCamPos.set(
+          THREE.MathUtils.lerp(-5.8, 5.6, s) * Math.min(1.45, scaleMult),
+          2.55 + Math.sin(app.movePhase * 2) * 0.25,
+          4.85 + Math.sin(app.movePhase) * 0.9
+        );
+        desiredCamTarget.set(
+          THREE.MathUtils.lerp(-2.5, 3.1, s),
+          THREE.MathUtils.lerp(2.05, 1.35, s),
+          zOff - 0.2
+        );
+        app.daemonReadouts.D45 = `DOLLY ${(s * 100).toFixed(0)}%`;
+        app.daemonReadouts.D46 = `RACK X=${desiredCamTarget.x.toFixed(1)}`;
+        app.daemonReadouts.D47 = 'CRANE STANDBY';
+        app.daemonReadouts.D48 = 'GIMBAL LOCKED';
+        app.daemonReadouts.D49 = 'CHASE STANDBY';
+      } else if (app.movieMove === 'crane') {
+        app.movePhase += dt * 0.42;
+        const radius = 10.8 * Math.min(1.85, scaleMult);
+        const angle = Math.sin(app.movePhase) * 1.15 + 0.35;
+        desiredCamPos.set(
+          Math.sin(angle) * radius,
+          5.2 + (0.5 - 0.5 * Math.cos(app.movePhase)) * 4.4,
+          Math.cos(angle) * radius + zOff * 0.4
+        );
+        desiredCamTarget.set(0.0, 1.25, zOff * 0.5);
+        app.daemonReadouts.D45 = 'DOLLY STANDBY';
+        app.daemonReadouts.D46 = 'CENTER LOCK';
+        app.daemonReadouts.D47 = `ARC ${Math.round(THREE.MathUtils.radToDeg(angle))}°`;
+        app.daemonReadouts.D48 = `ALT ${desiredCamPos.y.toFixed(1)}m`;
+        app.daemonReadouts.D49 = 'CHASE STANDBY';
+      } else if (app.movieMove === 'chase') {
+        app.movePhase = (app.movePhase + dt * (0.14 + (app.flow / 10) * 0.16)) % 1;
+        loopCurve.getPointAt(app.movePhase, chasePt);
+        loopCurve.getPointAt((app.movePhase + 0.08) % 1, chaseAhead);
+        chasePt.applyMatrix4(rigGroup.matrixWorld);
+        chaseAhead.applyMatrix4(rigGroup.matrixWorld);
+
+        desiredCamPos.set(
+          chasePt.x * 0.85,
+          chasePt.y + 1.55,
+          chasePt.z + 3.45
+        );
+        desiredCamTarget.lerpVectors(chasePt, chaseAhead, 0.65);
+        app.daemonReadouts.D45 = 'DOLLY STANDBY';
+        app.daemonReadouts.D46 = 'FLOW TRACK';
+        app.daemonReadouts.D47 = 'CRANE STANDBY';
+        app.daemonReadouts.D48 = 'GIMBAL CHASE';
+        app.daemonReadouts.D49 = `U=${(app.movePhase * 100).toFixed(0)}%`;
+      }
+
+      const blend = 1 - Math.exp(-4.5 * dt);
+      camera.position.lerp(desiredCamPos, blend);
+      controls.target.lerp(desiredCamTarget, blend);
+      app.daemonReadouts.D50 = `AUTO:${MOVIE_MOVES[app.movieMove].code}`;
+    }
+
+    function setMovieMove(moveKey) {
+      if (!MOVIE_MOVES[moveKey]) return;
+      app.movieMove = moveKey;
+      app.movePhase = 0;
+      if (moveKey !== 'none') app.turntable = false;
+      app.daemonStatus.cam = `${app.scale.toLocaleString()}× • ${MOVIE_MOVES[moveKey].label}`;
+      if (app.openSheet === 'models') renderModelsSheet();
+      if (app.openSheet === 'daemons') renderDaemonMovieControls();
+      logDaemon('D50', `Movie Move → ${MOVIE_MOVES[moveKey].label}`);
+    }
+
+    function updateAll50DaemonReadouts() {
+      const actualDt = Math.max(0, app.tOut - app.tIn);
+      const r = app.daemonReadouts;
+
+      // Optical & Photo-Charge (D01-D10)
+      r.D01 = `${app.flux} W/m²`;
+      r.D02 = '2.11× CONE';
+      r.D03 = app.cutaway ? 'CUTAWAY V' : 'SEALED V';
+      r.D04 = `+${app.photoChargeW.toFixed(0)} W/u`;
+      r.D05 = (app.flags & FLAGS.CLOUD_HOLD) ? 'CLAMPED' : 'NOMINAL';
+      r.D06 = app.cartridge.toUpperCase();
+      r.D07 = app.cartridge === 'pass2' ? 'HIGH 1.38×' : (app.cartridge === 'pass1' ? 'MED 1.22×' : 'BASE 1.0×');
+      r.D08 = (app.flags & FLAGS.CLOUD_HOLD) ? 'HOLDING' : 'CLEAR';
+      r.D09 = `${(0.05 + (app.flux / 1100) * 0.34).toFixed(2)} INT`;
+      r.D10 = `${app.tOut.toFixed(1)}°C ABS`;
+
+      // Chemical & Thermal Discharge (D11-D20)
+      r.D11 = `${(app.soc * 100).toFixed(1)}% SoC`;
+      r.D12 = fmtWh(app.soc * UNIT_CAPACITY_WH);
+      r.D13 = `${app.dispatchMode.toUpperCase()} ${app.dischargeRatePct}%`;
+      r.D14 = `+${fmtWatts(app.chemReleaseW)}`;
+      r.D15 = '0.02%/m DECAY';
+      r.D16 = '82% LATENT';
+      r.D17 = `${app.tReturn.toFixed(1)}°C RET`;
+      r.D18 = `${fmtWatts(app.thermalKw * 1000)}`;
+      r.D19 = `ERR ${app.pidErr >= 0 ? '+' : ''}${app.pidErr.toFixed(1)}°C`;
+      r.D20 = app.soc > 0.05 ? 'CHARGE OK' : 'LOW SoC';
+
+      // Hydraulics & TEG Bus (D21-D30)
+      r.D21 = `PWM ${Math.round(app.pwm)}%`;
+      r.D22 = fmtFlow(app.flow);
+      r.D23 = `${app.dpKpa.toFixed(1)} kPa`;
+      r.D24 = (app.flags & FLAGS.FOUL_SWEEP) ? 'SWEEP' : 'CLEAN';
+      r.D25 = `${Math.round(app.valveAct)}°`;
+      r.D26 = `${app.pressBar.toFixed(2)} bar`;
+      r.D27 = (app.flags & FLAGS.BUBBLE_PURGE) ? 'PURGING' : 'QUIET';
+      r.D28 = `${((app.flow / 10) * 3).toFixed(1)} Hz`;
+      r.D29 = `${fmtWatts(app.tegWatts)}`;
+      r.D30 = `${app.vBus.toFixed(1)}V BUS`;
+
+      // Safety & Interlocks (D31-D38)
+      r.D31 = (app.flags & FLAGS.LEAK_TRIP) ? 'DRIP TRIP' : 'SEALED';
+      r.D32 = (app.flags & FLAGS.OVERTEMP) ? 'OVERHEAT' : `${app.tOut.toFixed(0)}°C OK`;
+      r.D33 = app.mode === 'M0' ? 'LATCHED M0' : 'ARMED';
+      r.D34 = (app.flags & FLAGS.BROWNOUT) ? '35% CAP' : 'UNLIMITED';
+      r.D35 = Math.abs(app.valveCmd - app.valveAct) > 1 ? 'SLEWING' : 'PARKED';
+      r.D36 = `MODE ${app.mode}`;
+      r.D37 = actualDt < 75 ? 'SAFE ΔT' : 'HIGH ΔT';
+      r.D38 = `T+${app.elapsed.toFixed(0)}s OK`;
+
+      // Scale & CAD Matrix (D39-D44)
+      r.D39 = `${app.scale.toLocaleString()}×`;
+      r.D40 = `${SCALE_META[app.scale].bays} BAYS`;
+      r.D41 = SCALE_META[app.scale].farm ? 'FARM ON' : 'PAD ONLY';
+      r.D42 = app.blueprint ? 'GRID ON' : 'GRID OFF';
+      r.D43 = app.exploded ? 'EXPLODED' : 'ASSEMBLED';
+      r.D44 = `${app.csvRows.length} ROWS`;
+
+      if (app.movieMove === 'none') {
+        r.D45 = 'DOLLY IDLE';
+        r.D46 = 'RACK IDLE';
+        r.D47 = 'CRANE IDLE';
+        r.D48 = 'GIMBAL IDLE';
+        r.D49 = 'CHASE IDLE';
+        r.D50 = app.turntable ? 'TURNTABLE' : 'ORBIT CTL';
+      }
+    }
+
+    function runPidLoopDaemon(dt) {
+      const actualDt = Math.max(0, app.tOut - app.tIn);
+      const err = actualDt - app.targetDt;
+      app.pidErr = err;
+
+      const cartFactor = app.cartridge === 'pass2' ? 1.38 : (app.cartridge === 'pass1' ? 1.22 : 1.0);
+      const effectiveFlux = (app.flags & FLAGS.CLOUD_HOLD) ? Math.min(app.flux, 180) : app.flux;
+      const chargeRatePerSec = (effectiveFlux / 1000) * 0.0145 * cartFactor;
+      const darkDecayPerSec = 0.00018 * Math.max(0.5, app.tOut / 50);
+
+      let effDischargeFraction = app.dischargeRatePct / 100;
+      if (app.dispatchMode === 'charge') effDischargeFraction = 0.0;
+      else if (app.dispatchMode === 'discharge') effDischargeFraction = Math.max(0.55, effDischargeFraction);
+
+      if (app.mode === 'M0' || app.mode === 'M1') {
+        effDischargeFraction = 0.0;
+      }
+
+      const activeFlowBoost = app.flow > 0.2 ? (0.4 + 0.6 * Math.min(1, app.flow / 5.0)) : 0.15;
+      const dischargeRatePerSec = effDischargeFraction * 0.022 * activeFlowBoost;
+
+      const dSoc = (chargeRatePerSec * (1 - app.soc) - darkDecayPerSec * app.soc - dischargeRatePerSec * app.soc) * dt;
+      app.soc = THREE.MathUtils.clamp(app.soc + dSoc, 0, 1);
+
+      app.chemReleaseW = Number((app.soc * effDischargeFraction * MAX_CHEM_RELEASE_W * activeFlowBoost).toFixed(1));
+      app.photoChargeW = Number(((effectiveFlux / 1000) * 210 * cartFactor * (1 - app.soc * 0.65)).toFixed(1));
+
+      if (app.mode === 'M4' || app.mode === 'M6') {
+        app.pidIntegral = THREE.MathUtils.clamp(app.pidIntegral + err * dt, -25, 75);
+        const deriv = (err - app.pidPrevErr) / Math.max(0.01, dt);
+        app.pidPrevErr = err;
+        const chemAssist = (app.chemReleaseW / MAX_CHEM_RELEASE_W) * 14;
+        const ff = THREE.MathUtils.clamp((app.flux / 1000) * 48 + chemAssist, 12, 68);
+        const rawPwm = THREE.MathUtils.clamp(ff + 2.2 * err + 0.45 * app.pidIntegral + 0.35 * deriv, 12, 95);
+        let nextPwm = app.mode === 'M4' ? rawPwm : MODES.M6.pwm;
+        let nextValve = app.mode === 'M4'
+          ? THREE.MathUtils.clamp((err - 4) * 2.2 + Math.max(0, app.tOut - 78) * 1.6 + effDischargeFraction * 24, 0, 80)
+          : MODES.M6.valve;
+
+        if (app.flags & FLAGS.CLOUD_HOLD) nextPwm = Math.min(nextPwm, 28);
+        if (app.flags & FLAGS.HEAT_DUMP) {
+          nextPwm = Math.max(nextPwm, 72);
+          nextValve = Math.max(nextValve, 68);
+        }
+        if (app.flags & FLAGS.BROWNOUT) nextPwm = Math.min(nextPwm, 35);
+
+        app.cmdPwm = nextPwm;
+        app.valveCmd = nextValve;
+      } else {
+        app.pidIntegral *= 0.96;
+        app.pidPrevErr = err;
+        const m = MODES[app.mode] || MODES.M2;
+        let nextPwm = m.pwm;
+        let nextValve = m.valve;
+        if (app.dispatchMode === 'discharge' && app.mode === 'M2' && app.soc > 0.02) {
+          nextPwm = 42;
+          nextValve = 45;
+        }
+        if (app.mode === 'M3' && (app.flags & FLAGS.BUBBLE_PURGE)) nextPwm = 80;
+        if (app.mode === 'M3' && (app.flags & FLAGS.FOUL_SWEEP)) { nextPwm = 88; nextValve = 60; }
+        if (app.flags & FLAGS.BROWNOUT) nextPwm = Math.min(nextPwm, 35);
+        app.cmdPwm = nextPwm;
+        app.valveCmd = nextValve;
+      }
+
+      const sign = err >= 0 ? '+' : '';
+      app.daemonStatus.pid = `SoC ${(app.soc * 100).toFixed(1)}% • ΔT ${sign}${err.toFixed(1)}°C`;
+    }
+
+    function runThermalHydraulicDaemon(dt) {
+      const cartFactor = app.cartridge === 'pass2' ? 1.38 : (app.cartridge === 'pass1' ? 1.22 : 1.0);
+      app.pwm += (app.cmdPwm - app.pwm) * (1 - Math.exp(-6.5 * dt));
+
+      const targetFlow = (app.pwm / 100) * 7.2 / Math.sqrt(cartFactor);
+      app.flow = Number((app.flow * 0.88 + targetFlow * 0.12).toFixed(2));
+
+      app.dpExpKpa = Number(((app.flow / 5.0) ** 1.55 * 14.5 * cartFactor).toFixed(1));
+      const foulMult = (app.flags & FLAGS.FOUL_SWEEP) ? Math.max(1.05, 1.45 - app.elapsed * 0.01) : 1.0;
+      app.dpKpa = Number((app.dpExpKpa * foulMult).toFixed(1));
+
+      app.pressBar = (app.flags & FLAGS.LEAK_TRIP)
+        ? Number(Math.max(0.15, app.pressBar - dt * 0.35).toFixed(2))
+        : Number((1.35 + (app.flow / 8) * 0.45).toFixed(2));
+
+      const ambOff = (app.tAmbient - 22) * 0.25;
+      const dumpSub = (app.flags & FLAGS.HEAT_DUMP) ? 3.5 : 0;
+      const targetTin = app.flow > 0.15
+        ? app.tReturn * 0.68 + app.tAmbient * 0.32 - dumpSub
+        : app.tIn * 0.99 + app.tAmbient * 0.01;
+      app.tIn = Number((app.tIn * 0.92 + targetTin * 0.08).toFixed(1));
+
+      const totalThermalW = (app.flux / 1000) * 2450 * cartFactor + app.chemReleaseW * 3.2;
+      const dT = app.flow > 0.1
+        ? Math.min(76, Math.max(0.5, totalThermalW / Math.max(55, app.flow * 68) + ambOff * 0.35))
+        : Math.max(0, app.flux * 0.025 + app.chemReleaseW * 0.03 + ambOff * 0.2);
+      app.tOut = Number((app.tIn + dT).toFixed(1));
+      app.tReturn = Number((app.tOut * 0.55 + app.tIn * 0.45 - 2.8).toFixed(1));
+
+      const actualDt = Math.max(0, app.tOut - app.tIn);
+      app.tegWatts = Number(Math.max(0, actualDt * 0.48 * (app.flow / 4.5) + app.chemReleaseW * 0.045).toFixed(1));
+      app.thermalKw = Number(Math.max(0, totalThermalW / 1000).toFixed(2));
+
+      app.daemonStatus.therm = `${fmtFlow(app.flow)} • +${Math.round(app.chemReleaseW * app.scale)}W chem`;
+    }
+
+    function runSafetyGuardDaemon() {
+      const fault = (app.flags & (FLAGS.LEAK_TRIP | FLAGS.OVERTEMP)) !== 0;
+      if (fault && app.mode !== 'M0') {
+        app.mode = 'M0';
+        app.cmdPwm = 0;
+        app.valveCmd = 90;
+        syncTopBar();
+        logDaemon('D33', 'Fault detected → forced M0 Safe Hold & halted discharge');
+      }
+      if ((app.flags & FLAGS.BROWNOUT) && app.mode === 'M6') {
+        app.mode = 'M4';
+        syncTopBar();
+        logDaemon('D34', 'Brownout → shifted M6 to M4 (PWM ≤35%)');
+      }
+      app.vBus = (app.flags & FLAGS.BROWNOUT) ? 18.6 : 24.0;
+      app.daemonStatus.guard = fault ? 'FAULT M0 HOLD' : ((app.flags & FLAGS.BROWNOUT) ? 'BROWNOUT 18.6V' : `NOMINAL • ${app.vBus.toFixed(1)}V`);
+    }
+
+    function runScaleCamDaemon(dt) {
+      const slewSpeed = (app.flags & FLAGS.BROWNOUT) ? 35 : 115;
+      const diff = app.valveCmd - app.valveAct;
+      const step = slewSpeed * dt;
+      app.valveAct = Math.abs(diff) <= step ? app.valveCmd : app.valveAct + Math.sign(diff) * step;
+
+      if (app.turntable && app.movieMove === 'none') {
+        const off = camera.position.clone().sub(controls.target);
+        off.applyAxisAngle(new THREE.Vector3(0, 1, 0), dt * 0.42);
+        camera.position.copy(controls.target).add(off);
+      }
+
+      updateAll50DaemonReadouts();
+      const moveLabel = MOVIE_MOVES[app.movieMove]?.code || 'ORBIT';
+      app.daemonStatus.cam = `${app.scale.toLocaleString()}× • ${moveLabel}`;
+    }
+
+    // -----------------------------------------------------------------------
+    // 4. SPARKLINE CHART & SINGLE-SHEET UI CONTROLLER
+    // -----------------------------------------------------------------------
+    const sparkCanvas = document.getElementById('socSparkline');
+    const sparkCtx = sparkCanvas.getContext('2d');
+
+    function drawSocSparkline() {
+      const rect = sparkCanvas.getBoundingClientRect();
+      const w = Math.max(120, Math.floor(rect.width || 280));
+      const h = Math.max(48, Math.floor(rect.height || 80));
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      if (sparkCanvas.width !== w * dpr || sparkCanvas.height !== h * dpr) {
+        sparkCanvas.width = w * dpr;
+        sparkCanvas.height = h * dpr;
+      }
+      sparkCtx.save();
+      sparkCtx.scale(dpr, dpr);
+      sparkCtx.clearRect(0, 0, w, h);
+
+      // Subtle gridlines
+      sparkCtx.strokeStyle = 'rgba(244, 63, 94, 0.16)';
+      sparkCtx.lineWidth = 1;
+      for (let i = 1; i <= 3; i++) {
+        const y = (h / 4) * i;
+        sparkCtx.beginPath();
+        sparkCtx.moveTo(0, y);
+        sparkCtx.lineTo(w, y);
+        sparkCtx.stroke();
+      }
+
+      const drawSeries = (arr, color, fillColor) => {
+        if (!arr.length) return;
+        const n = arr.length;
+        sparkCtx.beginPath();
+        for (let i = 0; i < n; i++) {
+          const x = n === 1 ? w : (i / (n - 1)) * w;
+          const v = THREE.MathUtils.clamp(arr[i], 0, 1);
+          const y = h - 6 - v * (h - 12);
+          if (i === 0) sparkCtx.moveTo(x, y);
+          else sparkCtx.lineTo(x, y);
+        }
+        sparkCtx.strokeStyle = color;
+        sparkCtx.lineWidth = 2;
+        sparkCtx.stroke();
+
+        if (fillColor) {
+          sparkCtx.lineTo(w, h);
+          sparkCtx.lineTo(0, h);
+          sparkCtx.closePath();
+          sparkCtx.fillStyle = fillColor;
+          sparkCtx.fill();
+        }
+      };
+
+      drawSeries(app.chemNormHistory, '#fbbf24', null);
+      drawSeries(app.socHistory, '#f43f5e', 'rgba(225, 29, 72, 0.20)');
+      sparkCtx.restore();
+    }
+
+    function setSheetCollapsed(collapsed) {
+      app.sheetCollapsed = collapsed;
+      const wrapper = document.getElementById('sheetContentWrapper');
+      const btn = document.getElementById('collapseSheetBtn');
+      if (collapsed) {
+        wrapper.classList.add('hidden');
+        btn.textContent = '[+]';
+      } else {
+        wrapper.classList.remove('hidden');
+        btn.textContent = '[−]';
+        if (app.openSheet === 'pid') requestAnimationFrame(drawSocSparkline);
+      }
+    }
+
+    function openSheet(name) {
+      const sheet = document.getElementById('appSheet');
+      const closingSame = app.openSheet === name;
+      app.openSheet = closingSame ? null : name;
+
+      document.querySelectorAll('.dock-btn').forEach((btn) => {
+        btn.classList.toggle('app-btn-active', btn.getAttribute('data-sheet') === app.openSheet);
+      });
+
+      if (!app.openSheet) {
+        sheet.classList.add('hidden');
+        return;
+      }
+
+      setSheetCollapsed(false);
+      sheet.classList.remove('hidden');
+      document.querySelectorAll('.sheet-body').forEach((el) => {
+        el.classList.add('hidden');
+        el.classList.remove('flex');
+      });
+
+      const activeBody = document.getElementById(`sheet-${app.openSheet}`);
+      activeBody.classList.remove('hidden');
+      activeBody.classList.add('flex');
+
+      const titles = {
+        pid:     ['Liquid Battery & PID',    'Photo-isomer SoC, chemical discharge & ΔT'],
+        modes:   ['7-Mode State Machine',     'Modes M0–M6, cartridges & flags'],
+        models:  ['HD Models & Movie Moves',  'Assemblies, HD isolation & 3 camera moves'],
+        scale:   ['Scale Multiplier',         '1× to 1,000× Hellcat battery array & telemetry'],
+        daemons: ['50 Background Daemons',    'D01–D50 live telemetry, movie rig & CLI'],
+      };
+      const [t, s] = titles[app.openSheet];
+      document.getElementById('sheetTitle').textContent = t;
+      document.getElementById('sheetSubtitle').textContent = s;
+
+      if (app.openSheet === 'pid') {
+        syncPidReadouts();
+        requestAnimationFrame(drawSocSparkline);
+      }
+      if (app.openSheet === 'modes') renderModesSheet();
+      if (app.openSheet === 'models') renderModelsSheet();
+      if (app.openSheet === 'scale') renderScaleSheet();
+      if (app.openSheet === 'daemons') renderDaemonsSheet();
+    }
+
+    function syncTopBar() {
+      const m = MODES[app.mode] || MODES.M4;
+      const pill = document.getElementById('topModePill');
+      pill.textContent = `${m.code} • ${m.name}`;
+      pill.className = m.fault
+        ? 'px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-mono-num font-bold app-btn-danger shrink-0'
+        : 'px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-mono-num font-bold app-btn-active shrink-0';
+
+      const socPct = Math.round(app.soc * 100);
+      const socPill = document.getElementById('topSocPill');
+      socPill.textContent = `SoC ${socPct}%`;
+      socPill.className = socPct < 15
+        ? 'px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-mono-num font-bold app-btn-warn shrink-0'
+        : 'px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-mono-num font-bold app-btn-chem shrink-0';
+
+      const sPill = document.getElementById('topScalePill');
+      sPill.textContent = `${app.scale.toLocaleString()}×`;
+    }
+
+    function syncPidReadouts() {
+      document.querySelectorAll('.disp-btn').forEach((btn) => {
+        btn.classList.toggle('app-btn-active', btn.getAttribute('data-dispatch') === app.dispatchMode);
+      });
+      document.getElementById('fluxLabel').textContent = `${app.flux} W/m²`;
+      document.getElementById('dischargeLabel').textContent = `${app.dischargeRatePct}%`;
+      document.getElementById('ambLabel').textContent = `${app.tAmbient.toFixed(1)}°C`;
+      document.getElementById('dtLabel').textContent = `${app.targetDt.toFixed(1)}°C`;
+
+      document.getElementById('pidSoc').textContent = `${(app.soc * 100).toFixed(1)}%`;
+      document.getElementById('pidStoredWh').textContent = fmtWh(app.soc * UNIT_CAPACITY_WH);
+      document.getElementById('pidChemRelease').textContent = fmtWatts(app.chemReleaseW);
+      document.getElementById('pidActualDt').textContent = `${Math.max(0, app.tOut - app.tIn).toFixed(1)}°C`;
+      document.getElementById('pidActuators').textContent = `${Math.round(app.pwm)}% • ${Math.round(app.valveAct)}°`;
+      document.getElementById('pidFlow').textContent = fmtFlow(app.flow);
+      document.getElementById('pidTeg').textContent = fmtWatts(app.tegWatts);
+      document.getElementById('pidTotalPower').textContent = fmtWatts(app.thermalKw * 1000);
+    }
+
+    function renderModesSheet() {
+      document.querySelectorAll('.cart-btn').forEach((btn) => {
+        btn.classList.toggle('app-btn-active', btn.getAttribute('data-cart') === app.cartridge);
+      });
+
+      const mGrid = document.getElementById('modeButtonsGrid');
+      mGrid.innerHTML = MODE_KEYS.map((k) => {
+        const m = MODES[k];
+        const active = app.mode === k;
+        const cls = active ? (m.fault ? 'app-btn-danger' : 'app-btn-active') : 'text-rose-100';
+        return `<button type="button" data-mode="${k}" class="m-pick app-btn ${cls} p-2 rounded-xl text-left text-xs font-mono-num font-semibold">${m.code} ${m.name}</button>`;
+      }).join('');
+
+      mGrid.querySelectorAll('.m-pick').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const next = btn.getAttribute('data-mode');
+          const fault = (app.flags & (FLAGS.LEAK_TRIP | FLAGS.OVERTEMP)) !== 0;
+          if (fault && next !== 'M0') {
+            logDaemon('D33', `Blocked ${next} while fault active`);
+            return;
+          }
+          app.mode = next;
+          syncTopBar();
+          renderModesSheet();
+          logDaemon('D36', `Switched to ${next} (${MODES[next].name})`);
+        });
+      });
+
+      const fGrid = document.getElementById('flagButtonsGrid');
+      fGrid.innerHTML = FLAG_LIST.map((f) => {
+        const on = (app.flags & f.bit) !== 0;
+        const danger = on && (f.bit === FLAGS.LEAK_TRIP || f.bit === FLAGS.OVERTEMP);
+        return `<button type="button" data-bit="${f.bit}" class="f-pick app-btn ${danger ? 'app-btn-danger' : (on ? 'app-btn-warn' : 'text-rose-200')} px-2.5 py-1 rounded-xl text-[11px] font-mono-num">${f.label}</button>`;
+      }).join('');
+
+      fGrid.querySelectorAll('.f-pick').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const bit = Number(btn.getAttribute('data-bit'));
+          app.flags = (app.flags & bit) ? (app.flags & ~bit) : (app.flags | bit);
+          runSafetyGuardDaemon();
+          renderModesSheet();
+          logDaemon('D38', `Toggled flag 0x${bit.toString(16)}`);
+        });
+      });
+    }
+
+    function renderModelsSheet() {
+      const grid = document.getElementById('modelButtonsGrid');
+      grid.innerHTML = MODEL_KEYS.map((k) => {
+        const active = app.model === k && app.movieMove === 'none';
+        return `<button type="button" data-m="${k}" class="mdl-pick app-btn ${active ? 'app-btn-active' : 'text-rose-100'} p-2 rounded-xl text-xs font-semibold text-left">${MODELS[k].label}</button>`;
+      }).join('');
+
+      grid.querySelectorAll('.mdl-pick').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          app.movieMove = 'none';
+          focusModel(btn.getAttribute('data-m'));
+        });
+      });
+
+      const moveGrid = document.getElementById('movieMoveGrid');
+      moveGrid.innerHTML = ['dolly', 'crane', 'chase'].map((mk) => {
+        const active = app.movieMove === mk;
+        return `<button type="button" data-move="${mk}" class="mv-pick app-btn ${active ? 'app-btn-active' : 'text-rose-100'} py-2 px-1.5 rounded-xl text-[11px] font-mono-num font-bold">${MOVIE_MOVES[mk].label}</button>`;
+      }).join('');
+
+      moveGrid.querySelectorAll('.mv-pick').forEach((btn) => {
+        btn.addEventListener('click', () => setMovieMove(btn.getAttribute('data-move')));
+      });
+
+      const hdBtn = document.getElementById('sheetHdBtn');
+      hdBtn.textContent = `HD Inspect: ${app.hdInspect ? 'ON' : 'OFF'}`;
+      hdBtn.className = `app-btn ${app.hdInspect ? 'app-btn-active' : 'text-rose-200'} py-2 px-2 rounded-xl text-xs font-semibold`;
+
+      const isoBtn = document.getElementById('sheetIsolateBtn');
+      isoBtn.textContent = `Isolate: ${app.hdIsolate ? 'ON' : 'OFF'}`;
+      isoBtn.className = `app-btn ${app.hdIsolate ? 'app-btn-active' : 'text-rose-100'} py-2 px-2 rounded-xl text-xs font-semibold`;
+
+      const turnBtn = document.getElementById('sheetTurnBtn');
+      turnBtn.textContent = `Turntable: ${app.turntable ? 'ON' : 'OFF'}`;
+      turnBtn.className = `app-btn ${app.turntable ? 'app-btn-warn' : 'text-rose-200'} py-2 px-2 rounded-xl text-xs font-semibold`;
+    }
+
+    function renderScaleSheet() {
+      const grid = document.getElementById('scaleButtonsGrid');
+      grid.innerHTML = SCALES.map((s) => {
+        const active = app.scale === s;
+        return `<button type="button" data-s="${s}" class="s-pick app-btn ${active ? 'app-btn-active' : 'text-rose-100'} py-2 px-2 rounded-xl text-xs font-mono-num font-bold">${s.toLocaleString()}×</button>`;
+      }).join('');
+
+      grid.querySelectorAll('.s-pick').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          app.scale = Number(btn.getAttribute('data-s'));
+          syncTopBar();
+          rebuildScaleVisuals();
+          renderScaleSheet();
+          logDaemon('D39', `Scaled to ${app.scale.toLocaleString()}×`);
+        });
+      });
+      syncScaleReadout();
+    }
+
+    function syncScaleReadout() {
+      const el = document.getElementById('scaleInfoBox');
+      if (!el) return;
+      el.textContent = `${SCALE_META[app.scale].name} • SoC ${(app.soc * 100).toFixed(1)}% • ${fmtWh(app.soc * UNIT_CAPACITY_WH)} • ${fmtFlow(app.flow)} • ${fmtWatts(app.thermalKw * 1000)}`;
+    }
+
+    function renderDaemonMovieControls() {
+      document.getElementById('activeMoveBadge').textContent = MOVIE_MOVES[app.movieMove].label.toUpperCase();
+      const grid = document.getElementById('daemonMovieMoveGrid');
+      const keys = ['dolly', 'crane', 'chase', 'none'];
+      grid.innerHTML = keys.map((k) => {
+        const active = app.movieMove === k;
+        const shortLabel = k === 'none' ? 'Orbit' : MOVIE_MOVES[k].code;
+        return `<button type="button" data-dmove="${k}" class="dmv-btn app-btn ${active ? 'app-btn-active' : 'text-rose-100'} py-1.5 px-1.5 rounded-xl text-[10px] font-mono-num font-bold">${shortLabel}</button>`;
+      }).join('');
+      grid.querySelectorAll('.dmv-btn').forEach((btn) => {
+        btn.addEventListener('click', () => setMovieMove(btn.getAttribute('data-dmove')));
+      });
+    }
+
+    function renderDaemonsSheet() {
+      renderDaemonMovieControls();
+      document.querySelectorAll('.dfilter-btn').forEach((btn) => {
+        btn.classList.toggle('app-btn-active', btn.getAttribute('data-dfilter') === app.daemonFilter);
+      });
+      syncDaemonLiveCards();
+      renderDaemonLogs();
+    }
+
+    function renderDaemonLogs() {
+      const logEl = document.getElementById('daemonLogList');
+      if (!app.daemonLogs.length) {
+        logEl.innerHTML = '<div class="text-rose-300/60">No daemon events yet.</div>';
+      } else {
+        logEl.innerHTML = app.daemonLogs.slice(0, 10).map((l) =>
+          `<div class="text-rose-100"><span class="text-rose-400">${l.t}</span> <strong class="text-amber-300">${l.name}</strong>: ${l.msg}</div>`
+        ).join('');
+      }
+    }
+
+    function syncDaemonLiveCards() {
+      const el = document.getElementById('daemonCardsList');
+      if (!el) return;
+      const list = app.daemonFilter === 'ALL'
+        ? DAEMON_DEFS
+        : DAEMON_DEFS.filter(([, cat]) => cat === app.daemonFilter);
+
+      el.innerHTML = list.map(([id, cat, title]) => {
+        const val = app.daemonReadouts[id] || 'OK';
+        return `<div class="flex items-center justify-between gap-2 bg-white/5 rounded-lg px-2 py-1 border border-rose-500/15">
+          <span class="truncate"><span class="text-rose-400 font-bold">${id}</span> <span class="text-rose-200/75 text-[10px]">[${cat}]</span> <span class="text-rose-100">${title}</span></span>
+          <span class="text-amber-300 font-semibold shrink-0">${val}</span>
+        </div>`;
+      }).join('');
+    }
+
+    // -----------------------------------------------------------------------
+    // 5. FULL OS REBOOT (restartOS), AUDIO SYNTH, CSV & RENDER LOOP
+    // -----------------------------------------------------------------------
+    let synth = null;
+    function toggleSynth() {
+      app.audioOn = !app.audioOn;
+      document.getElementById('pidAudioBtn').textContent = `Synth: ${app.audioOn ? 'ON' : 'OFF'}`;
+      try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!synth) {
+          const ctx = new AC();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.value = 92;
+          gain.gain.value = 0.0001;
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          synth = { ctx, osc, gain };
+        }
+        if (synth.ctx.state === 'suspended') synth.ctx.resume();
+        synth.gain.gain.setTargetAtTime(app.audioOn ? 0.018 : 0.0001, synth.ctx.currentTime, 0.05);
+      } catch (_) {}
+    }
+
+    function exportCsv() {
+      const hdr = 't_s,scale,mode,dispatch,model,flux_wm2,discharge_pct,soc_pct,stored_wh,chem_release_w,t_amb_c,target_dt_c,actual_dt_c,pwm_pct,unit_flow_lpm,scaled_flow_lpm,t_out_c,t_in_c,unit_teg_w,scaled_teg_w,valve_deg';
+      const blob = new Blob([hdr + '\n' + app.csvRows.join('\n')], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `heliocell_hellcat_${app.scale}x.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      logDaemon('D44', `Exported ${app.csvRows.length} rows`);
+    }
+
+    function syncAllUiControlsToState() {
+      document.getElementById('fluxSlider').value = String(app.flux);
+      document.getElementById('dischargeSlider').value = String(app.dischargeRatePct);
+      document.getElementById('ambSlider').value = String(app.tAmbient);
+      document.getElementById('dtSlider').value = String(app.targetDt);
+      document.getElementById('pidAudioBtn').textContent = `Synth: ${app.audioOn ? 'ON' : 'OFF'}`;
+      document.getElementById('dockBlueprintBtn').classList.toggle('app-btn-active', app.blueprint);
+      document.getElementById('topCutawayBtn').classList.toggle('app-btn-warn', app.cutaway);
+      document.getElementById('topExplodeBtn').classList.toggle('app-btn-active', app.exploded);
+      syncTopBar();
+      syncPidReadouts();
+      drawSocSparkline();
+    }
+
+    function restartOS() {
+      const keepSheet = app.openSheet;
+      app = createInitialAppState();
+      app.openSheet = keepSheet;
+
+      for (const d of drips) d.active = false;
+      for (const b of bubbles) b.active = false;
+      dripAcc = 0;
+      bubbleAcc = 0;
+
+      for (const k of Object.keys(subGroups)) {
+        subGroups[k].obj.position.copy(subGroups[k].home);
+      }
+      bpGroup.visible = app.blueprint;
+      rebuildScaleVisuals();
+      applySceneVisibility();
+      syncAllUiControlsToState();
+
+      camera.position.set(...MODELS.all.pos);
+      controls.target.set(...MODELS.all.target);
+      controls.update();
+
+      updateAll50DaemonReadouts();
+      logDaemon('D38', 'HELLCAT OS REBOOTED • 50 daemons & 3 movie rigs nominal');
+
+      if (app.openSheet === 'modes') renderModesSheet();
+      if (app.openSheet === 'models') renderModelsSheet();
+      if (app.openSheet === 'scale') renderScaleSheet();
+      if (app.openSheet === 'daemons') renderDaemonsSheet();
+    }
+
+    function tickDaemons(dt) {
+      app.elapsed += dt;
+      app.daemonTimers.pid += dt;
+      app.daemonTimers.therm += dt;
+      app.daemonTimers.guard += dt;
+      app.daemonTimers.cam += dt;
+
+      if (app.daemonTimers.pid >= 0.1) {
+        const d = app.daemonTimers.pid;
+        app.daemonTimers.pid = 0;
+        runPidLoopDaemon(d);
+      }
+      if (app.daemonTimers.therm >= 0.05) {
+        const d = app.daemonTimers.therm;
+        app.daemonTimers.therm = 0;
+        runThermalHydraulicDaemon(d);
+      }
+      if (app.daemonTimers.guard >= 0.2) {
+        app.daemonTimers.guard = 0;
+        runSafetyGuardDaemon();
+      }
+      if (app.daemonTimers.cam >= 0.1) {
+        const d = app.daemonTimers.cam;
+        app.daemonTimers.cam = 0;
+        runScaleCamDaemon(d);
+      }
+
+      app.sparkAccum += dt;
+      if (app.sparkAccum >= 0.1) {
+        app.sparkAccum = 0;
+        app.socHistory.push(app.soc);
+        app.chemNormHistory.push(THREE.MathUtils.clamp(app.chemReleaseW / MAX_CHEM_RELEASE_W, 0, 1));
+        if (app.socHistory.length > SPARK_MAX_POINTS) app.socHistory.shift();
+        if (app.chemNormHistory.length > SPARK_MAX_POINTS) app.chemNormHistory.shift();
+        if (app.openSheet === 'pid' && !app.sheetCollapsed) drawSocSparkline();
+      }
+
+      document.getElementById('clockTag').textContent = `T+${app.elapsed.toFixed(1)}s`;
+      document.getElementById('daemonStripText').textContent =
+        `HELLCAT 50 DAEMONS • ${app.daemonStatus.pid} • ${app.daemonStatus.therm} • ${app.daemonStatus.guard} • ${app.daemonStatus.cam}`;
+
+      const hasFault = app.mode === 'M0' || (app.flags & (FLAGS.LEAK_TRIP | FLAGS.OVERTEMP)) !== 0;
+      document.getElementById('daemonPulseDot').className = hasFault
+        ? 'w-2 h-2 rounded-full bg-white animate-ping shrink-0'
+        : 'w-2 h-2 rounded-full bg-rose-200 shrink-0';
+
+      syncTopBar();
+      if (app.openSheet === 'pid') syncPidReadouts();
+      if (app.openSheet === 'scale') syncScaleReadout();
+      if (app.openSheet === 'daemons' && !app.sheetCollapsed) syncDaemonLiveCards();
+
+      app.csvAccum += dt;
+      if (app.csvAccum >= 0.5) {
+        app.csvAccum = 0;
+        app.csvRows.push([
+          app.elapsed.toFixed(2), app.scale, app.mode, app.dispatchMode, app.model,
+          app.flux.toFixed(0), app.dischargeRatePct, (app.soc * 100).toFixed(1),
+          (app.soc * UNIT_CAPACITY_WH * app.scale).toFixed(1), app.chemReleaseW.toFixed(1),
+          app.tAmbient.toFixed(1), app.targetDt.toFixed(1), (app.tOut - app.tIn).toFixed(1),
+          app.pwm.toFixed(0), app.flow.toFixed(2), (app.flow * app.scale).toFixed(2),
+          app.tOut.toFixed(1), app.tIn.toFixed(1), app.tegWatts.toFixed(1),
+          (app.tegWatts * app.scale).toFixed(1), Math.round(app.valveAct)
+        ].join(','));
+      }
+    }
+
+    function bindEvents() {
+      document.querySelectorAll('.dock-btn').forEach((btn) => {
+        btn.addEventListener('click', () => openSheet(btn.getAttribute('data-sheet')));
+      });
+      document.getElementById('collapseSheetBtn').addEventListener('click', () => {
+        setSheetCollapsed(!app.sheetCollapsed);
+      });
+      document.getElementById('closeSheetBtn').addEventListener('click', () => openSheet(null));
+
+      renderer.domElement.addEventListener('pointerdown', (e) => {
+        if (app.openSheet && e.button === 0) openSheet(null);
+      });
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && app.openSheet) openSheet(null);
+      });
+
+      document.getElementById('dockBlueprintBtn').addEventListener('click', (e) => {
+        app.blueprint = !app.blueprint;
+        bpGroup.visible = app.blueprint;
+        e.currentTarget.classList.toggle('app-btn-active', app.blueprint);
+        logDaemon('D42', `Blueprint ${app.blueprint ? 'ON' : 'OFF'}`);
+      });
+
+      document.getElementById('topCutawayBtn').addEventListener('click', (e) => {
+        app.cutaway = !app.cutaway;
+        applySceneVisibility();
+        e.currentTarget.classList.toggle('app-btn-warn', app.cutaway);
+      });
+
+      document.getElementById('topExplodeBtn').addEventListener('click', (e) => {
+        app.exploded = !app.exploded;
+        e.currentTarget.classList.toggle('app-btn-active', app.exploded);
+      });
+
+      document.getElementById('topResetBtn').addEventListener('click', () => {
+        app.turntable = false;
+        app.movieMove = 'none';
+        app.hdInspect = false;
+        app.scale = 1;
+        syncTopBar();
+        rebuildScaleVisuals();
+        focusModel('all');
+      });
+
+      document.getElementById('topRebootBtn').addEventListener('click', restartOS);
+
+      document.querySelectorAll('.disp-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          app.dispatchMode = btn.getAttribute('data-dispatch');
+          if (app.dispatchMode === 'charge' && app.dischargeRatePct > 10) {
+            app.dischargeRatePct = 0;
+            document.getElementById('dischargeSlider').value = '0';
+          } else if (app.dispatchMode === 'discharge' && app.dischargeRatePct < 55) {
+            app.dischargeRatePct = 65;
+            document.getElementById('dischargeSlider').value = '65';
+          }
+          syncPidReadouts();
+          logDaemon('D13', `Dispatch → ${app.dispatchMode.toUpperCase()}`);
+        });
+      });
+
+      document.getElementById('fluxSlider').addEventListener('input', (e) => {
+        app.flux = Number(e.target.value);
+        syncPidReadouts();
+      });
+      document.getElementById('dischargeSlider').addEventListener('input', (e) => {
+        app.dischargeRatePct = Number(e.target.value);
+        syncPidReadouts();
+      });
+      document.getElementById('ambSlider').addEventListener('input', (e) => {
+        app.tAmbient = Number(e.target.value);
+        syncPidReadouts();
+      });
+      document.getElementById('dtSlider').addEventListener('input', (e) => {
+        app.targetDt = Number(e.target.value);
+        syncPidReadouts();
+      });
+      document.getElementById('pidResetBtn').addEventListener('click', () => {
+        app.flux = 860;
+        app.dischargeRatePct = 35;
+        app.dispatchMode = 'hybrid';
+        app.tAmbient = 22.0;
+        app.targetDt = 28.0;
+        app.soc = 0.42;
+        app.pidIntegral = 14;
+        app.socHistory = [0.42];
+        app.chemNormHistory = [120 / MAX_CHEM_RELEASE_W];
+        document.getElementById('fluxSlider').value = '860';
+        document.getElementById('dischargeSlider').value = '35';
+        document.getElementById('ambSlider').value = '22';
+        document.getElementById('dtSlider').value = '28';
+        syncPidReadouts();
+        drawSocSparkline();
+      });
+      document.getElementById('pidAudioBtn').addEventListener('click', toggleSynth);
+      document.getElementById('pidCsvBtn').addEventListener('click', exportCsv);
+
+      document.querySelectorAll('.cart-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          app.cartridge = btn.getAttribute('data-cart');
+          applySceneVisibility();
+          renderModesSheet();
+        });
+      });
+
+      document.getElementById('sheetHdBtn').addEventListener('click', () => {
+        app.hdInspect = !app.hdInspect;
+        applySceneVisibility();
+        focusModel(app.model);
+        renderModelsSheet();
+      });
+      document.getElementById('sheetIsolateBtn').addEventListener('click', () => {
+        app.hdIsolate = !app.hdIsolate;
+        applySceneVisibility();
+        renderModelsSheet();
+      });
+      document.getElementById('sheetTurnBtn').addEventListener('click', () => {
+        app.turntable = !app.turntable;
+        if (app.turntable) app.movieMove = 'none';
+        renderModelsSheet();
+      });
+
+      document.querySelectorAll('.dfilter-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          app.daemonFilter = btn.getAttribute('data-dfilter');
+          renderDaemonsSheet();
+        });
+      });
+
+      document.getElementById('daemonCmdForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const inp = document.getElementById('daemonCmdInput');
+        const parts = inp.value.trim().toLowerCase().split(/\s+/);
+        inp.value = '';
+        if (!parts[0]) return;
+        if (parts[0] === 'reboot' || parts[0] === 'restart') {
+          restartOS();
+        } else if (parts[0] === 'move') {
+          const arg = parts[1] || 'none';
+          if (arg === 'off' || arg === 'orbit') setMovieMove('none');
+          else if (MOVIE_MOVES[arg]) setMovieMove(arg);
+        } else if (MOVIE_MOVES[parts[0]]) {
+          setMovieMove(parts[0]);
+        } else if (parts[0] === 'soc' && Number.isFinite(Number(parts[1]))) {
+          app.soc = THREE.MathUtils.clamp(Number(parts[1]) / 100, 0, 1);
+          logDaemon('D11', `Liquid SoC → ${(app.soc * 100).toFixed(1)}%`);
+        } else if (parts[0] === 'discharge' && Number.isFinite(Number(parts[1]))) {
+          app.dischargeRatePct = THREE.MathUtils.clamp(Number(parts[1]), 0, 100);
+          document.getElementById('dischargeSlider').value = String(app.dischargeRatePct);
+          logDaemon('D13', `Discharge → ${app.dischargeRatePct}%`);
+        } else if (parts[0] === 'scale' && SCALE_META[Number(parts[1])]) {
+          app.scale = Number(parts[1]);
+          syncTopBar();
+          rebuildScaleVisuals();
+          logDaemon('D39', `Scale → ${app.scale}×`);
+        } else if (parts[0] === 'mode' && MODES[parts[1]?.toUpperCase()]) {
+          app.mode = parts[1].toUpperCase();
+          syncTopBar();
+          logDaemon('D36', `Mode → ${app.mode}`);
+        } else if (parts[0] === 'flux' && Number.isFinite(Number(parts[1]))) {
+          app.flux = THREE.MathUtils.clamp(Number(parts[1]), 0, 1100);
+          document.getElementById('fluxSlider').value = String(app.flux);
+          logDaemon('D01', `Flux → ${app.flux} W/m²`);
+        } else if (parts[0] === 'leak') {
+          app.flags |= FLAGS.LEAK_TRIP;
+          runSafetyGuardDaemon();
+        } else if (parts[0] === 'clear') {
+          app.flags = FLAGS.NONE;
+          app.mode = 'M2';
+          syncTopBar();
+          logDaemon('D38', 'Cleared faults → M2 Standby');
+        }
+      });
+
+      window.addEventListener('resize', () => {
+        camera.aspect = host.clientWidth / Math.max(1, host.clientHeight);
+        camera.updateProjectionMatrix();
+        renderer.setSize(host.clientWidth, host.clientHeight);
+        if (app.openSheet === 'pid' && !app.sheetCollapsed) drawSocSparkline();
+      });
+    }
+
+    const clock = new THREE.Clock();
+    const tmpV = new THREE.Vector3();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = Math.min(clock.getDelta(), 0.05);
+      tickDaemons(dt);
+
+      const lerpAlpha = 1 - Math.exp(-6.0 * dt);
+      for (const k of Object.keys(subGroups)) {
+        const g = subGroups[k];
+        g.obj.position.lerp(app.exploded ? g.exploded : g.home, lerpAlpha);
+      }
+
+      // Visualize Liquid Battery State of Charge (SoC) in the crimson core cylinder
+      const socScaleY = Math.max(0.08, app.soc);
+      socCoreMesh.scale.y = socScaleY;
+      socCoreMesh.position.y = -(1.76 * (1 - socScaleY)) * 0.5;
+      socCoreMat.emissiveIntensity = 0.25 + app.soc * 1.15 + (app.chemReleaseW / MAX_CHEM_RELEASE_W) * 0.45;
+      socCoreMat.color.setHSL(0.985, 0.88, 0.36 + app.soc * 0.16);
+      socCoreMat.emissive.setHSL(0.97, 0.92, 0.22 + app.soc * 0.14);
+
+      valveHandle.rotation.z = THREE.MathUtils.degToRad(app.valveAct);
+      const isFault = app.mode === 'M0' || (app.flags & (FLAGS.LEAK_TRIP | FLAGS.OVERTEMP)) !== 0;
+      const isSlewing = Math.abs(app.valveCmd - app.valveAct) > 1.0;
+      collarMat.color.setHex(isFault ? 0xff1e56 : (isSlewing ? 0xfbbf24 : 0xef4444));
+      collarMat.emissive.setHex(isFault ? 0xbe123c : (isSlewing ? 0xd97706 : 0x991b1b));
+
+      const fluxNorm = THREE.MathUtils.clamp(app.flux / 1100, 0.02, 1.0);
+      skyMat.uniforms.uFlux.value = fluxNorm;
+      rayConeMat.opacity = 0.04 + fluxNorm * 0.27;
+      sunLight.intensity = 0.6 + fluxNorm * 3.9;
+      causticMat.opacity = 0.05 + fluxNorm * 0.34;
+
+      impeller.rotation.z += dt * (app.pwm / 100) * 18.0;
+      const tSpeed = (app.flow / 10) * 0.3;
+      const bubbleActive = (app.flags & FLAGS.BUBBLE_PURGE) !== 0;
+      for (const tr of tracers) {
+        tr.u = (tr.u + dt * tSpeed) % 1;
+        loopCurve.getPointAt(tr.u, tmpV);
+        if (bubbleActive) tmpV.y += Math.sin(app.elapsed * 18 + tr.u * 28) * 0.05;
+        tr.mesh.position.copy(tmpV);
+      }
+
+      // Crimson leak drips
+      const leakOn = (app.flags & FLAGS.LEAK_TRIP) !== 0;
+      dripAcc += (leakOn ? 8.0 : 0.0) * dt;
+      while (dripAcc >= 1) {
+        dripAcc -= 1;
+        const slot = drips.find((d) => !d.active);
+        if (slot) { slot.active = true; slot.pos.set(-2.2, 1.75, 0.35); slot.vy = -0.35; }
+      }
+      for (let i = 0; i < drips.length; i++) {
+        const d = drips[i];
+        if (d.active) {
+          d.vy -= 9.81 * 0.38 * dt;
+          d.pos.y += d.vy * dt;
+          if (d.pos.y <= -0.22) d.active = false;
+        }
+        dummy.position.copy(d.pos);
+        dummy.rotation.set(0, 0, 0);
+        dummy.scale.setScalar(d.active ? 1 : 0.0001);
+        dummy.updateMatrix();
+        dripMesh.setMatrixAt(i, dummy.matrix);
+      }
+      dripMesh.instanceMatrix.needsUpdate = true;
+
+      // Liquid flack purge particles
+      bubbleAcc += (bubbleActive ? 45.0 : 0.0) * dt;
+      while (bubbleAcc >= 1) {
+        bubbleAcc -= 1;
+        const b = bubbles.find((x) => !x.active);
+        if (b) { b.active = true; b.pos.set(-3.7, 2.0, 0); }
+      }
+      for (let i = 0; i < bubbles.length; i++) {
+        const b = bubbles[i];
+        if (b.active) {
+          b.phase += dt * 7;
+          b.pos.x += Math.max(0.3, app.flow * 0.9) * dt;
+          b.pos.y += Math.sin(b.phase) * 0.15 * dt;
+          if (b.pos.x > -0.9) b.active = false;
+        }
+        dummy.position.copy(b.pos);
+        dummy.rotation.set(0, 0, 0);
+        dummy.scale.setScalar(b.active ? 1 : 0.0001);
+        dummy.updateMatrix();
+        bubbleMesh.setMatrixAt(i, dummy.matrix);
+      }
+      bubbleMesh.instanceMatrix.needsUpdate = true;
+
+      if (synth && app.audioOn) {
+        const freq = isFault ? 240 + Math.sin(app.elapsed * 11) * 50 : 85 + (app.pwm / 100) * 160;
+        synth.osc.frequency.setTargetAtTime(freq, synth.ctx.currentTime, 0.06);
+      }
+
+      applyMovieCameraMove(dt);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    rebuildScaleVisuals();
+    applySceneVisibility();
+    bindEvents();
+    updateAll50DaemonReadouts();
+    syncAllUiControlsToState();
+    logDaemon('D38', 'HelioCell HELLCAT EDITION OS booted (50 daemons + 3 movie moves)');
+    animate();
+  </script>
+  <script src="/suite-apps/aether-loop-bridge.js"></script>
+</body>
+</html>

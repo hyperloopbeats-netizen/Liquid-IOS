@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AiM Zero-Crossing CAD Kernel — Single-File Master Workstation</title>
+    <style>
+        :root {
+            --bg-base: #04060b;
+            --panel-bg: rgba(8, 12, 22, 0.90);
+            --border-glow: rgba(0, 240, 255, 0.32);
+            --accent-cyan: #00f0ff;
+            --accent-orange: #ff9e00;
+            --text-main: #c4d6ed;
+            --text-dim: #62799e;
+        }
+        * { box-sizing: border-box; }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: var(--bg-base);
+            font-family: 'Courier New', Courier, monospace;
+            color: var(--accent-cyan);
+            user-select: none;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            cursor: crosshair;
+        }
+        .hud-panel {
+            position: absolute;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-glow);
+            border-radius: 8px;
+            box-shadow: 0 0 35px rgba(0, 240, 255, 0.14);
+            backdrop-filter: blur(14px);
+            padding: 18px;
+        }
+        #left-panel {
+            top: 20px;
+            left: 20px;
+            width: 350px;
+            max-height: calc(100vh - 90px);
+            overflow-y: auto;
+        }
+        #right-panel {
+            top: 20px;
+            right: 20px;
+            width: 350px;
+            max-height: calc(100vh - 90px);
+            overflow-y: auto;
+        }
+        #bottom-bar {
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            padding: 10px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+        h1 {
+            margin: 0 0 6px 0;
+            font-size: 14px;
+            letter-spacing: 2px;
+            color: #ffffff;
+            border-bottom: 1px solid var(--border-glow);
+            padding-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .badge {
+            font-size: 9px;
+            background: rgba(255, 158, 0, 0.18);
+            color: var(--accent-orange);
+            border: 1px solid rgba(255, 158, 0, 0.5);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        .section-title {
+            font-size: 10px;
+            color: var(--text-dim);
+            letter-spacing: 1.2px;
+            margin: 14px 0 6px 0;
+            text-transform: uppercase;
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            margin: 5px 0;
+            color: var(--text-main);
+        }
+        .stat-val { color: var(--accent-cyan); font-weight: bold; }
+        .stat-warn { color: var(--accent-orange); font-weight: bold; }
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .btn-grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        button {
+            background: rgba(0, 240, 255, 0.08);
+            border: 1px solid var(--border-glow);
+            color: var(--accent-cyan);
+            padding: 7px 10px;
+            font-family: inherit;
+            font-size: 11px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.18s ease;
+        }
+        button:hover, button.active {
+            background: rgba(0, 240, 255, 0.25);
+            box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
+            color: #ffffff;
+        }
+        button.orange {
+            border-color: rgba(255, 158, 0, 0.45);
+            color: var(--accent-orange);
+            background: rgba(255, 158, 0, 0.08);
+        }
+        button.orange:hover {
+            background: rgba(255, 158, 0, 0.25);
+            box-shadow: 0 0 12px rgba(255, 158, 0, 0.4);
+            color: #ffffff;
+        }
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--accent-cyan);
+            margin: 4px 0;
+        }
+        .code-box {
+            background: #020307;
+            border: 1px solid rgba(0, 240, 255, 0.18);
+            padding: 10px;
+            font-size: 11px;
+            color: #00f0ff;
+            border-radius: 4px;
+            height: 92px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            line-height: 1.4;
+            user-select: text;
+        }
+        .repl-row {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        input[type="text"] {
+            flex: 1;
+            background: #020307;
+            border: 1px solid var(--border-glow);
+            color: #ffffff;
+            padding: 7px 9px;
+            font-family: inherit;
+            font-size: 11px;
+            border-radius: 4px;
+            outline: none;
+        }
+        input[type="text"]:focus {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 8px rgba(0, 240, 255, 0.35);
+        }
+        #bottom-bar span.hl { color: var(--accent-orange); font-weight: bold; }
+        #bottom-bar span.cy { color: var(--accent-cyan); font-weight: bold; }
+    </style>
+</head>
+<body>
+    <!-- LEFT PANEL: KERNEL CONTROLS & CSG -->
+    <div id="left-panel" class="hud-panel">
+        <h1>AiM CAD KERNEL <span class="badge">SINGLE HTML</span></h1>
+
+        <div class="section-title">Zero-Crossing Action Rule</div>
+        <div class="stat-row"><span>Pixel Rule:</span> <span class="stat-val">1 PIXEL = SDF EVAL</span></div>
+        <div class="stat-row"><span>Boundary:</span> <span class="stat-val">f(x,y) = 0 [x = -x]</span></div>
+        <div class="stat-row"><span>Zero-Crossings:</span> <span class="stat-warn" id="hudZeroCount">0 PTS</span></div>
+
+        <div class="section-title">CSG Boolean Operation</div>
+        <div class="btn-grid">
+            <button id="btnSub" class="active" onclick="setBoolMode(0)">Subtract max(A,-B)</button>
+            <button id="btnUnion" onclick="setBoolMode(1)">Union min(A,B)</button>
+        </div>
+
+        <div class="section-title">Tool Geometry & CAM Offset</div>
+        <div class="stat-row"><span>Cutter Radius:</span> <span class="stat-val" id="valRadius">0.22</span></div>
+        <input type="range" id="sliderRadius" min="0.06" max="0.45" step="0.01" value="0.22">
+
+        <div class="stat-row"><span>Shell / Toolpath Offset:</span> <span class="stat-warn" id="valOffset">0.020</span></div>
+        <input type="range" id="sliderOffset" min="-0.06" max="0.10" step="0.005" value="0.02">
+
+        <div class="section-title">Grammar Preset Mutations</div>
+        <div class="btn-grid-3">
+            <button id="preset0" class="active" onclick="loadPreset(0)">V1 Plate</button>
+            <button id="preset1" onclick="loadPreset(1)">V2 Frame</button>
+            <button id="preset2" onclick="loadPreset(2)">V3 Fixture</button>
+        </div>
+        <div class="btn-grid">
+            <button onclick="toggleOrbit()">Toggle Orbit Slot</button>
+            <button class="orange" onclick="exportBundle()">Export JSON/DSL</button>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL: SELF-HOSTING DSL & LIVE REPL -->
+    <div id="right-panel" class="hud-panel">
+        <h1>SELF-HOSTING DSL REPL <span class="badge">LIVE</span></h1>
+
+        <div class="section-title">Active Kernel Bytecode</div>
+        <div id="dslDisplay" class="code-box"></div>
+
+        <div class="section-title">Execution Terminal</div>
+        <div id="replLog" class="code-box" style="height: 112px; color: #a8c7ea;">> SINGLE-FILE ZERO-CROSSING KERNEL ONLINE.
+> CMDS: SUB(0.25), UNION(0.25), OFFSET(0.03), PRESET(1|2|3), ORBIT, EXPORT</div>
+
+        <div class="repl-row">
+            <input type="text" id="replInput" placeholder="e.g. SUB(0.30) or OFFSET(0.04)" />
+            <button onclick="runRepl()">Exec</button>
+        </div>
+    </div>
+
+    <!-- BOTTOM TELEMETRY BAR -->
+    <div id="bottom-bar" class="hud-panel">
+        <div>CURSOR UV: <span class="hl" id="hudMouse">X: 0.00, Y: 0.00</span></div>
+        <div>CPU SDF SOLVER: <span class="cy" id="hudCpuMs">0.0 ms</span> | LOCAL VAULT: <span class="cy" id="hudVaultCount">0 SAVED</span></div>
+        <div>GPU RENDER: <span class="hl" id="hudFps">60 FPS</span></div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script>
+        // --- KERNEL STATE ---
+        const state = {
+            boolMode: 0,      // 0 = Subtract max(A, -B), 1 = Union min(A, B)
+            toolRadius: 0.22,
+            camOffset: 0.02,
+            preset: 0,        // 0 = Plate, 1 = Frame, 2 = Multi-Drill Fixture
+            orbitActive: true,
+            mouseX: window.innerWidth * 0.5,
+            mouseY: window.innerHeight * 0.5,
+            vault: JSON.parse(localStorage.getItem('aim_cad_vault') || '[]')
+        };
+
+        const presetTemplates = [
+            (r, off) => `LOAD_STOCK(box, [0.0,0.0], [0.55,0.38], 0.08)\n${state.boolMode === 0 ? 'SUB_TOOL' : 'UNION_TOOL'}(circle, [mouse.x, mouse.y], ${r.toFixed(2)})\nSUB_TOOL(slot, [osc.x, osc.y], [0.22,0.045])\nAPPLY_OFFSET(${off.toFixed(3)})`,
+            (r, off) => `LOAD_STOCK(box, [0.0,0.0], [0.50,0.50], 0.15)\nSUB_TOOL(circle, [0.0,0.0], 0.28)\n${state.boolMode === 0 ? 'SUB_TOOL' : 'UNION_TOOL'}(circle, [mouse.x, mouse.y], ${r.toFixed(2)})\nAPPLY_OFFSET(${off.toFixed(3)})`,
+            (r, off) => `LOAD_STOCK(box, [0.0,0.0], [0.62,0.32], 0.05)\n${state.boolMode === 0 ? 'SUB_TOOL' : 'UNION_TOOL'}(box, [mouse.x, mouse.y], [${r.toFixed(2)}, 0.075])\nSUB_DRILLS(4_CORNERS, 0.055)\nAPPLY_OFFSET(${off.toFixed(3)})`
+        ];
+
+        function appendLog(msg) {
+            const log = document.getElementById('replLog');
+            log.innerText += `\n> ${msg}`;
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function syncUI() {
+            document.getElementById('btnSub').classList.toggle('active', state.boolMode === 0);
+            document.getElementById('btnUnion').classList.toggle('active', state.boolMode === 1);
+            document.getElementById('sliderRadius').value = state.toolRadius;
+            document.getElementById('valRadius').innerText = state.toolRadius.toFixed(2);
+            document.getElementById('sliderOffset').value = state.camOffset;
+            document.getElementById('valOffset').innerText = state.camOffset.toFixed(3);
+            [0, 1, 2].forEach(i => {
+                document.getElementById(`preset${i}`).classList.toggle('active', state.preset === i);
+            });
+            document.getElementById('dslDisplay').innerText = presetTemplates[state.preset](state.toolRadius, state.camOffset);
+            document.getElementById('hudVaultCount').innerText = `${state.vault.length} SAVED`;
+        }
+
+        // --- CPU BINARY SDF KERNEL (ZERO-CROSSING DETECTOR & EXPORTER) ---
+        function sdCircleJS(px, py, cx, cy, r) {
+            return Math.hypot(px - cx, py - cy) - r;
+        }
+        function sdBoxJS(px, py, cx, cy, bx, by) {
+            const dx = Math.abs(px - cx) - bx;
+            const dy = Math.abs(py - cy) - by;
+            return Math.hypot(Math.max(dx, 0), Math.max(dy, 0)) + Math.min(Math.max(dx, dy), 0);
+        }
+        function sdRoundedBoxJS(px, py, cx, cy, bx, by, r) {
+            const qx = Math.abs(px - cx) - bx + r;
+            const qy = Math.abs(py - cy) - by + r;
+            return Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - r;
+        }
+
+        function computeCpuZeroCrossings(elapsedTime) {
+            const t0 = performance.now();
+            const res = 128; // 128x128 binary evaluation grid
+            const grid = new Float32Array(res * res);
+            const aspect = canvas.width / Math.max(canvas.height, 1);
+            const mx = ((state.mouseX / Math.max(canvas.width, 1)) * 2 - 1) * (aspect >= 1 ? aspect : 1);
+            const my = ((state.mouseY / Math.max(canvas.height, 1)) * 2 - 1) * (aspect < 1 ? 1 / aspect : 1);
+
+            for (let gy = 0; gy < res; gy++) {
+                const ny = ((gy / res) * 2 - 1) * (aspect < 1 ? 1 / aspect : 1);
+                for (let gx = 0; gx < res; gx++) {
+                    const nx = ((gx / res) * 2 - 1) * (aspect >= 1 ? aspect : 1);
+                    let d = 999;
+
+                    if (state.preset === 0) {
+                        const stock = sdRoundedBoxJS(nx, ny, 0, 0, 0.55, 0.38, 0.08);
+                        const cutter = sdCircleJS(nx, ny, mx, my, state.toolRadius);
+                        const ang = state.orbitActive ? elapsedTime * 1.6 : 0.785;
+                        const slot = sdBoxJS(nx, ny, Math.cos(ang) * 0.28, Math.sin(ang) * 0.28, 0.20, 0.045);
+                        const base = Math.max(stock, -slot);
+                        d = state.boolMode === 0 ? Math.max(base, -cutter) : Math.min(base, cutter);
+                    } else if (state.preset === 1) {
+                        const stock = sdRoundedBoxJS(nx, ny, 0, 0, 0.50, 0.50, 0.15);
+                        const bore = sdCircleJS(nx, ny, 0, 0, 0.28);
+                        const frame = Math.max(stock, -bore);
+                        const cutter = sdCircleJS(nx, ny, mx, my, state.toolRadius);
+                        d = state.boolMode === 0 ? Math.max(frame, -cutter) : Math.min(frame, cutter);
+                    } else {
+                        const stock = sdRoundedBoxJS(nx, ny, 0, 0, 0.62, 0.32, 0.05);
+                        const bolts = Math.min(
+                            sdCircleJS(nx, ny, -0.46, 0.20, 0.055),
+                            sdCircleJS(nx, ny,  0.46, 0.20, 0.055),
+                            sdCircleJS(nx, ny, -0.46, -0.20, 0.055),
+                            sdCircleJS(nx, ny,  0.46, -0.20, 0.055)
+                        );
+                        const plate = Math.max(stock, -bolts);
+                        const cutter = sdBoxJS(nx, ny, mx, my, state.toolRadius, 0.075);
+                        d = state.boolMode === 0 ? Math.max(plate, -cutter) : Math.min(plate, cutter);
+                    }
+                    grid[gy * res + gx] = d + state.camOffset;
+                }
+            }
+
+            let crossings = 0;
+            for (let gy = 0; gy < res - 1; gy++) {
+                for (let gx = 0; gx < res - 1; gx++) {
+                    const idx = gy * res + gx;
+                    const v = grid[idx];
+                    if ((v * grid[idx + 1] <= 0) || (v * grid[idx + res] <= 0)) {
+                        crossings++;
+                    }
+                }
+            }
+
+            const dt = (performance.now() - t0).toFixed(2);
+            document.getElementById('hudZeroCount').innerText = `${crossings} PTS`;
+            document.getElementById('hudCpuMs').innerText = `${dt} ms`;
+            return crossings;
+        }
+
+        // --- ACTIONS ---
+        window.setBoolMode = function(mode) {
+            state.boolMode = mode;
+            syncUI();
+            appendLog(`BOOL_MODE -> ${mode === 0 ? 'SUBTRACT max(A,-B)' : 'UNION min(A,B)'}`);
+        };
+
+        window.loadPreset = function(idx) {
+            state.preset = idx;
+            syncUI();
+            appendLog(`GRAMMAR_MUTATION -> V${idx + 1}.0 LOADED`);
+        };
+
+        window.toggleOrbit = function() {
+            state.orbitActive = !state.orbitActive;
+            appendLog(`ORBIT_SLOT -> ${state.orbitActive ? 'ENABLED' : 'LOCKED'}`);
+        };
+
+        window.exportBundle = function() {
+            const dsl = document.getElementById('dslDisplay').innerText;
+            const payload = {
+                timestamp: new Date().toISOString(),
+                kernel: 'AiM-ZeroCrossing-SDF-v1',
+                parameters: {
+                    boolMode: state.boolMode === 0 ? 'subtract' : 'union',
+                    toolRadius: state.toolRadius,
+                    camOffset: state.camOffset,
+                    preset: state.preset + 1
+                },
+                dsl
+            };
+            state.vault.push(payload);
+            localStorage.setItem('aim_cad_vault', JSON.stringify(state.vault));
+            syncUI();
+
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `aim_cad_kernel_v${state.preset + 1}.json`;
+            a.click();
+            appendLog(`SAVED TO LOCAL VAULT & EXPORTED JSON (#${state.vault.length})`);
+        };
+
+        window.runRepl = function() {
+            const inputEl = document.getElementById('replInput');
+            const raw = inputEl.value.trim().toUpperCase();
+            if (!raw) return;
+
+            const numMatch = raw.match(/-?[\d.]+/);
+            const num = numMatch ? parseFloat(numMatch[0]) : null;
+
+            if (raw.startsWith('SUB')) {
+                state.boolMode = 0;
+                if (num !== null && num > 0.04 && num <= 0.55) state.toolRadius = num;
+                syncUI();
+                appendLog(`EXEC SUBTRACT (r=${state.toolRadius.toFixed(2)})`);
+            } else if (raw.startsWith('UNION') || raw.startsWith('ADD')) {
+                state.boolMode = 1;
+                if (num !== null && num > 0.04 && num <= 0.55) state.toolRadius = num;
+                syncUI();
+                appendLog(`EXEC UNION (r=${state.toolRadius.toFixed(2)})`);
+            } else if (raw.startsWith('OFFSET')) {
+                if (num !== null && num >= -0.15 && num <= 0.15) state.camOffset = num;
+                syncUI();
+                appendLog(`EXEC CAM_OFFSET (${state.camOffset.toFixed(3)})`);
+            } else if (raw.startsWith('PRESET')) {
+                const idx = num !== null ? Math.max(0, Math.min(2, Math.floor(num) - 1)) : (state.preset + 1) % 3;
+                loadPreset(idx);
+            } else if (raw === 'ORBIT') {
+                toggleOrbit();
+            } else if (raw === 'EXPORT' || raw === 'SAVE') {
+                exportBundle();
+            } else {
+                appendLog(`SYNTAX_ERR: Unknown instruction '${raw}'`);
+            }
+            inputEl.value = '';
+        };
+
+        document.getElementById('replInput').addEventListener('keypress', e => {
+            if (e.key === 'Enter') runRepl();
+        });
+        document.getElementById('sliderRadius').addEventListener('input', e => {
+            state.toolRadius = parseFloat(e.target.value);
+            syncUI();
+        });
+        document.getElementById('sliderOffset').addEventListener('input', e => {
+            state.camOffset = parseFloat(e.target.value);
+            syncUI();
+        });
+
+        // --- WEBGL ZERO-CROSSING FRAGMENT SHADER ---
+        const canvas = document.getElementById('canvas');
+        const gl = canvas.getContext('webgl');
+        if (!gl) alert('WebGL is required for the GPU Zero-Crossing Kernel.');
+
+        const quadBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+            -1, -1,  1, -1, -1,  1,
+            -1,  1,  1, -1,  1,  1
+        ]), gl.STATIC_DRAW);
+
+        const vsSource = `
+            attribute vec2 a_position;
+            void main() {
+                gl_Position = vec4(a_position, 0.0, 1.0);
+            }
+        `;
+
+        const fsSource = `
+            precision highp float;
+            uniform vec2 u_resolution;
+            uniform vec2 u_mouse;
+            uniform float u_time;
+            uniform float u_toolRadius;
+            uniform float u_offset;
+            uniform int u_boolMode;
+            uniform int u_preset;
+            uniform int u_orbit;
+
+            float sdCircle(vec2 p, vec2 c, float r) {
+                return length(p - c) - r;
+            }
+
+            float sdBox(vec2 p, vec2 c, vec2 b) {
+                vec2 d = abs(p - c) - b;
+                return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
+            }
+
+            float sdRoundedBox(vec2 p, vec2 c, vec2 b, float r) {
+                vec2 q = abs(p - c) - b + r;
+                return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+            }
+
+            void main() {
+                float minRes = min(u_resolution.x, u_resolution.y);
+                vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / minRes;
+                vec2 mouse = (u_mouse * 2.0 - u_resolution.xy) / minRes;
+
+                float stock = 0.0;
+                float csgBase = 0.0;
+
+                if (u_preset == 0) {
+                    stock = sdRoundedBox(uv, vec2(0.0), vec2(0.55, 0.38), 0.08);
+                    float cutter = sdCircle(uv, mouse, u_toolRadius);
+                    float t = u_orbit == 1 ? u_time * 1.6 : 0.785;
+                    vec2 slotPos = vec2(cos(t), sin(t)) * 0.28;
+                    float slot = sdBox(uv, slotPos, vec2(0.20, 0.045));
+                    float baseWithSlot = max(stock, -slot);
+                    csgBase = (u_boolMode == 0) ? max(baseWithSlot, -cutter) : min(baseWithSlot, cutter);
+                } else if (u_preset == 1) {
+                    stock = sdRoundedBox(uv, vec2(0.0), vec2(0.50, 0.50), 0.15);
+                    float bore = sdCircle(uv, vec2(0.0), 0.28);
+                    float frame = max(stock, -bore);
+                    float cutter = sdCircle(uv, mouse, u_toolRadius);
+                    csgBase = (u_boolMode == 0) ? max(frame, -cutter) : min(frame, cutter);
+                } else {
+                    stock = sdRoundedBox(uv, vec2(0.0), vec2(0.62, 0.32), 0.05);
+                    float b1 = sdCircle(uv, vec2(-0.46,  0.20), 0.055);
+                    float b2 = sdCircle(uv, vec2( 0.46,  0.20), 0.055);
+                    float b3 = sdCircle(uv, vec2(-0.46, -0.20), 0.055);
+                    float b4 = sdCircle(uv, vec2( 0.46, -0.20), 0.055);
+                    float bolts = min(min(b1, b2), min(b3, b4));
+                    float plate = max(stock, -bolts);
+                    float cutter = sdBox(uv, mouse, vec2(u_toolRadius, 0.075));
+                    csgBase = (u_boolMode == 0) ? max(plate, -cutter) : min(plate, cutter);
+                }
+
+                float csgOffset = csgBase + u_offset;
+
+                float fdx = dFdx(csgBase);
+                float fdy = dFdy(csgBase);
+                float grad = max(length(vec2(fdx, fdy)), 0.0001);
+                float primaryBorder = smoothstep(0.0, 1.5, abs(csgBase) / grad);
+
+                float ofdx = dFdx(csgOffset);
+                float ofdy = dFdy(csgOffset);
+                float ograd = max(length(vec2(ofdx, ofdy)), 0.0001);
+                float offsetBorder = smoothstep(0.0, 1.3, abs(csgOffset) / ograd);
+
+                vec3 colBg     = vec3(0.018, 0.026, 0.048);
+                vec3 colStock  = vec3(0.085, 0.145, 0.245);
+                vec3 colPocket = vec3(0.035, 0.060, 0.105);
+                vec3 colCyan   = vec3(0.000, 0.940, 1.000);
+                vec3 colOrange = vec3(1.000, 0.620, 0.000);
+
+                vec3 color = mix(colStock, colPocket, step(0.0, csgBase));
+                color = mix(color, colBg, step(0.0, stock));
+
+                vec2 grid = abs(fract(gl_FragCoord.xy / 40.0 - 0.5) - 0.5) / fwidth(gl_FragCoord.xy / 40.0);
+                float gridLine = min(grid.x, grid.y);
+                color += vec3(0.0, 0.025, 0.045) * (1.0 - min(gridLine, 1.0));
+
+                if (abs(u_offset) > 0.001) {
+                    color = mix(colOrange, color, offsetBorder);
+                }
+                color = mix(colCyan, color, primaryBorder);
+
+                gl_FragColor = vec4(color, 1.0);
+            }
+        `;
+
+        function compileShader(type, src) {
+            const s = gl.createShader(type);
+            gl.shaderSource(s, src);
+            gl.compileShader(s);
+            return s;
+        }
+
+        const prog = gl.createProgram();
+        gl.attachShader(prog, compileShader(gl.VERTEX_SHADER, vsSource));
+        gl.attachShader(prog, compileShader(gl.FRAGMENT_SHADER, fsSource));
+        gl.linkProgram(prog);
+
+        const loc = {
+            pos: gl.getAttribLocation(prog, 'a_position'),
+            res: gl.getUniformLocation(prog, 'u_resolution'),
+            mouse: gl.getUniformLocation(prog, 'u_mouse'),
+            time: gl.getUniformLocation(prog, 'u_time'),
+            radius: gl.getUniformLocation(prog, 'u_toolRadius'),
+            offset: gl.getUniformLocation(prog, 'u_offset'),
+            boolMode: gl.getUniformLocation(prog, 'u_boolMode'),
+            preset: gl.getUniformLocation(prog, 'u_preset'),
+            orbit: gl.getUniformLocation(prog, 'u_orbit')
+        };
+
+        window.addEventListener('mousemove', e => {
+            state.mouseX = e.clientX;
+            state.mouseY = window.innerHeight - e.clientY;
+            const nx = ((e.clientX / window.innerWidth) * 2 - 1).toFixed(2);
+            const ny = (1 - (e.clientY / window.innerHeight) * 2).toFixed(2);
+            document.getElementById('hudMouse').innerText = `X: ${nx}, Y: ${ny}`;
+        });
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            gl.viewport(0, 0, canvas.width, canvas.height);
+        }
+        window.addEventListener('resize', resize);
+        resize();
+        syncUI();
+
+        const t0 = performance.now();
+        let frames = 0;
+        let lastFps = t0;
+        let lastCpuSample = 0;
+
+        function frame(now) {
+            const elapsed = (now - t0) * 0.001;
+            frames++;
+            if (now - lastFps >= 1000) {
+                document.getElementById('hudFps').innerText = `${frames} FPS`;
+                frames = 0;
+                lastFps = now;
+            }
+            if (now - lastCpuSample >= 250) {
+                computeCpuZeroCrossings(elapsed);
+                lastCpuSample = now;
+            }
+
+            gl.useProgram(prog);
+            gl.enableVertexAttribArray(loc.pos);
+            gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+            gl.vertexAttribPointer(loc.pos, 2, gl.FLOAT, false, 0, 0);
+
+            gl.uniform2f(loc.res, canvas.width, canvas.height);
+            gl.uniform2f(loc.mouse, state.mouseX, state.mouseY);
+            gl.uniform1f(loc.time, elapsed);
+            gl.uniform1f(loc.radius, state.toolRadius);
+            gl.uniform1f(loc.offset, state.camOffset);
+            gl.uniform1i(loc.boolMode, state.boolMode);
+            gl.uniform1i(loc.preset, state.preset);
+            gl.uniform1i(loc.orbit, state.orbitActive ? 1 : 0);
+
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+            requestAnimationFrame(frame);
+        }
+        requestAnimationFrame(frame);
+    </script>
+
+  <script>window.__AETHER_SUITE_META = { id: "zerocrossingcad", file: "aim-zero-crossing-cad.html" };</script>
+  <script src="/suite-apps/aether-loop-bridge.js"></script>
+</body>
+</html>

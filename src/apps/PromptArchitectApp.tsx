@@ -3,14 +3,25 @@ import {
   Check,
   Code2,
   Copy,
+  Eraser,
   FileCode2,
   FolderGit2,
   Layers,
   Play,
+  Shapes,
   Sparkles,
+  Upload,
   Wand2,
 } from 'lucide-react';
+import { aimSpaceStore } from '../kernel/aimSpaceStore';
+import {
+  BLANK_PHASE_HTML,
+  hyperfaceStudioStore,
+  type HyperFaceStageState,
+} from '../kernel/hyperfaceStudioStore';
+import { jsonKnowledgeStore } from '../kernel/jsonKnowledgeStore';
 import { neuralBus } from '../kernel/neuralBus';
+import { extractTitleFromHtml, printedAppsStore } from '../kernel/printedAppsStore';
 import { vfs } from '../kernel/vfs';
 import type { AppId, VFSFile } from '../types/os';
 
@@ -43,6 +54,11 @@ interface PromptArchitectAppProps {
 
 const UPGRADE_RECIPES = [
   {
+    label: 'Clear Phase & Design 3D Object',
+    prompt:
+      'Clear the HyperFace mesh phase completely and build a standalone interactive Three.js 3D object studio for a floating plasma crystal artifact with orbit controls and live HUD sliders.',
+  },
+  {
     label: 'Modularize & Type-Harden',
     prompt:
       'Restructure this code into clean typed modules with strict interfaces, explicit error handling, and zero side-effect leaks.',
@@ -67,9 +83,14 @@ const UPGRADE_RECIPES = [
 export function PromptArchitectApp({
   onOpenFileInDrive,
   onRunInSandbox,
+  onOpenApp,
 }: PromptArchitectAppProps) {
   const [files, setFiles] = useState<VFSFile[]>([]);
-  const [mode, setMode] = useState<'vfs' | 'scratch'>('vfs');
+  const [mode, setMode] = useState<'vfs' | 'scratch' | 'hyperface'>('vfs');
+  const [hyperfaceStage, setHyperfaceStage] = useState<HyperFaceStageState>(
+    hyperfaceStudioStore.getState()
+  );
+  const [clearPhaseBeforeDesign, setClearPhaseBeforeDesign] = useState(true);
   const [selectedFileId, setSelectedFileId] = useState<string>('');
   const [scratchName, setScratchName] = useState<string>('custom-system.ts');
   const [scratchCode, setScratchCode] = useState<string>(
@@ -87,7 +108,9 @@ export function PromptArchitectApp({
   const [appliedBanner, setAppliedBanner] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsub = vfs.subscribe((next) => {
+    void hyperfaceStudioStore.ensureInitialized();
+    const unsubHyper = hyperfaceStudioStore.subscribe(setHyperfaceStage);
+    const unsubVfs = vfs.subscribe((next) => {
       setFiles(next);
       if (next.length > 0 && !next.some((f) => f.id === selectedFileId)) {
         const preferred =
@@ -95,7 +118,10 @@ export function PromptArchitectApp({
         setSelectedFileId(preferred.id);
       }
     });
-    return unsub;
+    return () => {
+      unsubHyper();
+      unsubVfs();
+    };
   }, [selectedFileId]);
 
   const activeFile = files.find((f) => f.id === selectedFileId) ?? files[0] ?? null;
@@ -130,8 +156,72 @@ export function PromptArchitectApp({
     setAppliedBanner(null);
 
     try {
-      const targetFileName = mode === 'vfs' && activeFile ? activeFile.name : scratchName.trim() || 'module.ts';
-      const targetCode = mode === 'vfs' && activeFile ? activeFile.content : scratchCode;
+      if (mode === 'hyperface' && clearPhaseBeforeDesign) {
+        hyperfaceStudioStore.clearPhase();
+        const res = await fetch('/api/hyperface/design-object', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: prompt.trim(),
+            previousTitle: hyperfaceStage.stageTitle,
+          }),
+        });
+        const data = (await res.json()) as {
+          title?: string;
+          summary?: string;
+          designTags?: string[];
+          html?: string;
+          error?: string;
+        };
+        if (!res.ok || !data.html) {
+          throw new Error(data.error || `Server returned HTTP ${res.status}`);
+        }
+
+        const title = data.title || 'AI Designed 3D Object';
+        hyperfaceStudioStore.setStageHtmlFromArchitect(title, data.html, prompt.trim());
+
+        const parsed: ArchitectResult = {
+          model: 'gemini-4-hydrogen',
+          summary:
+            data.summary ||
+            `Cleared HyperFace phase and synthesized "${title}" ready for HyperFace stage & Library.`,
+          architecturalPlan: [
+            'Cleared active HyperFace mesh phase to blank Three.js stage.',
+            `Synthesized "${title}" procedural 3D geometry & interactive controls.`,
+            'Synced output directly to HyperFace Studio and ready to upload to Library.',
+          ],
+          systemModules: [
+            { name: 'HyperFaceStage', responsibility: 'Live Three.js WebGL interactive viewport' },
+            { name: 'LibraryBridge', responsibility: 'Direct HTML5 Printer & JSON Vault sync' },
+          ],
+          patches: [
+            {
+              fileName: `${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 28) || 'object-3d'}.html`,
+              kind: 'html',
+              action: 'create',
+              description: data.summary || `Custom 3D object design: ${title}`,
+              code: data.html,
+            },
+          ],
+        };
+        setResult(parsed);
+        setActivePatchIdx(0);
+        setAppliedBanner(`Phase cleared & "${title}" pushed live to HyperFace Studio!`);
+        return;
+      }
+
+      const targetFileName =
+        mode === 'hyperface'
+          ? 'hyperface-studio.html'
+          : mode === 'vfs' && activeFile
+          ? activeFile.name
+          : scratchName.trim() || 'module.ts';
+      const targetCode =
+        mode === 'hyperface'
+          ? (hyperfaceStage.html || BLANK_PHASE_HTML).slice(0, 14000)
+          : mode === 'vfs' && activeFile
+          ? activeFile.content
+          : scratchCode;
 
       const res = await fetch('/api/architect/upgrade', {
         method: 'POST',
@@ -213,6 +303,34 @@ export function PromptArchitectApp({
     );
   };
 
+  const pushPatchToHyperFace = (patch: ArchitectPatch) => {
+    const title = extractTitleFromHtml(patch.code) || patch.fileName.replace(/\.[^.]+$/, '');
+    hyperfaceStudioStore.setStageHtmlFromArchitect(title, patch.code, prompt);
+    setAppliedBanner(`Pushed "${title}" onto HyperFace Object Stage.`);
+    onOpenApp?.('hyperface');
+  };
+
+  const uploadPatchToLibrary = async (patch: ArchitectPatch) => {
+    const title = extractTitleFromHtml(patch.code) || patch.fileName.replace(/\.[^.]+$/, '');
+    const printed = await printedAppsStore.printApp({
+      name: title,
+      description: patch.description || `Uploaded from AI Prompt Editor: ${prompt.slice(0, 120)}`,
+      html: patch.code,
+      improvementNote: 'Designed in AI Prompt Architect & uploaded to OS Library.',
+    });
+    jsonKnowledgeStore.saveEntry({
+      title: `Library Upload: ${printed.name}`,
+      category: 'style-theme',
+      tags: ['library-upload', 'prompt-architect', 'hyperface'],
+      summary: `Uploaded "${printed.name}" to OS Library & Desktop.`,
+      sideNotes: [`Prompt: ${prompt.slice(0, 160)}`],
+      linkedAppIds: ['architect', 'hyperface', 'htmlprinter'],
+      data: { printedAppId: printed.id, name: printed.name, version: printed.version },
+    });
+    setAppliedBanner(`Uploaded "${printed.name}" directly to OS Library & Desktop!`);
+    onOpenApp?.(printed.id);
+  };
+
   const currentPatch = result?.patches[activePatchIdx] ?? null;
 
   return (
@@ -233,7 +351,7 @@ export function PromptArchitectApp({
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-lg border border-white/10 shrink-0">
+        <div className="flex flex-wrap items-center gap-1.5 bg-slate-900/80 p-1 rounded-lg border border-white/10 shrink-0">
           <button
             type="button"
             onClick={() => setMode('vfs')}
@@ -256,6 +374,18 @@ export function PromptArchitectApp({
           >
             Paste Code Snippet
           </button>
+          <button
+            type="button"
+            onClick={() => setMode('hyperface')}
+            className={`px-2.5 py-1.5 rounded-md font-medium cursor-pointer transition-colors whitespace-nowrap inline-flex items-center gap-1 ${
+              mode === 'hyperface'
+                ? 'bg-cyan-500/25 text-cyan-100 border border-cyan-400/45'
+                : 'text-slate-300 hover:text-white'
+            }`}
+          >
+            <Shapes className="w-3.5 h-3.5" />
+            <span>HyperFace Stage</span>
+          </button>
         </div>
       </div>
 
@@ -265,10 +395,10 @@ export function PromptArchitectApp({
         <div className="lg:col-span-5 flex flex-col gap-3 lg:min-h-0">
           {/* Source Selector / Editor */}
           <div className="aether-panel rounded-xl p-3 flex flex-col gap-2 min-h-[210px] lg:flex-1 lg:min-h-0">
-            <div className="flex items-center justify-between gap-2 shrink-0">
+            <div className="flex flex-wrap items-center justify-between gap-2 shrink-0">
               <span className="font-semibold text-slate-100 inline-flex items-center gap-1.5">
                 <FileCode2 className="w-3.5 h-3.5 text-cyan-300" />
-                <span>Target Code Context</span>
+                <span>{mode === 'hyperface' ? 'HyperFace 3D Stage' : 'Target Code Context'}</span>
               </span>
 
               {mode === 'vfs' ? (
@@ -283,7 +413,7 @@ export function PromptArchitectApp({
                     </option>
                   ))}
                 </select>
-              ) : (
+              ) : mode === 'scratch' ? (
                 <input
                   type="text"
                   value={scratchName}
@@ -291,10 +421,50 @@ export function PromptArchitectApp({
                   placeholder="filename.ts"
                   className="bg-slate-900 border border-white/15 rounded-md px-2 py-1 text-slate-100 w-40 font-mono text-[11px] outline-none"
                 />
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => hyperfaceStudioStore.clearPhase()}
+                    className="px-2 py-1 rounded-md bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-100 text-[11px] inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    <Eraser className="w-3 h-3" />
+                    <span>Clear Phase</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onOpenApp?.('hyperface')}
+                    className="px-2 py-1 rounded-md bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/40 text-cyan-100 text-[11px] cursor-pointer"
+                  >
+                    View Stage
+                  </button>
+                </div>
               )}
             </div>
 
-            {mode === 'vfs' ? (
+            {mode === 'hyperface' ? (
+              <div className="flex-1 flex flex-col gap-2 min-h-[140px]">
+                <div className="rounded-lg bg-[#050a14] border border-white/10 p-2.5 flex items-center justify-between gap-2 text-[11px]">
+                  <span className="text-slate-300 truncate">
+                    Active: <strong className="text-cyan-200">{hyperfaceStage.stageTitle}</strong>
+                  </span>
+                  <label className="inline-flex items-center gap-1.5 text-amber-200 cursor-pointer shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={clearPhaseBeforeDesign}
+                      onChange={(e) => setClearPhaseBeforeDesign(e.target.checked)}
+                      className="accent-cyan-400"
+                    />
+                    <span>Clear phase &amp; design new 3D object</span>
+                  </label>
+                </div>
+                <textarea
+                  readOnly
+                  value={hyperfaceStage.html}
+                  className="flex-1 min-h-[110px] w-full rounded-lg bg-[#050a14] border border-white/10 p-2.5 font-mono text-[10.5px] text-slate-400 leading-relaxed resize-none outline-none"
+                />
+              </div>
+            ) : mode === 'vfs' ? (
               <textarea
                 value={activeFile?.content ?? ''}
                 onChange={(e) => {
@@ -506,6 +676,44 @@ export function PromptArchitectApp({
                               <span>Run</span>
                             </button>
                           )}
+
+                        {(currentPatch.fileName.endsWith('.html') || mode === 'hyperface') && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => pushPatchToHyperFace(currentPatch)}
+                              className="px-2.5 py-1.5 rounded-lg bg-fuchsia-500/20 hover:bg-fuchsia-500/30 border border-fuchsia-400/45 text-fuchsia-100 font-medium inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                            >
+                              <Shapes className="w-3.5 h-3.5" />
+                              <span>Push to HyperFace</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => void uploadPatchToLibrary(currentPatch)}
+                              className="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/45 text-emerald-100 font-medium inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                            >
+                              <Upload className="w-3.5 h-3.5" />
+                              <span>Upload to Library</span>
+                            </button>
+                          </>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            aimSpaceStore.queueRestructureInput({
+                              sourceName: `Architect: ${currentPatch.fileName}`,
+                              sourceCode: currentPatch.code,
+                              directive: prompt,
+                            });
+                            onOpenApp?.('aimspace');
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/45 text-amber-100 font-medium inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Send to AIM Space</span>
+                        </button>
                       </div>
                     )}
                   </div>

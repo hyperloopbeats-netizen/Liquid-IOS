@@ -549,6 +549,22 @@ class VirtualFileSystem {
     return true;
   }
 
+  async pruneOldSnapshots(keepCount = 4): Promise<number> {
+    await this.init();
+    const allSnaps = (await this.readAllFromStore<VFSSnapshot>(STORE_SNAPSHOTS)).sort(
+      (a, b) => b.createdAt - a.createdAt
+    );
+    const toRemove = allSnaps.slice(Math.max(1, keepCount));
+    for (const old of toRemove) {
+      await this.deleteFromStore(STORE_SNAPSHOTS, old.id);
+    }
+    if (toRemove.length > 0) {
+      await this.refreshCaches();
+      neuralBus.publish('VFS', 'VFS_COMPACTED', `Compacted ${toRemove.length} archived VFS snapshot(s) to reclaim IndexedDB storage.`);
+    }
+    return toRemove.length;
+  }
+
   async verifyIntegrity(): Promise<{ ok: boolean; fileCount: number; totalBytes: number; issues: string[] }> {
     await this.init();
     const issues: string[] = [];

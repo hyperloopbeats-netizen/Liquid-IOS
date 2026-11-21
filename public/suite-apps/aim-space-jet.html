@@ -1,0 +1,2397 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>AIM SPACE — 3D Glass Light-Reception Jet &amp; Smart AI Simulation</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #02050d;
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: none;
+    }
+
+    /* Full-bleed perspective + entity 3D canvas directly over Three.js planet system layer */
+    #space-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      z-index: 1;
+      touch-action: none;
+    }
+
+    .hud-glass {
+      background: rgba(6, 14, 28, 0.80);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(56, 189, 248, 0.32);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.65), inset 0 0 10px rgba(56, 189, 248, 0.06);
+      border-radius: 10px;
+    }
+
+    .scroll-slim::-webkit-scrollbar {
+      width: 3px;
+      height: 3px;
+    }
+    .scroll-slim::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.35);
+    }
+    .scroll-slim::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.45);
+      border-radius: 999px;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 5px;
+      background: #1e293b;
+      border-radius: 999px;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 2px solid #060d1b;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
+    }
+
+    .thumb-pad {
+      position: relative;
+      width: 82px;
+      height: 82px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 50% 50%, rgba(14, 35, 68, 0.72) 0%, rgba(4, 10, 22, 0.88) 82%, rgba(56, 189, 248, 0.25) 100%);
+      border: 1.5px solid rgba(56, 189, 248, 0.45);
+      box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.7), 0 4px 16px rgba(0, 0, 0, 0.55);
+      touch-action: none;
+    }
+
+    .thumb-knob {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 30px;
+      height: 30px;
+      margin-left: -15px;
+      margin-top: -15px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 35% 30%, #7dd3fc 0%, #0284c7 68%, #0c4a6e 100%);
+      border: 1.5px solid rgba(224, 242, 254, 0.9);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.75);
+      pointer-events: none;
+    }
+
+    .thumb-knob.right {
+      background: radial-gradient(circle at 35% 30%, #6ee7b7 0%, #059669 68%, #064e3b 100%);
+      border: 1.5px solid rgba(209, 250, 229, 0.9);
+      box-shadow: 0 0 10px rgba(52, 211, 153, 0.75);
+      pointer-events: none;
+    }
+
+    .micro-fractal-btn {
+      background: radial-gradient(circle at 30% 30%, rgba(56, 189, 248, 0.35), rgba(168, 85, 247, 0.25) 60%, rgba(6, 14, 28, 0.92) 100%);
+      border: 1px solid rgba(192, 132, 252, 0.55);
+      box-shadow: 0 0 14px rgba(168, 85, 247, 0.32), inset 0 0 8px rgba(56, 189, 248, 0.25);
+    }
+  </style>
+</head>
+<body class="w-screen h-screen overflow-hidden">
+
+  <!-- Full-Viewport Perspective & Entity 3D Canvas -->
+  <canvas id="space-canvas"></canvas>
+
+  <!-- CLEAN NON-BLOCKING AIM SPACE LAUNCH PILL (Floats Over Live 3D Cosmos) -->
+  <div id="intro-overlay" class="fixed inset-x-0 bottom-24 z-30 flex justify-center px-3 pointer-events-none">
+    <div class="hud-glass max-w-md w-full px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-2.5 border-sky-400/50 pointer-events-auto">
+      <div class="text-center sm:text-left leading-snug">
+        <div class="text-[9px] font-mono uppercase tracking-[0.2em] text-cyan-300 font-bold">
+          GLASS LIGHT-RECEPTION ENGINE · 20 SMART AI DAEMONS
+        </div>
+        <div class="text-base font-black tracking-wider text-white leading-tight">AIM SPACE</div>
+        <div class="text-[10px] text-slate-300">
+          AU &amp; light-year flight · Damped mothership inertia · Procedural 3D planet systems &amp; trajectories
+        </div>
+      </div>
+      <button id="btn-launch" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-sky-400 via-cyan-300 to-emerald-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg cursor-pointer shrink-0 active:scale-95">
+        LAUNCH FLIGHT
+      </button>
+    </div>
+  </div>
+
+  <!-- INSIDE COCKPIT CANOPY & HD TELEMETRY OVERLAY (Toggled with C or [C]) -->
+  <div id="cockpit-overlay" class="hidden fixed inset-0 z-10 pointer-events-none">
+    <svg class="w-full h-full opacity-75" viewBox="0 0 1000 1000" preserveAspectRatio="none">
+      <defs>
+        <radialGradient id="mothershipCanopy" cx="50%" cy="50%" r="72%">
+          <stop offset="58%" stop-color="rgba(34,211,238,0)"/>
+          <stop offset="88%" stop-color="rgba(14,116,144,0.18)"/>
+          <stop offset="100%" stop-color="rgba(2,6,23,0.82)"/>
+        </radialGradient>
+      </defs>
+      <rect x="0" y="0" width="1000" height="1000" fill="url(#mothershipCanopy)"/>
+      <!-- Canopy Struts -->
+      <path d="M 15 1000 L 205 85 L 242 85 L 72 1000 Z" fill="rgba(7,16,34,0.68)" stroke="rgba(56,189,248,0.5)" stroke-width="2"/>
+      <path d="M 985 1000 L 795 85 L 758 85 L 928 1000 Z" fill="rgba(7,16,34,0.68)" stroke="rgba(56,189,248,0.5)" stroke-width="2"/>
+      <path d="M 205 85 Q 500 32 795 85 L 774 128 Q 500 84 226 128 Z" fill="rgba(34,211,238,0.12)" stroke="rgba(103,232,249,0.5)" stroke-width="2"/>
+      <!-- Center Vector Reticle -->
+      <circle cx="500" cy="500" r="46" fill="none" stroke="rgba(52,211,153,0.7)" stroke-width="1.6" stroke-dasharray="10 7"/>
+      <circle cx="500" cy="500" r="3" fill="rgba(251,191,36,0.95)"/>
+      <line x1="430" y1="500" x2="466" y2="500" stroke="rgba(52,211,153,0.75)" stroke-width="1.5"/>
+      <line x1="534" y1="500" x2="570" y2="500" stroke="rgba(52,211,153,0.75)" stroke-width="1.5"/>
+      <line x1="500" y1="430" x2="500" y2="466" stroke="rgba(52,211,153,0.75)" stroke-width="1.5"/>
+      <line x1="500" y1="534" x2="500" y2="570" stroke="rgba(52,211,153,0.75)" stroke-width="1.5"/>
+    </svg>
+
+    <!-- Left Cockpit HD Telemetry Card -->
+    <div class="hidden md:flex flex-col gap-1 fixed left-2 top-[96px] w-48 hud-glass p-2 font-mono text-[10px] max-h-[75vh] overflow-y-auto scroll-slim">
+      <div class="text-[9px] font-bold text-cyan-300 border-b border-cyan-500/25 pb-0.5">HD // OPTICS &amp; TRAJ</div>
+      <div class="flex justify-between"><span class="text-slate-400">RANGE:</span><span id="ck-scale" class="text-cyan-300 font-semibold">0.00000 AU</span></div>
+      <div class="flex justify-between"><span class="text-slate-400">D_in:</span><span id="ck-din" class="text-sky-300 font-semibold">0.75 m</span></div>
+      <div class="flex justify-between"><span class="text-slate-400">C_g / θ_c:</span><span id="ck-cg" class="text-amber-300 font-semibold">3.00×·41.8°</span></div>
+      <div class="flex justify-between"><span class="text-slate-400">FLUX:</span><span id="ck-flux" class="text-amber-200 font-semibold">2550 W/m²</span></div>
+    </div>
+
+    <!-- Right Cockpit HD Telemetry Card -->
+    <div class="hidden md:flex flex-col gap-1 fixed right-12 top-[96px] w-48 hud-glass p-2 font-mono text-[10px] max-h-[75vh] overflow-y-auto scroll-slim">
+      <div class="text-[9px] font-bold text-emerald-300 border-b border-emerald-500/25 pb-0.5">HD // BUS &amp; SINK</div>
+      <div class="flex justify-between"><span class="text-slate-400">P_elec:</span><span id="ck-pelec" class="text-emerald-400 font-bold">82.61 W</span></div>
+      <div class="flex justify-between"><span class="text-slate-400">I / R_load:</span><span id="ck-bus" class="text-sky-300 font-semibold">6.88A·1.74Ω</span></div>
+      <div class="flex justify-between"><span class="text-slate-400">Q_heat:</span><span id="ck-qheat" class="text-rose-400 font-semibold">292.9 W</span></div>
+      <div class="flex justify-between"><span class="text-slate-400">T_rec / η_f:</span><span id="ck-temp" class="text-orange-300 font-semibold">50.0°·98.6%</span></div>
+    </div>
+  </div>
+
+  <!-- ULTRA-SMALL SYMMETRICAL TOP HUD -->
+  <header class="fixed top-1.5 left-1.5 right-1.5 z-20 flex items-center justify-between gap-1.5 pointer-events-none">
+    <div class="hud-glass px-2.5 py-1 flex items-center gap-2 pointer-events-auto font-mono text-[10px] leading-none">
+      <span class="font-sans font-black text-xs tracking-wider text-sky-300">AIM SPACE</span>
+      <span id="hud-sector" class="text-cyan-300 font-semibold">S01</span>
+      <span id="hud-systems" class="text-purple-300 font-semibold">SYS 01</span>
+      <span class="text-amber-300 font-bold">PTS <span id="hud-score">0</span></span>
+      <span id="hud-dist" class="hidden sm:inline text-sky-200">0 m</span>
+      <span id="hud-temp" class="text-emerald-400 font-semibold">50.0°C</span>
+    </div>
+
+    <div class="hud-glass p-1 flex items-center gap-1 pointer-events-auto font-mono text-[10px] leading-none">
+      <button id="btn-smart-ai" class="px-1.5 py-1 rounded bg-purple-500/25 hover:bg-purple-500/35 text-purple-200 border border-purple-400/40 font-bold">20 DAEMONS [+]</button>
+      <button id="btn-gen-sys" title="Generate Planet System Along Flight Trajectory" class="px-1.5 py-1 rounded bg-sky-500/25 hover:bg-sky-500/35 text-sky-200 border border-sky-400/40 font-bold">+SYS</button>
+      <button id="btn-cockpit" title="Toggle Inside Cockpit HD View [C]" class="px-1.5 py-1 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border border-cyan-400/35 font-bold">[C]</button>
+      <button id="btn-cam" title="Cycle Camera Mode [V]" class="px-1.5 py-1 rounded bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 border border-indigo-400/35 font-bold">[V]</button>
+      <button id="btn-sfx" title="Toggle Web Audio Synth SFX" class="px-1.5 py-1 rounded bg-slate-800/90 hover:bg-slate-700 text-cyan-300 border border-slate-700 font-bold">SFX</button>
+      <button id="btn-pause" title="Pause / Resume [P]" class="px-1.5 py-1 rounded bg-slate-800/90 hover:bg-slate-700 text-amber-300 border border-slate-700 font-semibold">[P]</button>
+      <button id="btn-restart" title="Restart Mission [R]" class="px-1.5 py-1 rounded bg-slate-800/90 hover:bg-slate-700 text-rose-300 border border-slate-700 font-semibold">[R]</button>
+      <button id="btn-physics-hud" class="px-2 py-1 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-400/35 font-bold">ENGINE [+]</button>
+    </div>
+  </header>
+
+  <!-- SYMMETRICAL SIDE GAUGE STRIPS -->
+  <div class="fixed left-1.5 top-[42px] z-20 flex flex-col gap-1 pointer-events-none font-mono text-[9px]">
+    <div class="hud-glass px-2 py-1 flex items-center gap-1.5 pointer-events-auto">
+      <span class="text-slate-400">HULL</span>
+      <div class="w-12 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+        <div id="bar-hull" class="h-full bg-emerald-400 w-full"></div>
+      </div>
+      <span id="val-hull" class="text-emerald-300 font-bold">100%</span>
+    </div>
+    <div class="hud-glass px-2 py-1 flex items-center gap-1.5 pointer-events-auto">
+      <span class="text-slate-400">CAP</span>
+      <div class="w-12 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+        <div id="bar-cap" class="h-full bg-cyan-400 w-full"></div>
+      </div>
+      <span id="val-cap" class="text-cyan-300 font-bold">100%</span>
+    </div>
+  </div>
+
+  <div class="fixed right-1.5 top-[42px] z-20 flex flex-col items-end gap-1 pointer-events-none font-mono text-[9px]">
+    <div class="hud-glass px-2 py-1 flex items-center gap-1.5 pointer-events-auto">
+      <span class="text-slate-400">HEAT</span>
+      <div class="w-12 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+        <div id="bar-heat" class="h-full bg-gradient-to-r from-sky-400 via-amber-400 to-rose-500 w-[28%]"></div>
+      </div>
+      <span id="val-heat" class="text-orange-300 font-bold">50°C</span>
+    </div>
+    <span id="hud-cam" class="hud-glass px-2 py-0.5 text-cyan-200 font-semibold pointer-events-auto">CHASE</span>
+  </div>
+
+  <!-- COLLAPSIBLE GAME PROMPT WINDOW FOR SMART AI & 20 DAEMONS (D-01..D-20) -->
+  <section id="gfx-prompt-window" class="hidden fixed right-11 top-[96px] z-20 w-[calc(100vw-56px)] max-w-[312px] pointer-events-auto">
+    <div class="hud-glass p-2.5 space-y-2 text-[10px] font-mono max-h-[75vh] overflow-y-auto scroll-slim border-purple-400/45">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-1">
+        <div class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+          <span class="font-sans font-bold uppercase tracking-wider text-purple-200 text-[10px]">GFX Prompt (D-01..D-20)</span>
+        </div>
+        <button id="btn-close-gfx" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold">[−]</button>
+      </div>
+
+      <div class="space-y-1.5">
+        <div class="flex gap-1">
+          <input id="gfx-prompt-input" type="text" placeholder="Prompt Smart AI &amp; 20 daemons (e.g. 'spawn planet system')..." class="flex-1 bg-slate-950/90 border border-slate-700 focus:border-purple-400 rounded-lg px-2 py-1 text-[10px] text-slate-100 placeholder-slate-500 outline-none">
+          <button id="btn-send-gfx-prompt" class="px-2.5 py-1 rounded-lg bg-gradient-to-r from-purple-500 to-cyan-400 text-slate-950 font-extrabold text-[10px] cursor-pointer shrink-0">RUN</button>
+        </div>
+
+        <div class="flex flex-wrap gap-1 font-sans text-[9px]">
+          <button data-preset="planets" class="gfx-preset px-1.5 py-0.5 rounded bg-purple-500/20 hover:bg-purple-500/35 text-purple-200 border border-purple-400/30">Spawn System</button>
+          <button data-preset="trajectory" class="gfx-preset px-1.5 py-0.5 rounded bg-cyan-500/20 hover:bg-cyan-500/35 text-cyan-200 border border-cyan-400/30">Trajectory Lock</button>
+          <button data-preset="thermal" class="gfx-preset px-1.5 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/35 text-amber-200 border border-amber-400/30">Thermal-Optic</button>
+          <button data-preset="reset" class="gfx-preset px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">Auto-Balanced</button>
+        </div>
+      </div>
+
+      <div id="gfx-status-banner" class="bg-slate-950/85 border border-purple-500/25 rounded px-2 py-1 text-[9px] text-cyan-200 truncate">
+        SMART AI READY · Orchestrating 20 daemons &amp; live 3D planet systems
+      </div>
+
+      <div id="gfx-recent-patches" class="space-y-1"></div>
+    </div>
+  </section>
+
+  <!-- SIDE-PINNED MICRO-FRACTAL GFX BUTTON (Right Edge) -->
+  <button id="btn-micro-fractal" title="Open Micro-Fractal GFX Prompt Window" aria-label="Open GFX Prompt Window" class="micro-fractal-btn fixed right-1.5 top-1/2 -translate-y-1/2 z-20 w-8 h-12 rounded-xl flex flex-col items-center justify-center gap-0.5 pointer-events-auto active:scale-95">
+    <svg class="w-4 h-4 text-cyan-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polygon points="12 3 20 8.5 20 15.5 12 21 4 15.5 4 8.5 12 3"/>
+      <polygon points="12 7.5 16 10 16 14 12 16.5 8 14 8 10 12 7.5"/>
+    </svg>
+    <span class="font-mono text-[7px] font-extrabold tracking-tighter text-purple-200">GFX</span>
+  </button>
+
+  <!-- COLLAPSIBLE SMART AI META-CONTROLLER & 20-DAEMON MONITOR (Left Side, Hidden on Load) -->
+  <section id="ai-devs-panel" class="hidden fixed top-[96px] left-1.5 z-20 w-[calc(100vw-12px)] max-w-[304px] pointer-events-auto">
+    <div class="hud-glass p-2.5 space-y-1.5 text-[10px] font-mono max-h-[75vh] overflow-y-auto scroll-slim">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-1">
+        <span class="text-[10px] font-sans font-bold uppercase tracking-wider text-purple-300">Smart AI · 20 Daemons</span>
+        <span id="ai-patch-count" class="text-emerald-300 font-semibold">0 CYCLES</span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-1 font-sans text-[9px]">
+        <button data-mode="AUTO-BALANCED" class="smart-mode-btn py-1 px-1.5 rounded bg-purple-500/25 text-purple-200 border border-purple-400/45 font-bold truncate">AUTO-BALANCED</button>
+        <button data-mode="PLANET-GEN SURGE" class="smart-mode-btn py-1 px-1.5 rounded bg-slate-800 text-slate-300 border border-slate-700 truncate">PLANET-GEN SURGE</button>
+        <button data-mode="THERMAL-OPTIC GUARD" class="smart-mode-btn py-1 px-1.5 rounded bg-slate-800 text-slate-300 border border-slate-700 truncate">THERMAL-OPTIC</button>
+        <button data-mode="TRAJECTORY-LOCK" class="smart-mode-btn py-1 px-1.5 rounded bg-slate-800 text-slate-300 border border-slate-700 truncate">TRAJECTORY-LOCK</button>
+      </div>
+
+      <div id="smart-ai-summary" class="bg-slate-950/85 rounded px-2 py-1 border border-purple-500/25 text-[9px] text-cyan-200">
+        META: AUTO-BALANCED · 10 FLT + 10 GFX DAEMONS
+      </div>
+
+      <div id="ai-devs-list" class="space-y-1"></div>
+    </div>
+  </section>
+
+  <!-- COLLAPSIBLE GLASS LIGHT-RECEPTION ENGINE PHYSICS DRAWER (Right Side, Hidden on Load) -->
+  <aside id="physics-panel" class="hidden fixed top-[96px] right-1.5 z-20 w-[calc(100vw-12px)] max-w-[276px] pointer-events-auto">
+    <div class="hud-glass p-2.5 space-y-1.5 text-[11px] max-h-[75vh] overflow-y-auto scroll-slim">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-1">
+        <span class="text-[10px] font-bold uppercase tracking-wider text-sky-400">Glass Engine (n_g=1.50)</span>
+        <button id="btn-reset-phys" class="text-[9px] font-mono text-amber-300 hover:underline">Reset 0.75m</button>
+      </div>
+
+      <div class="bg-slate-900/75 p-1.5 rounded-lg border border-slate-800 space-y-1">
+        <div class="flex justify-between">
+          <label class="text-slate-300">Aperture D_in (43.3cm PV)</label>
+          <span id="lbl-din" class="font-mono text-sky-300 font-semibold">0.75 m</span>
+        </div>
+        <input id="rng-din" type="range" min="0.20" max="1.00" step="0.01" value="0.75">
+      </div>
+
+      <div class="bg-slate-900/75 p-1.5 rounded-lg border border-slate-800 space-y-1">
+        <div class="flex justify-between">
+          <label class="text-slate-300">Concentration C_g (45°/90°)</label>
+          <span id="lbl-cg" class="font-mono text-cyan-300 font-semibold">3.00×</span>
+        </div>
+        <input id="rng-cg" type="range" min="1.0" max="5.0" step="0.1" value="3.0">
+      </div>
+
+      <div class="bg-slate-900/75 p-1.5 rounded-lg border border-slate-800 space-y-1">
+        <div class="text-slate-300 text-[10px]">DC Bus (32-Fin 6061-T6 Sink · 4.32kg)</div>
+        <div class="grid grid-cols-3 gap-1 font-mono text-[10px]">
+          <button data-bus="12" class="bus-btn active py-0.5 rounded bg-emerald-500/25 text-emerald-200 border border-emerald-400/50 font-semibold">12V</button>
+          <button data-bus="24" class="bus-btn py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">24V</button>
+          <button data-bus="48" class="bus-btn py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">48V</button>
+        </div>
+      </div>
+
+      <div class="bg-slate-950/90 p-2 rounded-lg border border-slate-800 font-mono text-[10px] space-y-0.5">
+        <div class="flex justify-between"><span class="text-slate-400">θ_c / R₀ / T₂:</span><span id="p-crit" class="text-cyan-300">41.81°·4.0%·92.2%</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">P_in / P_rec:</span><span id="p-opt" class="text-amber-300">441.8 / 375.5 W</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">P_elec:</span><span id="p-elec" class="text-emerald-400 font-bold">82.61 W</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">Bus / Load / ΔV:</span><span id="p-bus" class="text-sky-300">6.88A·1.74Ω·1.8%</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">Q_heat:</span><span id="p-heat" class="text-rose-400">292.9 W</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">ΔT / T_rec:</span><span id="p-therm" class="text-orange-300">+25.0K / 50.0°C</span></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- SYMMETRICAL BOTTOM DUAL THUMBSTICKS & CENTER BOOST/PULSE BAR -->
+  <div class="fixed bottom-2 left-2 right-2 z-20 flex items-end justify-between pointer-events-none">
+    <!-- Left Virtual Thumbstick: Pitch / Yaw Steering -->
+    <div class="flex flex-col items-center gap-0.5 pointer-events-auto">
+      <div id="left-stick" class="thumb-pad">
+        <div id="left-knob" class="thumb-knob"></div>
+      </div>
+      <span class="hud-glass px-1.5 py-0.5 font-mono text-[8px] text-sky-300 uppercase">L-STICK: STEER</span>
+    </div>
+
+    <!-- Center BOOST & PULSE Bar -->
+    <div class="hud-glass p-1 flex items-center gap-1 mb-0.5 pointer-events-auto font-mono text-[10px]">
+      <button id="btn-boost" class="px-2.5 h-8 rounded-lg bg-amber-400/90 active:scale-95 text-slate-950 font-extrabold">BOOST</button>
+      <button id="btn-pulse" class="px-2.5 h-8 rounded-lg bg-emerald-400/90 active:scale-95 text-slate-950 font-extrabold">PULSE</button>
+    </div>
+
+    <!-- Right Virtual Thumbstick: Strafe / Throttle / Fire -->
+    <div class="flex flex-col items-center gap-0.5 pointer-events-auto">
+      <div id="right-stick" class="thumb-pad">
+        <div id="right-knob" class="thumb-knob right"></div>
+      </div>
+      <span class="hud-glass px-1.5 py-0.5 font-mono text-[8px] text-emerald-300 uppercase">R-STICK: STRAFE/FIRE</span>
+    </div>
+  </div>
+
+  <!-- GAME OVER MODAL -->
+  <div id="gameover-modal" class="hidden fixed inset-0 z-30 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+    <div class="hud-glass max-w-xs w-full p-4 text-center space-y-2.5 border-rose-400/50">
+      <div class="text-[10px] font-mono uppercase tracking-widest text-rose-400 font-bold">Mothership Hull Lost</div>
+      <h2 class="text-lg font-black text-white">AIM SPACE</h2>
+      <div class="grid grid-cols-2 gap-2 bg-slate-900/90 p-2 rounded-lg border border-slate-800 font-mono text-[11px]">
+        <div><div class="text-[9px] text-slate-400">SCORE</div><div id="go-score" class="text-amber-300 font-bold text-sm">0</div></div>
+        <div><div class="text-[9px] text-slate-400">DIST</div><div id="go-dist" class="text-sky-300 font-bold text-xs mt-0.5">0 m</div></div>
+      </div>
+      <button id="btn-modal-restart" class="w-full py-2 rounded-lg bg-gradient-to-r from-sky-400 to-emerald-400 text-slate-950 font-extrabold text-xs uppercase cursor-pointer">
+        Restart [R]
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. SAFE DOM HELPER & OPTIONAL WEB AUDIO SYNTHESIZER
+    // =========================================================================
+    function $(id) {
+      return document.getElementById(id);
+    }
+
+    const sfx = {
+      ctx: null,
+      enabled: true,
+      ensure() {
+        if (!this.enabled) return null;
+        try {
+          if (!this.ctx) {
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (AC) this.ctx = new AC();
+          }
+          if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume().catch(() => {});
+          }
+          return this.ctx;
+        } catch (_) {
+          return null;
+        }
+      },
+      play(freq, dur = 0.08, type = 'sine', vol = 0.04) {
+        const c = this.ensure();
+        if (!c) return;
+        try {
+          const osc = c.createOscillator();
+          const gain = c.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(Math.max(40, freq), c.currentTime);
+          gain.gain.setValueAtTime(vol, c.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0008, c.currentTime + dur);
+          osc.connect(gain);
+          gain.connect(c.destination);
+          osc.start();
+          osc.stop(c.currentTime + dur);
+        } catch (_) {}
+      }
+    };
+
+    // =========================================================================
+    // 2. GLASS LIGHT-RECEPTION JET ENGINE PHYSICS SOLVER
+    // =========================================================================
+    const PHYS = {
+      NG: 1.50,
+      NA: 1.00,
+      IRRADIANCE: 1000,
+      ETA_OPT: 0.85,
+      ETA_PV: 0.22,
+      T_AMB: 25.0,
+      H_CONV: 20.0,
+      K_AL: 167.0,
+      T_FIN: 0.003,
+      FIN_H: 0.02132,
+      FIN_GAP: 0.010,
+      FIN_N: 32,
+      SINK_MASS_KG: 4.32,
+      PV_AREA_M2: 0.1473,
+      CABLE_LEN: 3.0,
+      WIRE_R: { 12: 0.005211, 14: 0.008286, 16: 0.01317 }
+    };
+
+    const engCfg = {
+      dIn: 0.75,
+      cg: 3.0,
+      vBus: 12,
+      gateBoost: 0,
+      shipScale: 1 / 3, // 0.333x (3x smaller) mothership scale
+      aiOpticsGain: 1.0,
+      aiThermoGain: 1.0,
+      aiBusGain: 1.0,
+      aiInertiaDrag: 2.15,
+      aiScoreMult: 1.0,
+      gfxGlowMult: 1.0,
+      gfxFractalDensity: 1.0,
+      gfxGalaxyArms: 1.0,
+      gfxGlassRefraction: 1.0,
+      gfxPlumeFlare: 1.0,
+      gfxAtmosphereRim: 1.0,
+      gfxStarTwinkle: 1.0,
+      gfxPulseBloom: 1.0,
+      gfxHorizonGrid: 0.35,
+      gfxColorShift: 0.0
+    };
+
+    let engOut = {
+      rIn: 0.375, aIn: 0.4418, cgEff: 3.0, aRec: 0.1473, rRec: 0.2165,
+      thetaC: 41.81, r0: 0.04, t2: 0.9216,
+      pIn: 441.8, pRec: 375.5, fluxRec: 2550, etaFin: 0.9864,
+      deltaT: 25.0, tRec: 50.0, throttling: false,
+      pElec: 82.61, qHeat: 292.9, iNom: 6.88, rLoad: 1.74, vDropPct: 1.79
+    };
+
+    function solvePhysics(coolingBoost = 1.0) {
+      const dIn = Math.max(0.20, Math.min(1.00, Number(engCfg.dIn) || 0.75));
+      const cg = Math.max(1.0, Math.min(5.0, Number(engCfg.cg) || 3.0));
+      const vBus = [12, 24, 48].includes(engCfg.vBus) ? engCfg.vBus : 12;
+
+      const rIn = dIn / 2;
+      const aIn = Math.PI * rIn * rIn;
+      const cgEff = Math.max(1.0, (cg + (Number(engCfg.gateBoost) || 0)) * (Number(engCfg.aiOpticsGain) || 1.0));
+      const aRec = Math.max(0.005, aIn / cgEff);
+      const rRec = Math.sqrt(aRec / Math.PI);
+
+      const sinCrit = Math.max(0.01, Math.min(0.9999, PHYS.NA / PHYS.NG));
+      const thetaC = (Math.asin(sinCrit) * 180) / Math.PI;
+      const r0 = Math.pow((PHYS.NG - PHYS.NA) / (PHYS.NG + PHYS.NA), 2);
+      const t2 = Math.pow(1 - r0, 2);
+
+      const pIn = PHYS.IRRADIANCE * aIn;
+      const pRec = pIn * PHYS.ETA_OPT;
+      const fluxRec = pRec / Math.max(1e-5, aRec);
+
+      const pitch = PHYS.T_FIN + PHYS.FIN_GAP;
+      let chordSum = 0;
+      const span = (PHYS.FIN_N - 1) * pitch;
+      for (let i = 0; i < PHYS.FIN_N; i++) {
+        const y = -span / 2 + i * pitch;
+        if (Math.abs(y) < rRec) {
+          chordSum += 2 * Math.sqrt(Math.max(0, rRec * rRec - y * y));
+        }
+      }
+
+      const hEff = Math.max(2.0, PHYS.H_CONV * (coolingBoost || 1.0) * (Number(engCfg.aiThermoGain) || 1.0));
+      const lc = PHYS.FIN_H + PHYS.T_FIN / 2;
+      const mFin = Math.sqrt((2 * hEff) / (PHYS.K_AL * PHYS.T_FIN));
+      const etaFin = mFin * lc > 0.001 ? Math.tanh(mFin * lc) / (mFin * lc) : 1.0;
+      const aEff = Math.max(0.01, (aRec - PHYS.T_FIN * chordSum) + etaFin * (2 * chordSum * PHYS.FIN_H));
+      const rTh = 1 / (hEff * aEff);
+
+      const pElecRaw = pRec * PHYS.ETA_PV * (Number(engCfg.aiBusGain) || 1.0);
+      const qHeatRaw = Math.max(0, pRec - pElecRaw);
+      const deltaT = qHeatRaw * rTh;
+      const tRec = PHYS.T_AMB + deltaT;
+
+      const throttling = tRec > 85;
+      const mult = throttling ? Math.max(0.45, 1 - (tRec - 85) * 0.015) : 1.0;
+      const pElec = pElecRaw * mult;
+      const qHeat = Math.max(0, pRec - pElec);
+
+      const iNom = pElec / vBus;
+      const rLoad = iNom > 0.01 ? vBus / iNom : 999;
+      const awg = vBus === 12 ? 12 : vBus === 24 ? 14 : 16;
+      const rLoop = 2 * PHYS.CABLE_LEN * PHYS.WIRE_R[awg];
+      const vDropPct = ((iNom * rLoop) / vBus) * 100;
+
+      engOut = {
+        rIn, aIn, cgEff, aRec, rRec, thetaC, r0, t2,
+        pIn, pRec, fluxRec, etaFin, deltaT, tRec,
+        throttling, pElec, qHeat, iNom, rLoad, vDropPct
+      };
+    }
+
+    // =========================================================================
+    // 3. DUAL-LAYER 3D SCENE (THREE.JS R160 + PERSPECTIVE CANVAS FALLBACK)
+    // =========================================================================
+    const canvas = $('space-canvas');
+    const ctx = canvas ? canvas.getContext('2d') : null;
+    const tjsLayer = document.createElement('div');
+    tjsLayer.id = 'three-planet-system-layer';
+    tjsLayer.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:0;';
+
+    let viewW = Math.max(320, window.innerWidth || 1024);
+    let viewH = Math.max(240, window.innerHeight || 768);
+
+    const tjsSys = {
+      enabled: false,
+      renderer: null,
+      scene: null,
+      camera: null,
+      systems: [],
+      nextSystemMeters: 5500000,
+      trajectoryLine: null,
+      flightWakeLine: null,
+      wakePoints: []
+    };
+
+    const SYSTEM_PALETTES = [
+      { star: 0xffd166, p1: 0x38bdf8, p2: 0xfb923c, p3: 0xc084fc },
+      { star: 0x7dd3fc, p1: 0x34d399, p2: 0xf472b6, p3: 0xfbbf24 },
+      { star: 0xfdba74, p1: 0x60a5fa, p2: 0xa78bfa, p3: 0x2dd4bf }
+    ];
+
+    function createThreePlanetSystemAt(zCenter, index) {
+      if (!tjsSys.enabled || !window.THREE) return null;
+      const pal = SYSTEM_PALETTES[index % SYSTEM_PALETTES.length];
+      const xOff = (index % 2 === 0 ? 1 : -1) * (18 + (index % 3) * 14);
+      const yOff = 14 + ((index % 3) - 1) * 9;
+
+      const group = new THREE.Group();
+      group.position.set(xOff, yOff, zCenter);
+
+      const starRadius = 6.5 + (index % 3) * 2.2;
+      const starMesh = new THREE.Mesh(
+        new THREE.SphereGeometry(starRadius, 22, 22),
+        new THREE.MeshBasicMaterial({ color: pal.star })
+      );
+      group.add(starMesh);
+
+      const coronaMesh = new THREE.Mesh(
+        new THREE.SphereGeometry(starRadius * 1.45, 20, 20),
+        new THREE.MeshBasicMaterial({ color: pal.star, transparent: true, opacity: 0.16 })
+      );
+      group.add(coronaMesh);
+
+      const pColors = [pal.p1, pal.p2, pal.p3];
+      const bodies = [];
+      for (let b = 0; b < 3; b++) {
+        const a = 22 + b * 17;
+        const bRad = 15 + b * 11;
+        const speed = (0.34 - b * 0.07) * (1 + (index % 2) * 0.15);
+        const phase = index * 1.1 + b * 2.05;
+        const pRadius = (2.1 + b * 1.25) * (0.9 + (index % 2) * 0.15);
+
+        const orbitPts = [];
+        for (let s = 0; s <= 64; s++) {
+          const th = (s / 64) * Math.PI * 2;
+          orbitPts.push(new THREE.Vector3(Math.cos(th) * a, Math.sin(th) * bRad * 0.25, Math.sin(th) * bRad));
+        }
+        const orbitLine = new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints(orbitPts),
+          new THREE.LineBasicMaterial({ color: pColors[b], transparent: true, opacity: 0.36 })
+        );
+        group.add(orbitLine);
+
+        const pMesh = new THREE.Mesh(
+          new THREE.SphereGeometry(pRadius, 18, 18),
+          new THREE.MeshStandardMaterial({ color: pColors[b], roughness: 0.55, metalness: 0.18 })
+        );
+        group.add(pMesh);
+
+        let ringMesh = null;
+        if (b === 1 || (b === 0 && index % 2 === 1)) {
+          ringMesh = new THREE.Mesh(
+            new THREE.RingGeometry(pRadius * 1.35, pRadius * 2.0, 28),
+            new THREE.MeshBasicMaterial({ color: 0xe0f2fe, side: THREE.DoubleSide, transparent: true, opacity: 0.42 })
+          );
+          ringMesh.rotation.x = Math.PI * 0.44;
+          group.add(ringMesh);
+        }
+
+        let moonMesh = null;
+        if (b !== 1) {
+          moonMesh = new THREE.Mesh(
+            new THREE.SphereGeometry(pRadius * 0.28, 10, 10),
+            new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.8 })
+          );
+          group.add(moonMesh);
+        }
+
+        bodies.push({ a, bRad, speed, phase, pRadius, pMesh, ringMesh, moonMesh });
+      }
+
+      tjsSys.scene.add(group);
+      const sysObj = { id: index + 1, group, starMesh, coronaMesh, bodies };
+      tjsSys.systems.push(sysObj);
+      if (tjsSys.systems.length > 7) {
+        const oldest = tjsSys.systems.shift();
+        if (oldest && oldest.group) tjsSys.scene.remove(oldest.group);
+      }
+      return sysObj;
+    }
+
+    function spawnFlightPlanetSystem(reason = 'flight') {
+      const idx = tjsSys.systems.length;
+      const zAhead = 165 + (idx % 4) * 95;
+      if (tjsSys.enabled && window.THREE) {
+        createThreePlanetSystemAt(zAhead, idx);
+      }
+      const distFactor = Math.min(2.6, 1 + game.distMeters / 4e7);
+      game.planets.push({
+        x: (idx % 2 === 0 ? -1 : 1) * (24 + (idx % 3) * 18),
+        y: ((idx % 3) - 1) * 16,
+        z: 360 + (idx % 4) * 280,
+        r: (18 + (idx % 4) * 6) * distFactor,
+        ring: idx % 2 === 0,
+        c1: idx % 3 === 0 ? '#38bdf8' : idx % 3 === 1 ? '#fb923c' : '#c084fc',
+        c2: '#08182e',
+        glow: idx % 3 === 0 ? 'rgba(56,189,248,0.34)' : idx % 3 === 1 ? 'rgba(251,146,60,0.30)' : 'rgba(192,132,252,0.30)'
+      });
+      if (game.planets.length > 6) game.planets.shift();
+      game.systemsDiscovered += 1;
+      game.score += Math.round(200 * (Number(engCfg.aiScoreMult) || 1.0));
+      if (reason === 'manual') sfx.play(660, 0.11, 'triangle', 0.05);
+      updateHUD();
+    }
+
+    function initThreePlanetSystems() {
+      if (tjsSys.enabled || !window.THREE) return;
+      try {
+        if (!tjsLayer.parentNode && canvas && canvas.parentNode) {
+          canvas.parentNode.insertBefore(tjsLayer, canvas);
+        }
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.setSize(viewW, viewH);
+        tjsLayer.innerHTML = '';
+        tjsLayer.appendChild(renderer.domElement);
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(58, viewW / viewH, 0.5, 4500);
+        camera.position.set(0, 5, -14);
+        camera.lookAt(0, 2, 160);
+
+        scene.add(new THREE.AmbientLight(0x93c5fd, 0.82));
+        const sunLight = new THREE.PointLight(0xfff3c4, 2.4, 3200);
+        sunLight.position.set(0, 28, 220);
+        scene.add(sunLight);
+
+        // Live Predicted Flight Trajectory Arc in 3D
+        const trajPts = [];
+        for (let i = 0; i <= 28; i++) trajPts.push(new THREE.Vector3(0, 0, i * 6));
+        const trajectoryLine = new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints(trajPts),
+          new THREE.LineBasicMaterial({ color: 0x34d399, transparent: true, opacity: 0.78 })
+        );
+        scene.add(trajectoryLine);
+
+        // Ship Flight Wake Ribbon in 3D
+        tjsSys.wakePoints = [];
+        for (let i = 0; i < 36; i++) tjsSys.wakePoints.push(new THREE.Vector3(0, 0, -i * 3.5));
+        const flightWakeLine = new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints(tjsSys.wakePoints),
+          new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.48 })
+        );
+        scene.add(flightWakeLine);
+
+        tjsSys.renderer = renderer;
+        tjsSys.scene = scene;
+        tjsSys.camera = camera;
+        tjsSys.trajectoryLine = trajectoryLine;
+        tjsSys.flightWakeLine = flightWakeLine;
+        tjsSys.systems = [];
+        tjsSys.nextSystemMeters = 5500000;
+        tjsSys.enabled = true;
+
+        createThreePlanetSystemAt(145, 0);
+        createThreePlanetSystemAt(255, 1);
+      } catch (_) {
+        tjsSys.enabled = false;
+      }
+    }
+
+    function updateThreePlanetSystems(dt, worldSpeed = 120) {
+      if (!tjsSys.enabled || !window.THREE) return;
+      try {
+        if (game.distMeters >= tjsSys.nextSystemMeters) {
+          tjsSys.nextSystemMeters += 7500000;
+          spawnFlightPlanetSystem('distance');
+        }
+
+        for (const sys of tjsSys.systems) {
+          sys.group.position.z -= worldSpeed * 0.34 * dt;
+          if (sys.group.position.z < -35) {
+            sys.group.position.z = 360 + Math.random() * 90;
+          }
+          sys.starMesh.rotation.y += dt * 0.35;
+          const coronaScale = (1.38 + 0.14 * Math.sin(game.time * 2.4)) * Math.max(0.7, engCfg.gfxGlowMult);
+          sys.coronaMesh.scale.setScalar(coronaScale);
+
+          for (const b of sys.bodies) {
+            const ang = b.phase + game.time * b.speed;
+            const bx = Math.cos(ang) * b.a;
+            const by = Math.sin(ang) * b.bRad * 0.25;
+            const bz = Math.sin(ang) * b.bRad;
+            b.pMesh.position.set(bx, by, bz);
+            b.pMesh.rotation.y += dt * 0.7;
+            if (b.ringMesh) b.ringMesh.position.set(bx, by, bz);
+            if (b.moonMesh) {
+              const mAng = ang * 3.6;
+              b.moonMesh.position.set(
+                bx + Math.cos(mAng) * (b.pRadius * 2.4),
+                by + Math.sin(mAng) * (b.pRadius * 0.7),
+                bz + Math.sin(mAng) * (b.pRadius * 2.4)
+              );
+            }
+          }
+        }
+
+        const trajAttr = tjsSys.trajectoryLine.geometry.getAttribute('position');
+        const steerAx = ctrl.lx + ctrl.rx * 0.4;
+        const steerAy = -ctrl.ly - ctrl.ry * 0.4;
+        for (let i = 0; i < trajAttr.count; i++) {
+          const tSec = (i / (trajAttr.count - 1)) * 1.5;
+          const tx = game.px + game.vx * tSec + 0.5 * steerAx * 24 * tSec * tSec;
+          const ty = game.py + game.vy * tSec + 0.5 * steerAy * 19 * tSec * tSec;
+          trajAttr.setXYZ(i, tx, ty, i * 6.2);
+        }
+        trajAttr.needsUpdate = true;
+
+        const wakeAttr = tjsSys.flightWakeLine.geometry.getAttribute('position');
+        for (let i = 0; i < wakeAttr.count; i++) {
+          const lag = i * 0.045;
+          const wx = game.px - game.vx * lag;
+          const wy = game.py - game.vy * lag;
+          wakeAttr.setXYZ(i, wx, wy, -i * 3.2);
+        }
+        wakeAttr.needsUpdate = true;
+
+        tjsSys.camera.position.set(game.px * 0.45, game.py * 0.45 + 4.5, -14);
+        tjsSys.camera.lookAt(game.px * 0.65, game.py * 0.65 + 2, 165);
+        tjsSys.renderer.render(tjsSys.scene, tjsSys.camera);
+      } catch (_) {}
+    }
+
+    function resizeCanvas() {
+      viewW = Math.max(320, window.innerWidth || 1024);
+      viewH = Math.max(240, window.innerHeight || 768);
+      if (tjsSys.enabled && tjsSys.renderer && tjsSys.camera) {
+        tjsSys.camera.aspect = viewW / viewH;
+        tjsSys.camera.updateProjectionMatrix();
+        tjsSys.renderer.setSize(viewW, viewH);
+      }
+      if (!canvas || !ctx) return;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.floor(viewW * dpr);
+      canvas.height = Math.floor(viewH * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    const cam = {
+      mode: 'chase', // 'chase' | 'cockpit' | 'stern' | 'orbit'
+      orbitYaw: 0,
+      orbitPitch: 0.24,
+      orbitDist: 11.5
+    };
+
+    const game = {
+      introDismissed: false,
+      paused: false,
+      dead: false,
+      score: 0,
+      distMeters: 0,
+      sector: 1,
+      systemsDiscovered: 1,
+      lastWorldSpeed: 120,
+      time: 0,
+      hull: 100,
+      cap: 100,
+      px: 0,
+      py: 0,
+      vx: 0,
+      vy: 0,
+      pitchTilt: 0,
+      roll: 0,
+      yawBank: 0,
+      fireCd: 0,
+      spawnTimer: 0.15,
+      inStream: false,
+      aiEnemyAggro: 1.0,
+      stars: [],
+      planets: [],
+      galaxies: [],
+      fractalDust: [],
+      beacons: [],
+      gates: [],
+      streams: [],
+      enemies: [],
+      pulses: [],
+      bolts: [],
+      sparks: []
+    };
+
+    const ctrl = {
+      lx: 0, ly: 0,
+      rx: 0, ry: 0,
+      fire: false,
+      boost: false,
+      keys: {}
+    };
+
+    function worldToCamera(wx, wy, wz) {
+      let x = Number(wx) || 0;
+      let y = Number(wy) || 0;
+      let z = Number(wz) || 0;
+
+      if (cam.mode === 'chase') {
+        x = x - game.px * 0.52;
+        y = y - game.py * 0.52 + 0.65;
+        z = z + 14.0;
+      } else if (cam.mode === 'cockpit') {
+        x = x - game.px;
+        y = y - game.py - 0.22;
+        z = z + 1.4;
+      } else if (cam.mode === 'stern') {
+        x = -(x - game.px * 0.42);
+        y = y - game.py * 0.42 + 0.55;
+        z = -(z - 11.5);
+      } else if (cam.mode === 'orbit') {
+        const cy = Math.cos(cam.orbitYaw);
+        const sy = Math.sin(cam.orbitYaw);
+        const cp = Math.cos(cam.orbitPitch);
+        const sp = Math.sin(cam.orbitPitch);
+        const dx = x - game.px;
+        const dy = y - game.py;
+        const dz = z;
+        const x1 = dx * cy - dz * sy;
+        const z1 = dx * sy + dz * cy;
+        const y2 = dy * cp - z1 * sp;
+        const z2 = dy * sp + z1 * cp;
+        x = x1;
+        y = y2;
+        z = z2 + cam.orbitDist;
+      }
+
+      return { x, y, z };
+    }
+
+    function projectPoint(wx, wy, wz) {
+      const c = worldToCamera(wx, wy, wz);
+      const zSafe = Math.max(0.35, Number.isFinite(c.z) ? c.z : 10);
+      const fov = Math.min(viewW, viewH) * 1.15;
+      const scale = fov / zSafe;
+      const sx = viewW * 0.5 + (Number.isFinite(c.x) ? c.x : 0) * scale;
+      const sy = viewH * 0.5 - (Number.isFinite(c.y) ? c.y : 0) * scale;
+      return { sx, sy, z: zSafe, scale };
+    }
+
+    // =========================================================================
+    // 4. SMART AI META-CONTROLLER & 20 AUTONOMOUS DAEMONS (D-01..D-20)
+    // =========================================================================
+    const smartAI = {
+      mode: 'AUTO-BALANCED',
+      cycleCount: 0,
+      lastDirective: 'auto-balanced',
+      recentPatches: [],
+      daemons: [
+        { id: 'D-01', domain: 'FLT', name: 'OPTICS_ARCHITECT', role: 'Snell & TIR Compiler', patch: 'init(45°/90°)', tick: 0 },
+        { id: 'D-02', domain: 'FLT', name: 'THERMO_FOUNDRY', role: '6061-T6 Sink & Draft', patch: 'init(32 fins)', tick: 0 },
+        { id: 'D-03', domain: 'FLT', name: 'BUS_ELECTRICIAN', role: '12V/24V/48V Load Coder', patch: 'init(12V bus)', tick: 0 },
+        { id: 'D-04', domain: 'FLT', name: 'COSMOS_CARTOGRAPHER', role: 'AU/LY Scale Engineer', patch: 'init(deep-AU)', tick: 0 },
+        { id: 'D-05', domain: 'FLT', name: 'FRACTAL_WEAVER', role: 'Golden-Angle Dust Scripter', patch: 'init(φ=2.40)', tick: 0 },
+        { id: 'D-06', domain: 'FLT', name: 'MOTHERSHIP_DYNAMICS', role: 'Inertia & Drag Tuner', patch: 'init(drag=2.15)', tick: 0 },
+        { id: 'D-07', domain: 'FLT', name: 'ENEMY_TACTICIAN', role: 'Drone/Mine Pattern AI', patch: 'init(4 waves)', tick: 0 },
+        { id: 'D-08', domain: 'FLT', name: 'BEACON_DIRECTOR', role: 'Flux & Gate Sequencer', patch: 'init(1.0x mult)', tick: 0 },
+        { id: 'D-09', domain: 'FLT', name: 'COCKPIT_AVIONICS', role: 'HD Telemetry Compiler', patch: 'init(0.75m/82.6W)', tick: 0 },
+        { id: 'D-10', domain: 'FLT', name: 'QA_WATCHDOG', role: 'Stability & Bounds Audit', patch: 'ok(60fps/bounds)', tick: 0 },
+        { id: 'D-11', domain: 'GFX', name: 'STARLIGHT_SHADER', role: 'Deep-Field Star Scintillation', patch: 'twk×1.00', tick: 0 },
+        { id: 'D-12', domain: 'GFX', name: 'PLANET_CORONA', role: 'Corona & Limb Radiance', patch: 'glow×1.00', tick: 0 },
+        { id: 'D-13', domain: 'GFX', name: 'GALAXY_SPIRAL', role: 'Nebula Arms & Core Density', patch: 'arms×1.00', tick: 0 },
+        { id: 'D-14', domain: 'GFX', name: 'FRACTAL_DUST', role: 'φ-Dust Fractal Lattice', patch: 'dust×1.00', tick: 0 },
+        { id: 'D-15', domain: 'GFX', name: 'TRAJECTORY_RIBBON', role: 'Orbital & Flight Arc Shader', patch: 'grid=0.35', tick: 0 },
+        { id: 'D-16', domain: 'GFX', name: 'STERN_PLUME', role: 'Quad Stern Flux Exhaust', patch: 'plume×1.00', tick: 0 },
+        { id: 'D-17', domain: 'GFX', name: 'FIN_THERMAL', role: '32-Fin Heat Glow Shader', patch: 'limb×1.00', tick: 0 },
+        { id: 'D-18', domain: 'GFX', name: 'REFL_REFRACT_RAY', role: '45°/90° Glass & Pulse Bloom', patch: 'bloom×1.00', tick: 0 },
+        { id: 'D-19', domain: 'GFX', name: 'HUD_TELEMETRY', role: 'Prism & Hue Grade Tuner', patch: 'prism×1.00', tick: 0 },
+        { id: 'D-20', domain: 'GFX', name: 'FRAME_PACER', role: 'Dynamic Hue & Tone Grade', patch: 'hue+0°', tick: 0 }
+      ]
+    };
+
+    function recordDaemonMutation(id, name, patchText) {
+      smartAI.recentPatches.unshift({
+        id,
+        name,
+        patch: patchText,
+        ts: smartAI.cycleCount
+      });
+      if (smartAI.recentPatches.length > 8) {
+        smartAI.recentPatches.length = 8;
+      }
+    }
+
+    function setSmartAIMode(mode) {
+      smartAI.mode = mode;
+      document.querySelectorAll('.smart-mode-btn').forEach((btn) => {
+        const active = btn.dataset.mode === mode;
+        btn.classList.toggle('bg-purple-500/25', active);
+        btn.classList.toggle('text-purple-200', active);
+        btn.classList.toggle('border-purple-400/45', active);
+        btn.classList.toggle('font-bold', active);
+        btn.classList.toggle('bg-slate-800', !active);
+        btn.classList.toggle('text-slate-300', !active);
+        btn.classList.toggle('border-slate-700', !active);
+      });
+      if (mode === 'PLANET-GEN SURGE') {
+        engCfg.gfxGlowMult = Math.max(engCfg.gfxGlowMult, 1.55);
+        engCfg.gfxAtmosphereRim = Math.max(engCfg.gfxAtmosphereRim, 1.50);
+        spawnFlightPlanetSystem('smart-ai');
+      } else if (mode === 'THERMAL-OPTIC GUARD') {
+        engCfg.aiThermoGain = 1.35;
+        engCfg.aiOpticsGain = 1.12;
+      } else if (mode === 'TRAJECTORY-LOCK') {
+        engCfg.aiInertiaDrag = 2.65;
+        engCfg.gfxHorizonGrid = 0.65;
+      }
+      updateHUD();
+    }
+
+    function runSmartAI20Daemons(dt) {
+      if (smartAI.mode === 'AUTO-BALANCED') {
+        if (engOut.tRec > 65) {
+          engCfg.aiThermoGain = Math.min(1.45, engCfg.aiThermoGain + dt * 0.25);
+        } else if (game.systemsDiscovered < 3 && game.distMeters > 1800000) {
+          spawnFlightPlanetSystem('smart-ai-auto');
+        }
+      }
+
+      for (let i = 0; i < smartAI.daemons.length; i++) {
+        const dmn = smartAI.daemons[i];
+        dmn.tick += dt;
+        const interval = 0.90 + (i % 10) * 0.16;
+        if (dmn.tick < interval) continue;
+        dmn.tick = 0;
+        smartAI.cycleCount += 1;
+
+        const wave = Math.sin(game.time * (0.45 + (i % 10) * 0.08) + i);
+
+        switch (i) {
+          case 0:
+            engCfg.aiOpticsGain = (smartAI.mode === 'THERMAL-OPTIC GUARD' ? 1.12 : 0.96) + (wave + 1) * 0.05;
+            dmn.patch = `C_g*=${engCfg.aiOpticsGain.toFixed(2)} θ_c=${engOut.thetaC.toFixed(1)}°`;
+            break;
+          case 1:
+            engCfg.aiThermoGain = smartAI.mode === 'THERMAL-OPTIC GUARD' || engOut.tRec > 60 ? 1.32 : 0.95 + (wave + 1) * 0.1;
+            if (engOut.tRec > 58 && game.streams.length < 4) {
+              game.streams.push({
+                x: game.px + (Math.random() - 0.5) * 6,
+                y: game.py + (Math.random() - 0.5) * 4,
+                z: 190 + Math.random() * 80,
+                r: 4.0
+              });
+            }
+            dmn.patch = `h_gain=${engCfg.aiThermoGain.toFixed(2)} T=${engOut.tRec.toFixed(0)}°C`;
+            break;
+          case 2:
+            engCfg.aiBusGain = engCfg.vBus === 48 ? 1.08 : engCfg.vBus === 24 ? 1.04 : 1.00;
+            dmn.patch = `${engCfg.vBus}V I=${engOut.iNom.toFixed(2)}A η=${(engCfg.aiBusGain * 100).toFixed(0)}%`;
+            break;
+          case 3:
+            for (const pl of game.planets) pl.x += Math.cos(game.time * 0.12 + pl.z * 0.002) * 0.6;
+            dmn.patch = `SYS:${game.systemsDiscovered} ${(game.distMeters / 149597870700).toFixed(5)}AU`;
+            break;
+          case 4:
+            for (let k = 0; k < Math.min(25, game.fractalDust.length); k++) {
+              const idx = (Math.floor(game.time * 13) + k) % game.fractalDust.length;
+              const d = game.fractalDust[idx];
+              d.x += Math.sin(game.time + k) * 0.35;
+              d.y += Math.cos(game.time * 0.8 + k) * 0.25;
+            }
+            dmn.patch = `φ-motes(${game.fractalDust.length}) shift`;
+            break;
+          case 5:
+            engCfg.aiInertiaDrag = smartAI.mode === 'TRAJECTORY-LOCK' ? 2.65 : 1.95 + (wave + 1) * 0.22;
+            dmn.patch = `drag=${engCfg.aiInertiaDrag.toFixed(2)} v=(${game.vx.toFixed(1)},${game.vy.toFixed(1)})`;
+            break;
+          case 6:
+            game.aiEnemyAggro = 0.85 + (wave + 1) * 0.2;
+            dmn.patch = `aggro=${game.aiEnemyAggro.toFixed(2)} units=${game.enemies.length}`;
+            break;
+          case 7:
+            engCfg.aiScoreMult = 1.0 + Math.max(0, wave) * 0.35;
+            if (game.beacons.length < 6) {
+              game.beacons.push({
+                x: (Math.random() - 0.5) * 20,
+                y: (Math.random() - 0.5) * 11,
+                z: 280 + Math.random() * 140,
+                ph: Math.random() * 6.28
+              });
+            }
+            dmn.patch = `pts×${engCfg.aiScoreMult.toFixed(2)} bcn=${game.beacons.length}`;
+            break;
+          case 8:
+            dmn.patch = `HUD:${cam.mode.toUpperCase()} ${engOut.pElec.toFixed(1)}W`;
+            break;
+          case 9:
+            game.px = Math.max(-18.5, Math.min(18.5, game.px));
+            game.py = Math.max(-11.0, Math.min(11.0, game.py));
+            game.hull = Math.max(0, Math.min(100, game.hull));
+            game.cap = Math.max(0, Math.min(100, game.cap));
+            if (game.bolts.length > 45) game.bolts.splice(0, game.bolts.length - 45);
+            if (game.sparks.length > 90) game.sparks.splice(0, game.sparks.length - 90);
+            dmn.patch = `audit OK · ${smartAI.cycleCount} cyc`;
+            break;
+          case 10:
+            engCfg.gfxStarTwinkle = Math.max(0.6, Math.min(2.0, engCfg.gfxStarTwinkle + wave * 0.1));
+            dmn.patch = `twk×${engCfg.gfxStarTwinkle.toFixed(2)}`;
+            break;
+          case 11:
+            engCfg.gfxGlowMult = Math.max(0.65, Math.min(2.1, engCfg.gfxGlowMult + wave * 0.08));
+            dmn.patch = `glow×${engCfg.gfxGlowMult.toFixed(2)}`;
+            break;
+          case 12:
+            engCfg.gfxGalaxyArms = Math.max(0.7, Math.min(1.9, engCfg.gfxGalaxyArms + wave * 0.07));
+            dmn.patch = `arms×${engCfg.gfxGalaxyArms.toFixed(2)}`;
+            break;
+          case 13:
+            engCfg.gfxFractalDensity = Math.max(0.6, Math.min(2.2, engCfg.gfxFractalDensity + wave * 0.1));
+            dmn.patch = `dust×${engCfg.gfxFractalDensity.toFixed(2)}`;
+            break;
+          case 14:
+            engCfg.gfxHorizonGrid = Math.max(0.12, Math.min(0.75, engCfg.gfxHorizonGrid + wave * 0.05));
+            dmn.patch = `grid=${engCfg.gfxHorizonGrid.toFixed(2)}`;
+            break;
+          case 15:
+            engCfg.gfxPlumeFlare = Math.max(0.75, Math.min(2.1, engCfg.gfxPlumeFlare + wave * 0.09));
+            dmn.patch = `plume×${engCfg.gfxPlumeFlare.toFixed(2)}`;
+            break;
+          case 16:
+            engCfg.gfxAtmosphereRim = Math.max(0.7, Math.min(2.0, engCfg.gfxAtmosphereRim + wave * 0.08));
+            dmn.patch = `limb×${engCfg.gfxAtmosphereRim.toFixed(2)}`;
+            break;
+          case 17:
+            engCfg.gfxPulseBloom = Math.max(0.7, Math.min(2.2, engCfg.gfxPulseBloom + wave * 0.09));
+            dmn.patch = `bloom×${engCfg.gfxPulseBloom.toFixed(2)}`;
+            break;
+          case 18:
+            engCfg.gfxGlassRefraction = Math.max(0.7, Math.min(2.0, engCfg.gfxGlassRefraction + wave * 0.08));
+            dmn.patch = `prism×${engCfg.gfxGlassRefraction.toFixed(2)}`;
+            break;
+          case 19:
+            engCfg.gfxColorShift = Math.max(-45, Math.min(45, engCfg.gfxColorShift + wave * 4));
+            dmn.patch = `hue${engCfg.gfxColorShift >= 0 ? '+' : ''}${engCfg.gfxColorShift.toFixed(0)}°`;
+            break;
+        }
+        recordDaemonMutation(dmn.id, dmn.name, dmn.patch);
+      }
+    }
+
+    function renderAIDevSwarmList() {
+      const cntEl = $('ai-patch-count');
+      const sumEl = $('smart-ai-summary');
+      const listEl = $('ai-devs-list');
+      if (cntEl) cntEl.textContent = `${smartAI.cycleCount} CYCLES`;
+      if (sumEl) sumEl.textContent = `META: ${smartAI.mode} · SYS:${game.systemsDiscovered} · 20 DAEMONS ACTIVE`;
+      if (!listEl) return;
+      listEl.innerHTML = smartAI.daemons.map(d => `
+        <div class="bg-slate-950/80 rounded px-2 py-1 border border-slate-800/90 flex flex-col gap-0.5">
+          <div class="flex items-center justify-between">
+            <span class="text-purple-300 font-bold">${d.id} [${d.domain}] · ${d.name}</span>
+            <span class="text-[9px] text-emerald-400">LIVE</span>
+          </div>
+          <div class="text-[9px] text-slate-400">${d.role}</div>
+          <div class="text-[9px] text-cyan-200 truncate">fn() → ${d.patch}</div>
+        </div>
+      `).join('');
+    }
+
+    function applyGraphicsPromptDirective(rawText) {
+      const text = (rawText || '').trim();
+      const q = text.toLowerCase();
+      smartAI.lastDirective = text || 'auto-balanced';
+      smartAI.cycleCount += 20;
+
+      if (q.includes('planet') || q.includes('system') || q.includes('nebula') || q.includes('corona') || q.includes('glow')) {
+        setSmartAIMode('PLANET-GEN SURGE');
+        engCfg.gfxGlowMult = 1.65;
+        engCfg.gfxAtmosphereRim = 1.55;
+        engCfg.gfxGalaxyArms = 1.50;
+        spawnFlightPlanetSystem('prompt');
+      } else if (q.includes('trajectory') || q.includes('orbit') || q.includes('lock') || q.includes('fractal') || q.includes('dust')) {
+        setSmartAIMode('TRAJECTORY-LOCK');
+        engCfg.gfxFractalDensity = 1.85;
+        engCfg.gfxStarTwinkle = 1.60;
+        engCfg.gfxHorizonGrid = 0.68;
+      } else if (q.includes('thermal') || q.includes('optic') || q.includes('prism') || q.includes('glass') || q.includes('plume') || q.includes('boost')) {
+        setSmartAIMode('THERMAL-OPTIC GUARD');
+        engCfg.gfxGlassRefraction = 1.60;
+        engCfg.gfxPlumeFlare = 1.65;
+        engCfg.gfxPulseBloom = 1.70;
+      } else if (q.includes('reset') || q.includes('auto') || q.includes('balance') || q.includes('clean')) {
+        setSmartAIMode('AUTO-BALANCED');
+        engCfg.gfxGlowMult = 1.0;
+        engCfg.gfxFractalDensity = 1.0;
+        engCfg.gfxGalaxyArms = 1.0;
+        engCfg.gfxGlassRefraction = 1.0;
+        engCfg.gfxPlumeFlare = 1.0;
+        engCfg.gfxAtmosphereRim = 1.0;
+        engCfg.gfxStarTwinkle = 1.0;
+        engCfg.gfxPulseBloom = 1.0;
+        engCfg.gfxHorizonGrid = 0.35;
+        engCfg.gfxColorShift = 0.0;
+      } else if (text.length > 0) {
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0;
+        const normA = (Math.abs(hash) % 100) / 100;
+        const normB = (Math.abs(hash >> 4) % 100) / 100;
+        engCfg.gfxGlowMult = 0.85 + normA * 0.95;
+        engCfg.gfxFractalDensity = 0.80 + normB * 1.05;
+        engCfg.gfxPlumeFlare = 0.90 + ((normA + normB) * 0.5) * 0.85;
+        engCfg.gfxColorShift = (normA - 0.5) * 36;
+      }
+
+      const d12 = smartAI.daemons[11];
+      const d14 = smartAI.daemons[13];
+      const d15 = smartAI.daemons[14];
+      recordDaemonMutation(d12.id, d12.name, `prompt: glow×${engCfg.gfxGlowMult.toFixed(2)}`);
+      recordDaemonMutation(d14.id, d14.name, `prompt: dust×${engCfg.gfxFractalDensity.toFixed(2)}`);
+      recordDaemonMutation(d15.id, d15.name, `prompt: grid=${engCfg.gfxHorizonGrid.toFixed(2)}`);
+
+      sfx.play(740, 0.09, 'sine', 0.04);
+      const banner = $('gfx-status-banner');
+      if (banner) {
+        banner.textContent = `SMART AI [${smartAI.mode}] "${smartAI.lastDirective}" → ${smartAI.cycleCount} OPS`;
+      }
+      renderGFXPromptFeed();
+      renderAIDevSwarmList();
+    }
+
+    function renderGFXPromptFeed() {
+      const list = $('gfx-recent-patches');
+      if (!list) return;
+      const items = smartAI.recentPatches.length > 0
+        ? smartAI.recentPatches
+        : smartAI.daemons.slice(10, 16).map(d => ({ id: d.id, name: d.name, patch: d.patch, ts: 0 }));
+
+      list.innerHTML = items.map(item => `
+        <div class="bg-slate-950/85 rounded px-2 py-1 border border-slate-800/90 flex items-center justify-between gap-1">
+          <div class="truncate">
+            <span class="text-purple-300 font-bold">${item.id}</span>
+            <span class="text-slate-300 ml-1">${item.name}</span>
+          </div>
+          <span class="text-cyan-300 shrink-0">${item.patch}</span>
+        </div>
+      `).join('');
+    }
+
+    // =========================================================================
+    // 5. COSMOS SEEDING, SIMULATION & PERSPECTIVE RENDERER
+    // =========================================================================
+    function seedCosmos() {
+      game.stars = [];
+      for (let i = 0; i < 320; i++) {
+        game.stars.push({
+          x: (Math.random() - 0.5) * 280,
+          y: (Math.random() - 0.5) * 180,
+          z: 25 + Math.random() * 1650,
+          size: 1.2 + Math.random() * 2.4,
+          col: i % 4 === 0 ? '#7dd3fc' : i % 5 === 0 ? '#fde68a' : '#f8fafc'
+        });
+      }
+
+      game.planets = [
+        { x: -48, y: 22, z: 420, r: 24, ring: true, c1: '#38bdf8', c2: '#082f49', glow: 'rgba(56,189,248,0.34)' },
+        { x: 58, y: -20, z: 760, r: 36, ring: false, c1: '#fb923c', c2: '#431407', glow: 'rgba(251,146,60,0.30)' },
+        { x: -32, y: -34, z: 1180, r: 30, ring: true, c1: '#c084fc', c2: '#2e1065', glow: 'rgba(192,132,252,0.28)' }
+      ];
+
+      game.galaxies = [
+        { x: 95, y: 46, z: 1350, r: 78, rot: 0.42, col: 'rgba(56,189,248,0.26)' },
+        { x: -105, y: -42, z: 1620, r: 92, rot: -0.55, col: 'rgba(244,114,182,0.22)' }
+      ];
+
+      game.fractalDust = [];
+      for (let i = 0; i < 220; i++) {
+        const phi = i * 2.3999632;
+        const rad = Math.sqrt(i + 1) * 4.8;
+        game.fractalDust.push({
+          x: Math.cos(phi) * rad,
+          y: Math.sin(phi) * rad * 0.75,
+          z: 18 + (i % 110) * 14.5,
+          scale: 1.2 + (i % 4) * 0.7
+        });
+      }
+    }
+
+    function resetMission() {
+      game.paused = false;
+      game.dead = false;
+      game.score = 0;
+      game.distMeters = 0;
+      game.sector = 1;
+      game.systemsDiscovered = Math.max(1, tjsSys.systems.length);
+      game.lastWorldSpeed = 120;
+      game.time = 0;
+      game.hull = 100;
+      game.cap = 100;
+      game.px = 0;
+      game.py = 0;
+      game.vx = 0;
+      game.vy = 0;
+      game.pitchTilt = 0;
+      game.roll = 0;
+      game.yawBank = 0;
+      game.fireCd = 0;
+      game.spawnTimer = 0.15;
+      game.inStream = false;
+      engCfg.gateBoost = 0;
+      tjsSys.nextSystemMeters = 5500000;
+
+      game.beacons = [];
+      game.gates = [];
+      game.streams = [];
+      game.enemies = [];
+      game.pulses = [];
+      game.bolts = [];
+      game.sparks = [];
+
+      for (let i = 0; i < 7; i++) {
+        game.beacons.push({
+          x: (Math.random() - 0.5) * 18,
+          y: (Math.random() - 0.5) * 10,
+          z: 36 + i * 48,
+          ph: i
+        });
+      }
+      game.gates.push({ x: 0, y: 0.6, z: 115, r: 4.8, passed: false });
+      game.streams.push({ x: -6.5, y: -1.4, z: 155, r: 3.8 });
+      game.enemies.push({ x: 5.5, y: 1.4, z: 135, hp: 2, mode: 'weaver', ph: 0, cd: 1.3 });
+      game.enemies.push({ x: -6.0, y: -1.6, z: 195, hp: 2, mode: 'flanker', ph: 1.4, cd: 1.8 });
+
+      const modal = $('gameover-modal');
+      if (modal) modal.classList.add('hidden');
+      const pauseBtn = $('btn-pause');
+      if (pauseBtn) pauseBtn.textContent = '[P]';
+      solvePhysics(1.0);
+      updateHUD();
+    }
+
+    function spawnWave() {
+      const x = (Math.random() - 0.5) * 28;
+      const y = (Math.random() - 0.5) * 16;
+      const z = 340 + Math.random() * 160;
+
+      game.beacons.push({ x, y, z, ph: Math.random() * 6.28 });
+
+      if (Math.random() < 0.36) {
+        game.gates.push({
+          x: (Math.random() - 0.5) * 18,
+          y: (Math.random() - 0.5) * 10,
+          z: z + 35,
+          r: 4.8,
+          passed: false
+        });
+      }
+
+      if (Math.random() < 0.30) {
+        game.streams.push({
+          x: (Math.random() - 0.5) * 20,
+          y: (Math.random() - 0.5) * 11,
+          z: z + 20,
+          r: 3.8
+        });
+      }
+
+      const modes = ['weaver', 'flanker', 'sentry', 'mine'];
+      const mode = modes[Math.floor(Math.random() * modes.length)];
+      game.enemies.push({
+        x, y, z: z + 25,
+        hp: mode === 'sentry' ? 3 : 2,
+        mode,
+        ph: Math.random() * 6.28,
+        cd: 1.1 + Math.random() * 1.2
+      });
+    }
+
+    function firePulse() {
+      if (game.fireCd > 0 || game.cap < 6) return;
+      game.cap = Math.max(0, game.cap - 6.5);
+      game.fireCd = 0.14;
+      sfx.play(680, 0.07, 'triangle', 0.04);
+
+      const aimX = Math.abs(ctrl.rx) > 0.15 ? ctrl.rx * 22 : 0;
+      const aimY = Math.abs(ctrl.ry) > 0.15 ? -ctrl.ry * 22 : 0;
+
+      game.pulses.push({
+        x: game.px,
+        y: game.py,
+        z: 3.5,
+        vx: aimX,
+        vy: aimY,
+        vz: 240,
+        dmg: 1 + engOut.pElec / 85
+      });
+    }
+
+    function burstSparks(x, y, z, col) {
+      for (let i = 0; i < 16; i++) {
+        const a = (i / 16) * Math.PI * 2;
+        const sp = 5 + Math.random() * 12;
+        game.sparks.push({
+          x, y, z,
+          vx: Math.cos(a) * sp,
+          vy: Math.sin(a) * sp,
+          vz: (Math.random() - 0.5) * 14,
+          life: 0.45,
+          maxLife: 0.45,
+          col
+        });
+      }
+    }
+
+    function triggerGameOver() {
+      game.dead = true;
+      sfx.play(115, 0.25, 'sawtooth', 0.07);
+      const goScore = $('go-score');
+      const goDist = $('go-dist');
+      const modal = $('gameover-modal');
+      if (goScore) goScore.textContent = `${game.score}`;
+      if (goDist) goDist.textContent = formatCosmicDistance(game.distMeters);
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function stepSimulation(dt) {
+      runSmartAI20Daemons(dt);
+      if (game.paused || game.dead) return;
+      game.time += dt;
+      if (game.fireCd > 0) game.fireCd = Math.max(0, game.fireCd - dt);
+      if (engCfg.gateBoost > 0) engCfg.gateBoost = Math.max(0, engCfg.gateBoost - dt * 0.32);
+
+      // L-Stick & WASD/Arrows steer/pitch/yaw; R-Stick adds strafe & throttle
+      let sx = ctrl.lx + ctrl.rx * 0.42;
+      let sy = -ctrl.ly - ctrl.ry * 0.42;
+      if (ctrl.keys['ArrowLeft'] || ctrl.keys['KeyA']) sx -= 1;
+      if (ctrl.keys['ArrowRight'] || ctrl.keys['KeyD']) sx += 1;
+      if (ctrl.keys['ArrowUp'] || ctrl.keys['KeyW']) sy += 1;
+      if (ctrl.keys['ArrowDown'] || ctrl.keys['KeyS']) sy -= 1;
+      sx = Math.max(-1, Math.min(1, sx));
+      sy = Math.max(-1, Math.min(1, sy));
+
+      if (cam.mode === 'orbit') {
+        cam.orbitYaw += sx * dt * 1.5;
+        cam.orbitPitch = Math.max(-1.1, Math.min(1.1, cam.orbitPitch + sy * dt * 1.2));
+      } else {
+        // Smooth damped mothership flight inertia
+        const accelX = sx * 24.0;
+        const accelY = sy * 19.0;
+        game.vx += accelX * dt;
+        game.vy += accelY * dt;
+
+        const drag = Math.exp(-(Number(engCfg.aiInertiaDrag) || 2.15) * dt);
+        game.vx *= drag;
+        game.vy *= drag;
+
+        game.px += game.vx * dt;
+        game.py += game.vy * dt;
+
+        if (Math.abs(game.px) > 18.0) {
+          game.vx += (18.0 * Math.sign(game.px) - game.px) * 3.8 * dt;
+        }
+        if (Math.abs(game.py) > 10.5) {
+          game.vy += (10.5 * Math.sign(game.py) - game.py) * 3.8 * dt;
+        }
+
+        const targetRoll = -game.vx * 0.032;
+        const targetPitch = game.vy * 0.028;
+        const targetYaw = game.vx * 0.022;
+        game.roll += (targetRoll - game.roll) * Math.min(1, dt * 4.2);
+        game.pitchTilt += (targetPitch - game.pitchTilt) * Math.min(1, dt * 4.2);
+        game.yawBank += (targetYaw - game.yawBank) * Math.min(1, dt * 4.2);
+      }
+
+      game.inStream = game.streams.some(st => st.z < 12 && st.z > -6 && Math.hypot(game.px - st.x, game.py - st.y) < st.r * 1.2);
+      solvePhysics(game.inStream ? 2.4 : 1.0);
+
+      const stickThrottle = Math.max(0, -ctrl.ry) * 0.35;
+      const boosting = (ctrl.boost || ctrl.keys['ShiftLeft'] || ctrl.keys['ShiftRight']) && game.cap > 4 && !engOut.throttling;
+      if (boosting) game.cap = Math.max(0, game.cap - dt * 15);
+
+      const worldSpeed = (115 + (engOut.pElec / 110) * 65 + stickThrottle * 45) * (boosting ? 1.68 : 1.0);
+      game.lastWorldSpeed = worldSpeed;
+      game.cap = Math.min(100, game.cap + (engOut.pElec / 82.61) * 18 * dt);
+      game.distMeters += worldSpeed * dt * 420000;
+      game.sector = Math.max(1, Math.floor(game.distMeters / 45000000) + 1);
+
+      if (ctrl.fire || ctrl.keys['Space'] || Math.hypot(ctrl.rx, ctrl.ry) > 0.65) {
+        firePulse();
+      }
+
+      game.spawnTimer -= dt;
+      if (game.spawnTimer <= 0) {
+        spawnWave();
+        game.spawnTimer = Math.max(0.42, 0.85 - game.sector * 0.025);
+      }
+
+      for (const s of game.stars) {
+        s.z -= worldSpeed * 1.15 * dt;
+        if (s.z < 12) s.z = 1650;
+      }
+      for (const pl of game.planets) {
+        pl.z -= worldSpeed * 0.42 * dt;
+        if (pl.z < 140) pl.z = 1620;
+      }
+      for (const g of game.galaxies) {
+        g.z -= worldSpeed * 0.22 * dt;
+        if (g.z < 360) g.z = 1750;
+      }
+      for (const d of game.fractalDust) {
+        d.z -= worldSpeed * 1.55 * dt;
+        if (d.z < 10) d.z = 1580;
+      }
+
+      for (let i = game.beacons.length - 1; i >= 0; i--) {
+        const b = game.beacons[i];
+        b.z -= worldSpeed * dt;
+        b.ph += dt * 4;
+        if (b.z < 6.5 && b.z > -4.5 && Math.hypot(game.px - b.x, game.py - b.y) < 3.4) {
+          game.score += Math.round(150 * (Number(engCfg.aiScoreMult) || 1.0));
+          game.cap = Math.min(100, game.cap + 24);
+          game.hull = Math.min(100, game.hull + 4);
+          sfx.play(880, 0.09, 'sine', 0.05);
+          burstSparks(b.x, b.y, b.z, '#fbbf24');
+          game.beacons.splice(i, 1);
+          continue;
+        }
+        if (b.z < -15) game.beacons.splice(i, 1);
+      }
+
+      for (let i = game.gates.length - 1; i >= 0; i--) {
+        const g = game.gates[i];
+        g.z -= worldSpeed * dt;
+        if (!g.passed && g.z < 5.5 && g.z > -4.5 && Math.hypot(game.px - g.x, game.py - g.y) < g.r) {
+          g.passed = true;
+          engCfg.gateBoost = Math.min(2.0, engCfg.gateBoost + 0.9);
+          game.score += Math.round(250 * (Number(engCfg.aiScoreMult) || 1.0));
+          game.cap = 100;
+          sfx.play(520, 0.14, 'triangle', 0.06);
+          burstSparks(g.x, g.y, g.z, '#22d3ee');
+        }
+        if (g.z < -18) game.gates.splice(i, 1);
+      }
+
+      for (let i = game.streams.length - 1; i >= 0; i--) {
+        game.streams[i].z -= worldSpeed * dt;
+        if (game.streams[i].z < -18) game.streams.splice(i, 1);
+      }
+
+      for (let i = game.enemies.length - 1; i >= 0; i--) {
+        const e = game.enemies[i];
+        e.ph += dt * 2.8 * (Number(game.aiEnemyAggro) || 1.0);
+        e.z -= (worldSpeed * 0.78 + 22) * dt;
+        if (e.mode === 'weaver') {
+          e.x += Math.cos(e.ph) * 9.5 * dt;
+          e.y += Math.sin(e.ph * 1.4) * 5.2 * dt;
+        } else if (e.mode === 'flanker') {
+          e.x += Math.sin(e.ph) * 11.0 * dt;
+          e.y += (game.py - e.y) * 0.85 * dt;
+        } else if (e.mode === 'sentry') {
+          e.x += Math.cos(e.ph * 0.7) * 5.2 * dt;
+          e.y += Math.sin(e.ph * 0.7) * 5.2 * dt;
+        }
+
+        e.cd -= dt * (Number(game.aiEnemyAggro) || 1.0);
+        if (e.cd <= 0 && e.z > 25 && e.z < 260 && e.mode !== 'mine') {
+          e.cd = 1.5 + Math.random();
+          const dx = game.px - e.x;
+          const dy = game.py - e.y;
+          const d = Math.max(0.1, Math.hypot(dx, dy, e.z));
+          game.bolts.push({
+            x: e.x, y: e.y, z: e.z,
+            vx: (dx / d) * 42,
+            vy: (dy / d) * 42,
+            vz: (-e.z / d) * 95 - 35
+          });
+        }
+
+        if (e.z < 6.0 && e.z > -4.5 && Math.hypot(game.px - e.x, game.py - e.y) < 3.1) {
+          game.hull = Math.max(0, game.hull - 22);
+          sfx.play(150, 0.16, 'sawtooth', 0.06);
+          burstSparks(e.x, e.y, e.z, '#fb7185');
+          game.enemies.splice(i, 1);
+          if (game.hull <= 0) { triggerGameOver(); return; }
+          continue;
+        }
+        if (e.z < -18) game.enemies.splice(i, 1);
+      }
+
+      for (let i = game.pulses.length - 1; i >= 0; i--) {
+        const p = game.pulses[i];
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.z += p.vz * dt;
+        if (p.z > 520) { game.pulses.splice(i, 1); continue; }
+
+        let hit = false;
+        for (let j = game.enemies.length - 1; j >= 0; j--) {
+          const e = game.enemies[j];
+          if (Math.abs(p.z - e.z) < 12.0 && Math.hypot(p.x - e.x, p.y - e.y) < 3.4) {
+            e.hp -= p.dmg;
+            hit = true;
+            if (e.hp <= 0) {
+              game.score += Math.round(300 * (Number(engCfg.aiScoreMult) || 1.0));
+              sfx.play(240, 0.12, 'square', 0.04);
+              burstSparks(e.x, e.y, e.z, '#34d399');
+              game.enemies.splice(j, 1);
+            } else {
+              burstSparks(p.x, p.y, p.z, '#fbbf24');
+            }
+            break;
+          }
+        }
+        if (hit) game.pulses.splice(i, 1);
+      }
+
+      for (let i = game.bolts.length - 1; i >= 0; i--) {
+        const b = game.bolts[i];
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+        b.z += b.vz * dt;
+        if (b.z < 5.5 && b.z > -4.0 && Math.hypot(game.px - b.x, game.py - b.y) < 2.4) {
+          game.hull = Math.max(0, game.hull - 12);
+          sfx.play(170, 0.14, 'sawtooth', 0.05);
+          burstSparks(b.x, b.y, b.z, '#f43f5e');
+          game.bolts.splice(i, 1);
+          if (game.hull <= 0) { triggerGameOver(); return; }
+          continue;
+        }
+        if (b.z < -18) game.bolts.splice(i, 1);
+      }
+
+      for (let i = game.sparks.length - 1; i >= 0; i--) {
+        const sp = game.sparks[i];
+        sp.x += sp.vx * dt;
+        sp.y += sp.vy * dt;
+        sp.z += sp.vz * dt;
+        sp.life -= dt;
+        if (sp.life <= 0) game.sparks.splice(i, 1);
+      }
+    }
+
+    function drawMothership(wx, wy, wz) {
+      if (!ctx) return;
+      const p = projectPoint(wx, wy, wz);
+      const s = p.scale * (2.35 + engCfg.dIn * 0.55) * engCfg.shipScale;
+      const heatNorm = Math.min(1, Math.max(0, (engOut.tRec - 25) / 85));
+      const finR = Math.round(90 + heatNorm * 165);
+      const finG = Math.round(215 - heatNorm * 125);
+      const finB = Math.round(240 - heatNorm * 175);
+
+      ctx.save();
+      ctx.translate(p.sx, p.sy);
+      ctx.rotate(game.roll + game.yawBank * 0.35);
+      const pitchScaleY = Math.max(0.75, 1 + game.pitchTilt * 0.45);
+      ctx.scale(1, pitchScaleY);
+
+      // Quad Stern Photon-Flux Thruster Nozzles & Exhaust Plumes
+      [-0.44 * s, -0.17 * s, 0.17 * s, 0.44 * s].forEach((nx, idx) => {
+        const flameLen = (0.58 + (engOut.pElec / 100) * 0.52) * engCfg.gfxPlumeFlare * s * (0.85 + 0.25 * Math.sin(game.time * 36 + idx));
+        const fGrad = ctx.createLinearGradient(0, 0.42 * s, 0, 0.42 * s + flameLen);
+        fGrad.addColorStop(0, '#34d399');
+        fGrad.addColorStop(0.55, '#38bdf8');
+        fGrad.addColorStop(1, 'rgba(56,189,248,0)');
+        ctx.fillStyle = fGrad;
+        ctx.beginPath();
+        ctx.moveTo(nx - 0.075 * s, 0.42 * s);
+        ctx.lineTo(nx + 0.075 * s, 0.42 * s);
+        ctx.lineTo(nx, 0.42 * s + flameLen);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#1e293b';
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 1.6;
+        ctx.fillRect(nx - 0.085 * s, 0.30 * s, 0.17 * s, 0.13 * s);
+        ctx.strokeRect(nx - 0.085 * s, 0.30 * s, 0.17 * s, 0.13 * s);
+      });
+
+      // Swept Titanium Mothership Airframe
+      const hullGrad = ctx.createLinearGradient(-1.58 * s, 0, 1.58 * s, 0);
+      hullGrad.addColorStop(0, '#091122');
+      hullGrad.addColorStop(0.25, '#172e54');
+      hullGrad.addColorStop(0.5, '#38bdf8');
+      hullGrad.addColorStop(0.75, '#172e54');
+      hullGrad.addColorStop(1, '#091122');
+      ctx.fillStyle = hullGrad;
+      ctx.strokeStyle = '#7dd3fc';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(0, -0.82 * s);
+      ctx.lineTo(1.56 * s, 0.24 * s);
+      ctx.lineTo(0.70 * s, 0.45 * s);
+      ctx.lineTo(0, 0.22 * s);
+      ctx.lineTo(-0.70 * s, 0.45 * s);
+      ctx.lineTo(-1.56 * s, 0.24 * s);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // 32-Fin Aluminum 6061-T6 Heat Sink Array with Live Thermal Glow
+      ctx.fillStyle = `rgb(${finR}, ${finG}, ${finB})`;
+      ctx.strokeStyle = 'rgba(241,245,249,0.75)';
+      ctx.lineWidth = 1;
+      for (let f = -6; f <= 6; f++) {
+        const fx = f * 0.056 * s;
+        ctx.fillRect(fx - 1.5, 0.08 * s, 3, 0.22 * s);
+      }
+
+      // 45° Conical Borosilicate Frustum & 90° Secondary Refractor Crown
+      const glassGrad = ctx.createLinearGradient(0, -0.76 * s, 0, 0.14 * s);
+      const glassAlphaBoost = Math.min(0.96, 0.88 * engCfg.gfxGlassRefraction);
+      glassGrad.addColorStop(0, `rgba(224,242,254,${glassAlphaBoost.toFixed(2)})`);
+      glassGrad.addColorStop(0.5, `rgba(34,211,238,${Math.min(0.85, 0.54 * engCfg.gfxGlassRefraction).toFixed(2)})`);
+      glassGrad.addColorStop(1, 'rgba(14,165,233,0.34)');
+      ctx.fillStyle = glassGrad;
+      ctx.strokeStyle = '#bae6fd';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, -0.92 * s);
+      ctx.lineTo(0.44 * s, -0.26 * s);
+      ctx.lineTo(0.27 * s, 0.16 * s);
+      ctx.lineTo(-0.27 * s, 0.16 * s);
+      ctx.lineTo(-0.44 * s, -0.26 * s);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // 43.3 cm PV Receiver Core
+      ctx.fillStyle = '#34d399';
+      ctx.beginPath();
+      ctx.arc(0, -0.05 * s, 0.125 * s, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function drawFallbackPlanetSystemOrbits() {
+      if (!ctx || tjsSys.enabled) return;
+      for (let idx = 0; idx < 2; idx++) {
+        const center = projectPoint(idx === 0 ? 22 : -24, 10, 150 + idx * 80);
+        ctx.save();
+        ctx.strokeStyle = idx === 0 ? 'rgba(56,189,248,0.28)' : 'rgba(192,132,252,0.25)';
+        ctx.lineWidth = 1.4;
+        for (let b = 1; b <= 3; b++) {
+          const rx = b * 18 * center.scale * 0.25;
+          const ry = b * 7 * center.scale * 0.25;
+          ctx.beginPath();
+          ctx.ellipse(center.sx, center.sy, Math.max(12, rx), Math.max(5, ry), -0.2, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+    }
+
+    function drawScene() {
+      if (!ctx) return;
+      ctx.clearRect(0, 0, viewW, viewH);
+
+      if (!tjsSys.enabled) {
+        const bg = ctx.createRadialGradient(viewW * 0.5, viewH * 0.35, 25, viewW * 0.5, viewH * 0.5, Math.max(viewW, viewH) * 0.8);
+        bg.addColorStop(0, '#0f2445');
+        bg.addColorStop(0.55, '#060d1c');
+        bg.addColorStop(1, '#02050d');
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, viewW, viewH);
+      }
+
+      ctx.save();
+      if (Math.abs(engCfg.gfxColorShift) > 0.5) {
+        ctx.filter = `hue-rotate(${engCfg.gfxColorShift.toFixed(1)}deg)`;
+      }
+
+      // Live Predicted Flight Trajectory Arc
+      ctx.beginPath();
+      for (let i = 0; i <= 18; i++) {
+        const tArc = (i / 18) * 1.1;
+        const ax = game.px + game.vx * tArc;
+        const ay = game.py + game.vy * tArc;
+        const az = 2 + i * 5.5;
+        const ptArc = projectPoint(ax, ay, az);
+        if (i === 0) ctx.moveTo(ptArc.sx, ptArc.sy);
+        else ctx.lineTo(ptArc.sx, ptArc.sy);
+      }
+      ctx.strokeStyle = 'rgba(52, 211, 153, 0.55)';
+      ctx.lineWidth = 1.4;
+      ctx.setLineDash([5, 5]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Deep-Space Stars
+      for (const s of game.stars) {
+        const p = projectPoint(s.x, s.y, s.z);
+        const twk = 0.72 + 0.28 * engCfg.gfxStarTwinkle * Math.sin(game.time * 4.5 + s.z);
+        ctx.fillStyle = s.col;
+        ctx.beginPath();
+        ctx.arc(p.sx, p.sy, Math.max(1.2, s.size * (p.scale * 0.045) * twk), 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Spiral Galaxies
+      for (const g of game.galaxies) {
+        const p = projectPoint(g.x, g.y, g.z);
+        const rad = Math.max(16, g.r * p.scale * 0.45);
+        ctx.save();
+        ctx.translate(p.sx, p.sy);
+        ctx.rotate(g.rot + game.time * 0.03 * engCfg.gfxGalaxyArms);
+        const gg = ctx.createRadialGradient(0, 0, 1, 0, 0, rad);
+        gg.addColorStop(0, 'rgba(255,255,255,0.65)');
+        gg.addColorStop(0.35, g.col);
+        gg.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = gg;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, rad, rad * 0.34, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Fallback Planet Orbits when Three.js is not active
+      drawFallbackPlanetSystemOrbits();
+
+      // Glowing Planets with Atmosphere & Rings
+      for (const pl of game.planets) {
+        const p = projectPoint(pl.x, pl.y, pl.z);
+        const rad = Math.max(14, pl.r * p.scale);
+        ctx.save();
+        ctx.translate(p.sx, p.sy);
+
+        const haloScale = 1.55 * engCfg.gfxGlowMult;
+        const gl = ctx.createRadialGradient(0, 0, rad * 0.85, 0, 0, rad * haloScale);
+        gl.addColorStop(0, pl.glow);
+        gl.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = gl;
+        ctx.beginPath();
+        ctx.arc(0, 0, rad * haloScale, 0, Math.PI * 2);
+        ctx.fill();
+
+        const pg = ctx.createLinearGradient(-rad, -rad, rad, rad);
+        pg.addColorStop(0, pl.c1);
+        pg.addColorStop(1, pl.c2);
+        ctx.fillStyle = pg;
+        ctx.beginPath();
+        ctx.arc(0, 0, rad, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = `rgba(186,230,253,${Math.min(0.85, 0.28 * engCfg.gfxAtmosphereRim).toFixed(2)})`;
+        ctx.lineWidth = Math.max(1.2, rad * 0.06);
+        ctx.beginPath();
+        ctx.arc(0, 0, rad * 1.02, 0, Math.PI * 2);
+        ctx.stroke();
+
+        if (pl.ring) {
+          ctx.strokeStyle = 'rgba(224,242,254,0.55)';
+          ctx.lineWidth = Math.max(1.6, rad * 0.11);
+          ctx.beginPath();
+          ctx.ellipse(0, 0, rad * 1.9, rad * 0.38, -0.25, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      // Golden-Angle Fractal Dust Motes
+      for (const d of game.fractalDust) {
+        const p = projectPoint(d.x, d.y, d.z);
+        const sz = Math.max(2.0, d.scale * (p.scale * 0.036) * (0.75 + 0.35 * engCfg.gfxFractalDensity));
+        ctx.fillStyle = 'rgba(125,211,252,0.62)';
+        ctx.fillRect(p.sx - sz * 0.5, p.sy - sz * 0.5, sz, sz);
+        if (d.scale > 2 || engCfg.gfxFractalDensity > 1.35) {
+          ctx.fillStyle = 'rgba(251,191,36,0.48)';
+          ctx.fillRect(p.sx + sz * 1.1, p.sy - sz * 0.9, sz * 0.65, sz * 0.65);
+          ctx.fillRect(p.sx - sz * 1.3, p.sy + sz * 0.9, sz * 0.65, sz * 0.65);
+        }
+      }
+
+      // Depth-Sorted Foreground Entities
+      const items = [];
+
+      for (const st of game.streams) {
+        const p = projectPoint(st.x, st.y, st.z);
+        items.push({
+          z: st.z,
+          draw: () => {
+            const rad = Math.max(11, st.r * p.scale);
+            ctx.strokeStyle = '#38bdf8';
+            ctx.fillStyle = 'rgba(14,165,233,0.15)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(p.sx, p.sy, rad, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+          }
+        });
+      }
+
+      for (const g of game.gates) {
+        const p = projectPoint(g.x, g.y, g.z);
+        items.push({
+          z: g.z,
+          draw: () => {
+            const rad = Math.max(13, g.r * p.scale);
+            ctx.save();
+            ctx.translate(p.sx, p.sy);
+            ctx.rotate(game.time * 0.75);
+            ctx.strokeStyle = g.passed ? '#34d399' : '#22d3ee';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(0, 0, rad, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+          }
+        });
+      }
+
+      for (const b of game.beacons) {
+        const p = projectPoint(b.x, b.y, b.z);
+        items.push({
+          z: b.z,
+          draw: () => {
+            const rad = Math.max(3.5, 0.85 * p.scale * engCfg.shipScale);
+            const bg2 = ctx.createRadialGradient(p.sx, p.sy, 1, p.sx, p.sy, rad * 2.2);
+            bg2.addColorStop(0, '#fef08a');
+            bg2.addColorStop(0.5, 'rgba(251,191,36,0.58)');
+            bg2.addColorStop(1, 'rgba(251,191,36,0)');
+            ctx.fillStyle = bg2;
+            ctx.beginPath();
+            ctx.arc(p.sx, p.sy, rad * 2.2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        });
+      }
+
+      for (const e of game.enemies) {
+        const p = projectPoint(e.x, e.y, e.z);
+        items.push({
+          z: e.z,
+          draw: () => {
+            const rad = Math.max(4.5, 1.25 * p.scale * engCfg.shipScale);
+            ctx.save();
+            ctx.translate(p.sx, p.sy);
+            ctx.rotate(e.ph * 0.6);
+            ctx.fillStyle = e.mode === 'mine' ? '#fb7185' : e.mode === 'sentry' ? '#c084fc' : '#f97316';
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            for (let k = 0; k < 6; k++) {
+              const a = (k / 6) * Math.PI * 2;
+              const r = k % 2 === 0 ? rad : rad * 0.5;
+              if (k === 0) ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+              else ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+          }
+        });
+      }
+
+      for (const pr of game.pulses) {
+        const p = projectPoint(pr.x, pr.y, pr.z);
+        items.push({
+          z: pr.z,
+          draw: () => {
+            const radP = Math.max(2.2, 0.35 * p.scale * engCfg.shipScale * engCfg.gfxPulseBloom);
+            ctx.fillStyle = '#34d399';
+            ctx.beginPath();
+            ctx.arc(p.sx, p.sy, radP, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        });
+      }
+
+      for (const bl of game.bolts) {
+        const p = projectPoint(bl.x, bl.y, bl.z);
+        items.push({
+          z: bl.z,
+          draw: () => {
+            ctx.fillStyle = '#f43f5e';
+            ctx.beginPath();
+            ctx.arc(p.sx, p.sy, Math.max(2.4, 0.38 * p.scale * engCfg.shipScale), 0, Math.PI * 2);
+            ctx.fill();
+          }
+        });
+      }
+
+      for (const sp of game.sparks) {
+        const p = projectPoint(sp.x, sp.y, sp.z);
+        items.push({
+          z: sp.z,
+          draw: () => {
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, sp.life / sp.maxLife);
+            ctx.fillStyle = sp.col;
+            ctx.beginPath();
+            ctx.arc(p.sx, p.sy, Math.max(1.5, 0.28 * p.scale * engCfg.shipScale), 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+        });
+      }
+
+      if (cam.mode !== 'cockpit') {
+        items.push({
+          z: 0,
+          draw: () => drawMothership(game.px, game.py, 0)
+        });
+      }
+
+      items.sort((a, b) => b.z - a.z);
+      for (const it of items) {
+        if (it && typeof it.draw === 'function') it.draw();
+      }
+      ctx.restore();
+    }
+
+    // =========================================================================
+    // 6. HUD TELEMETRY, CONTROLS & ERROR-GUARDED LOOP
+    // =========================================================================
+    function formatCosmicDistance(meters) {
+      const m = Math.max(0, Number(meters) || 0);
+      const km = m / 1000;
+      const au = m / 149597870700;
+      const ly = m / 9.461e15;
+      if (ly >= 0.0005) return `${ly.toFixed(4)} ly (${au.toFixed(2)} AU)`;
+      if (au >= 0.01) return `${au.toFixed(3)} AU (${(km / 1e6).toFixed(1)}M km)`;
+      if (km >= 10000) return `${(km / 1e3).toFixed(1)}k km (${au.toFixed(4)} AU)`;
+      return `${m.toFixed(0)} m`;
+    }
+
+    function setText(id, txt) {
+      const el = $(id);
+      if (el) el.textContent = txt;
+    }
+
+    function updateHUD() {
+      const distStr = formatCosmicDistance(game.distMeters);
+      setText('hud-score', `${game.score}`);
+      setText('hud-dist', distStr);
+      setText('hud-sector', `S${String(game.sector).padStart(2, '0')}`);
+      setText('hud-systems', `SYS ${String(game.systemsDiscovered).padStart(2, '0')}`);
+      setText('hud-cam', cam.mode.toUpperCase());
+      setText('hud-temp', `${engOut.tRec.toFixed(1)}°C`);
+
+      const barHull = $('bar-hull');
+      if (barHull) barHull.style.width = `${game.hull}%`;
+      setText('val-hull', `${Math.round(game.hull)}%`);
+
+      const barCap = $('bar-cap');
+      if (barCap) barCap.style.width = `${game.cap}%`;
+      setText('val-cap', `${Math.round(game.cap)}%`);
+
+      const hPct = Math.min(100, Math.max(8, ((engOut.tRec - 20) / 110) * 100));
+      const barHeat = $('bar-heat');
+      if (barHeat) barHeat.style.width = `${hPct}%`;
+      setText('val-heat', `${Math.round(engOut.tRec)}°C`);
+
+      setText('lbl-din', `${engCfg.dIn.toFixed(2)} m`);
+      setText('lbl-cg', `${engCfg.cg.toFixed(2)}×`);
+      setText('p-crit', `${engOut.thetaC.toFixed(2)}°·${(engOut.r0 * 100).toFixed(1)}%·${(engOut.t2 * 100).toFixed(1)}%`);
+      setText('p-opt', `${engOut.pIn.toFixed(1)} / ${engOut.pRec.toFixed(1)} W`);
+      setText('p-elec', `${engOut.pElec.toFixed(2)} W`);
+      setText('p-bus', `${engOut.iNom.toFixed(2)}A·${engOut.rLoad.toFixed(2)}Ω·${engOut.vDropPct.toFixed(1)}%`);
+      setText('p-heat', `${engOut.qHeat.toFixed(1)} W`);
+      setText('p-therm', `+${engOut.deltaT.toFixed(1)}K / ${engOut.tRec.toFixed(1)}°C`);
+
+      setText('ck-scale', `${(game.distMeters / 149597870700).toFixed(5)} AU`);
+      setText('ck-din', `${engCfg.dIn.toFixed(2)} m`);
+      setText('ck-cg', `${engOut.cgEff.toFixed(2)}×·${engOut.thetaC.toFixed(1)}°`);
+      setText('ck-flux', `${engOut.fluxRec.toFixed(0)} W/m²`);
+      setText('ck-pelec', `${engOut.pElec.toFixed(2)} W`);
+      setText('ck-bus', `${engOut.iNom.toFixed(2)}A·${engOut.rLoad.toFixed(2)}Ω`);
+      setText('ck-qheat', `${engOut.qHeat.toFixed(1)} W`);
+      setText('ck-temp', `${engOut.tRec.toFixed(1)}°·${(engOut.etaFin * 100).toFixed(1)}%`);
+
+      const aiPanel = $('ai-devs-panel');
+      if (aiPanel && !aiPanel.classList.contains('hidden')) {
+        renderAIDevSwarmList();
+      }
+      const gfxWin = $('gfx-prompt-window');
+      if (gfxWin && !gfxWin.classList.contains('hidden')) {
+        renderGFXPromptFeed();
+      }
+    }
+
+    function dismissIntro() {
+      if (!game.introDismissed) {
+        game.introDismissed = true;
+        const overlay = $('intro-overlay');
+        if (overlay) overlay.classList.add('hidden');
+        sfx.play(440, 0.12, 'sine', 0.05);
+      }
+    }
+
+    function bindThumbstick(padId, knobId, axis) {
+      const pad = $(padId);
+      const knob = $(knobId);
+      if (!pad || !knob) return;
+      const maxR = 24;
+      let pid = null;
+
+      function setPos(cx, cy) {
+        const r = pad.getBoundingClientRect();
+        let dx = cx - (r.left + r.width * 0.5);
+        let dy = cy - (r.top + r.height * 0.5);
+        const d = Math.hypot(dx, dy);
+        if (d > maxR) { dx = (dx / d) * maxR; dy = (dy / d) * maxR; }
+        knob.style.transform = `translate(${dx}px, ${dy}px)`;
+        ctrl[`${axis}x`] = dx / maxR;
+        ctrl[`${axis}y`] = dy / maxR;
+      }
+
+      function clearPos() {
+        pid = null;
+        knob.style.transform = 'translate(0px, 0px)';
+        ctrl[`${axis}x`] = 0;
+        ctrl[`${axis}y`] = 0;
+      }
+
+      pad.addEventListener('pointerdown', (e) => {
+        dismissIntro();
+        pid = e.pointerId;
+        try { pad.setPointerCapture(pid); } catch (_) {}
+        setPos(e.clientX, e.clientY);
+      });
+      pad.addEventListener('pointermove', (e) => { if (e.pointerId === pid) setPos(e.clientX, e.clientY); });
+      pad.addEventListener('pointerup', (e) => { if (e.pointerId === pid) clearPos(); });
+      pad.addEventListener('pointercancel', clearPos);
+    }
+
+    function setCamMode(mode) {
+      cam.mode = mode;
+      const ck = $('cockpit-overlay');
+      if (ck) ck.classList.toggle('hidden', mode !== 'cockpit');
+      updateHUD();
+    }
+
+    function toggleGfxWindow(forceState) {
+      const win = $('gfx-prompt-window');
+      if (!win) return;
+      const nextHidden = typeof forceState === 'boolean' ? !forceState : !win.classList.contains('hidden');
+      win.classList.toggle('hidden', nextHidden);
+      if (!nextHidden) {
+        renderGFXPromptFeed();
+        const inp = $('gfx-prompt-input');
+        if (inp) inp.focus();
+      }
+    }
+
+    function wireControls() {
+      bindThumbstick('left-stick', 'left-knob', 'l');
+      bindThumbstick('right-stick', 'right-knob', 'r');
+
+      const launchBtn = $('btn-launch');
+      if (launchBtn) {
+        launchBtn.addEventListener('click', () => {
+          dismissIntro();
+        });
+      }
+
+      const genSysBtn = $('btn-gen-sys');
+      if (genSysBtn) {
+        genSysBtn.addEventListener('click', () => {
+          dismissIntro();
+          spawnFlightPlanetSystem('manual');
+        });
+      }
+
+      document.querySelectorAll('.smart-mode-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          setSmartAIMode(btn.dataset.mode);
+        });
+      });
+
+      const ckBtn = $('btn-cockpit');
+      if (ckBtn) ckBtn.addEventListener('click', () => setCamMode(cam.mode === 'cockpit' ? 'chase' : 'cockpit'));
+
+      const camBtn = $('btn-cam');
+      if (camBtn) {
+        camBtn.addEventListener('click', () => {
+          const modes = ['chase', 'stern', 'orbit', 'cockpit'];
+          setCamMode(modes[(modes.indexOf(cam.mode) + 1) % modes.length]);
+        });
+      }
+
+      const sfxBtn = $('btn-sfx');
+      if (sfxBtn) {
+        sfxBtn.addEventListener('click', () => {
+          sfx.enabled = !sfx.enabled;
+          sfxBtn.textContent = sfx.enabled ? 'SFX' : 'MUTE';
+          sfxBtn.classList.toggle('text-cyan-300', sfx.enabled);
+          sfxBtn.classList.toggle('text-slate-500', !sfx.enabled);
+          if (sfx.enabled) sfx.play(587, 0.07, 'sine', 0.04);
+        });
+      }
+
+      const pauseBtn = $('btn-pause');
+      if (pauseBtn) {
+        pauseBtn.addEventListener('click', () => {
+          if (game.dead) return;
+          game.paused = !game.paused;
+          pauseBtn.textContent = game.paused ? '▶' : '[P]';
+        });
+      }
+
+      const rstBtn = $('btn-restart');
+      if (rstBtn) rstBtn.addEventListener('click', () => { dismissIntro(); resetMission(); });
+
+      const modalRstBtn = $('btn-modal-restart');
+      if (modalRstBtn) modalRstBtn.addEventListener('click', () => { dismissIntro(); resetMission(); });
+
+      const aiDevsBtn = $('btn-smart-ai');
+      if (aiDevsBtn) {
+        aiDevsBtn.addEventListener('click', () => {
+          const panel = $('ai-devs-panel');
+          if (!panel) return;
+          const hidden = panel.classList.toggle('hidden');
+          aiDevsBtn.textContent = hidden ? '20 DAEMONS [+]' : '20 DAEMONS [−]';
+          if (!hidden) renderAIDevSwarmList();
+        });
+      }
+
+      const physHudBtn = $('btn-physics-hud');
+      if (physHudBtn) {
+        physHudBtn.addEventListener('click', () => {
+          const panel = $('physics-panel');
+          if (!panel) return;
+          const hidden = panel.classList.toggle('hidden');
+          physHudBtn.textContent = hidden ? 'ENGINE [+]' : 'ENGINE [−]';
+        });
+      }
+
+      const resetPhysBtn = $('btn-reset-phys');
+      if (resetPhysBtn) {
+        resetPhysBtn.addEventListener('click', () => {
+          engCfg.dIn = 0.75;
+          engCfg.cg = 3.0;
+          engCfg.vBus = 12;
+          const rDin = $('rng-din');
+          const rCg = $('rng-cg');
+          if (rDin) rDin.value = '0.75';
+          if (rCg) rCg.value = '3.0';
+          solvePhysics(game.inStream ? 2.4 : 1.0);
+          updateHUD();
+        });
+      }
+
+      const rngDin = $('rng-din');
+      if (rngDin) {
+        rngDin.addEventListener('input', (e) => {
+          engCfg.dIn = parseFloat(e.target.value) || 0.75;
+          solvePhysics(game.inStream ? 2.4 : 1.0);
+          updateHUD();
+        });
+      }
+
+      const rngCg = $('rng-cg');
+      if (rngCg) {
+        rngCg.addEventListener('input', (e) => {
+          engCfg.cg = parseFloat(e.target.value) || 3.0;
+          solvePhysics(game.inStream ? 2.4 : 1.0);
+          updateHUD();
+        });
+      }
+
+      document.querySelectorAll('.bus-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.bus-btn').forEach(b => {
+            b.classList.remove('active', 'bg-emerald-500/25', 'text-emerald-200', 'border-emerald-400/50', 'font-semibold');
+            b.classList.add('bg-slate-800', 'text-slate-300', 'border-slate-700');
+          });
+          btn.classList.add('active', 'bg-emerald-500/25', 'text-emerald-200', 'border-emerald-400/50', 'font-semibold');
+          btn.classList.remove('bg-slate-800', 'text-slate-300', 'border-slate-700');
+          engCfg.vBus = parseInt(btn.dataset.bus, 10) || 12;
+          solvePhysics(game.inStream ? 2.4 : 1.0);
+          updateHUD();
+        });
+      });
+
+      const microFractalBtn = $('btn-micro-fractal');
+      if (microFractalBtn) microFractalBtn.addEventListener('click', () => toggleGfxWindow());
+
+      const closeGfxBtn = $('btn-close-gfx');
+      if (closeGfxBtn) closeGfxBtn.addEventListener('click', () => toggleGfxWindow(false));
+
+      const sendGfxBtn = $('btn-send-gfx-prompt');
+      if (sendGfxBtn) {
+        sendGfxBtn.addEventListener('click', () => {
+          const inp = $('gfx-prompt-input');
+          if (!inp) return;
+          applyGraphicsPromptDirective(inp.value);
+          inp.value = '';
+        });
+      }
+
+      const gfxInp = $('gfx-prompt-input');
+      if (gfxInp) {
+        gfxInp.addEventListener('keydown', (e) => {
+          e.stopPropagation();
+          if (e.key === 'Enter') {
+            applyGraphicsPromptDirective(gfxInp.value);
+            gfxInp.value = '';
+          }
+        });
+      }
+
+      document.querySelectorAll('.gfx-preset').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const p = btn.dataset.preset;
+          if (p === 'planets') applyGraphicsPromptDirective('spawn planet system corona glow');
+          else if (p === 'trajectory') applyGraphicsPromptDirective('trajectory lock dense fractal dust');
+          else if (p === 'thermal') applyGraphicsPromptDirective('thermal optic guard prism plume');
+          else applyGraphicsPromptDirective('reset auto balanced');
+        });
+      });
+
+      const pulseBtn = $('btn-pulse');
+      if (pulseBtn) {
+        pulseBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); dismissIntro(); ctrl.fire = true; firePulse(); });
+        pulseBtn.addEventListener('pointerup', () => { ctrl.fire = false; });
+        pulseBtn.addEventListener('pointerleave', () => { ctrl.fire = false; });
+      }
+
+      const boostBtn = $('btn-boost');
+      if (boostBtn) {
+        boostBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); dismissIntro(); ctrl.boost = true; });
+        boostBtn.addEventListener('pointerup', () => { ctrl.boost = false; });
+        boostBtn.addEventListener('pointerleave', () => { ctrl.boost = false; });
+      }
+
+      window.addEventListener('keydown', (e) => {
+        if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
+        ctrl.keys[e.code] = true;
+        if (!game.introDismissed && (e.code === 'Space' || e.code === 'Enter')) {
+          dismissIntro();
+        }
+        if (e.code === 'KeyC') setCamMode(cam.mode === 'cockpit' ? 'chase' : 'cockpit');
+        if (e.code === 'KeyV') {
+          const modes = ['chase', 'stern', 'orbit', 'cockpit'];
+          setCamMode(modes[(modes.indexOf(cam.mode) + 1) % modes.length]);
+        }
+        if (e.code === 'KeyP' && !game.dead) {
+          game.paused = !game.paused;
+          const pBtn = $('btn-pause');
+          if (pBtn) pBtn.textContent = game.paused ? '▶' : '[P]';
+        }
+        if (e.code === 'KeyR') { dismissIntro(); resetMission(); }
+      });
+
+      window.addEventListener('keyup', (e) => {
+        ctrl.keys[e.code] = false;
+      });
+    }
+
+    let lastTs = performance.now();
+    let loopStarted = false;
+
+    function renderRuntimeErrorBadge(err) {
+      try {
+        if ($('runtime-status-badge')) return;
+        const badge = document.createElement('div');
+        badge.id = 'runtime-status-badge';
+        badge.className = 'fixed bottom-24 left-1/2 -translate-x-1/2 z-40 hud-glass px-3 py-1.5 flex items-center gap-2 font-mono text-[10px] text-rose-200 border-rose-400/50 pointer-events-auto';
+        const label = document.createElement('span');
+        label.textContent = `SAFE GUARD: ${(err && err.message) ? err.message : 'Frame recovered'}`;
+        const retryBtn = document.createElement('button');
+        retryBtn.textContent = 'RETRY / RESET';
+        retryBtn.className = 'px-2 py-0.5 rounded bg-rose-500/30 border border-rose-300/50 text-white font-bold cursor-pointer';
+        retryBtn.addEventListener('click', () => {
+          badge.remove();
+          resetMission();
+        });
+        badge.appendChild(label);
+        badge.appendChild(retryBtn);
+        document.body.appendChild(badge);
+      } catch (_) {}
+    }
+
+    function mainLoop(now) {
+      const safeNow = Number.isFinite(now) ? now : performance.now();
+      const dt = Math.min(0.05, Math.max(0.001, (safeNow - lastTs) / 1000));
+      lastTs = safeNow;
+
+      try {
+        stepSimulation(dt);
+        updateThreePlanetSystems(dt, game.lastWorldSpeed);
+        drawScene();
+        updateHUD();
+      } catch (err) {
+        renderRuntimeErrorBadge(err);
+        if (window.console && console.error) console.error('AIM SPACE safe loop guard:', err);
+      }
+      requestAnimationFrame(mainLoop);
+    }
+
+    function startAimSpace() {
+      if (loopStarted) return;
+      loopStarted = true;
+      try {
+        initThreePlanetSystems();
+      } catch (_) {
+        tjsSys.enabled = false;
+      }
+      try {
+        resizeCanvas();
+        seedCosmos();
+        wireControls();
+        resetMission();
+      } catch (err) {
+        renderRuntimeErrorBadge(err);
+      }
+      lastTs = performance.now();
+      requestAnimationFrame(mainLoop);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', startAimSpace);
+    } else {
+      startAimSpace();
+    }
+  </script>
+  <script src="/suite-apps/aether-loop-bridge.js"></script>
+</body>
+</html>

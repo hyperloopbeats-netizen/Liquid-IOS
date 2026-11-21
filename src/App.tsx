@@ -1,17 +1,30 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Atom, BrainCircuit, FolderPlus, Layers, Zap } from 'lucide-react';
 import { OS_APPS } from './kernel/appRegistry';
+import { aimSpaceStore } from './kernel/aimSpaceStore';
+import { awarenessMatrixEngine } from './kernel/awarenessMatrixEngine';
+import { codeClusterStore } from './kernel/codeClusterStore';
+import { desktopFolderEngine } from './kernel/desktopFolderEngine';
 import { kernelHealer } from './kernel/healerEngine';
+import { hybridSynthEngine } from './kernel/hybridSynthEngine';
 import { liquidAudioEngine } from './kernel/liquidAudioEngine';
 import { microFractalKernel } from './kernel/microFractalKernel';
 import { neuralBus } from './kernel/neuralBus';
+import { printedAppsStore } from './kernel/printedAppsStore';
+import { sentientCoreEngine } from './kernel/sentientCoreEngine';
+import { smartSortEngine } from './kernel/smartSortEngine';
 import { swarmEngine } from './kernel/swarmEngine';
 import { synesthesiaEngine } from './kernel/synesthesiaEngine';
 import { trilateralMatrix } from './kernel/trilateralMatrix';
 import { vfs } from './kernel/vfs';
 import { parseVoiceIntent, voiceNavigator } from './kernel/voiceNavigator';
+import { clampWindowRect, getWorkspaceBounds, reclampWindowState } from './kernel/workspaceBounds';
 import type {
   AppId,
   CircadianMode,
+  OrganicFolder,
+  OSAppDefinition,
+  PrintedAppDefinition,
   SynesthesiaState,
   VoiceIntentResult,
   WindowState,
@@ -19,18 +32,37 @@ import type {
 import { AppIcon } from './components/AppIcon';
 import { CommandOverlay } from './components/CommandOverlay';
 import { Dock } from './components/Dock';
+import {
+  OrganicFolderDrawer,
+  OrganicFolderTile,
+  resolveUnifiedApp,
+  type ResolvedAppItem,
+} from './components/OrganicFolderPod';
+import { PrintedAppRuntime } from './components/PrintedAppRuntime';
+import { SmartAppSortTab } from './components/SmartAppSortTab';
 import { SynesthesiaBackdrop } from './components/SynesthesiaBackdrop';
 import { TopBar } from './components/TopBar';
 import { WindowFrame } from './components/WindowFrame';
 import { AetherDriveApp } from './apps/AetherDriveApp';
 import { AgentSwarmApp } from './apps/AgentSwarmApp';
+import { AIMSpaceApp } from './apps/AIMSpaceApp';
 import { CodeAuditorApp } from './apps/CodeAuditorApp';
+import { CodeUnificatorApp } from './apps/CodeUnificatorApp';
 import { Doom3DApp } from './apps/Doom3DApp';
 import { EngineBlocksApp } from './apps/EngineBlocksApp';
+import { FractalCinemaApp } from './apps/FractalCinemaApp';
+import { GameForgeApp } from './apps/GameForgeApp';
 import { GameSandboxApp } from './apps/GameSandboxApp';
+import { HtmlAppPrinterApp } from './apps/HtmlAppPrinterApp';
+import { HyperFaceStudioApp } from './apps/HyperFaceStudioApp';
+import { JsonResearchVaultApp } from './apps/JsonResearchVaultApp';
+import { KineticEngineApp } from './apps/KineticEngineApp';
 import { LiquidEqApp } from './apps/LiquidEqApp';
 import { LiquidPlayerApp } from './apps/LiquidPlayerApp';
 import { LiquidVideoApp } from './apps/LiquidVideoApp';
+import { LivePlaygroundApp } from './apps/LivePlaygroundApp';
+import { MasterBrainApp } from './apps/MasterBrainApp';
+import { MeshUnificatorApp } from './apps/MeshUnificatorApp';
 import { MicroFractalApp } from './apps/MicroFractalApp';
 import { ModelForgeApp } from './apps/ModelForgeApp';
 import { MusicStudioApp } from './apps/MusicStudioApp';
@@ -39,11 +71,92 @@ import { OrganicMp4PlayerApp } from './apps/OrganicMp4PlayerApp';
 import { PromptArchitectApp } from './apps/PromptArchitectApp';
 import { SandboxRunnerApp } from './apps/SandboxRunnerApp';
 import { SelfHealerApp } from './apps/SelfHealerApp';
+import { SentientNexusApp } from './apps/SentientNexusApp';
+import { SmartBrainForgeApp } from './apps/SmartBrainForgeApp';
+import { SmartCompanionApp } from './apps/SmartCompanionApp';
 import { SnapshotManagerApp } from './apps/SnapshotManagerApp';
+import { SpritePhysicsLabApp } from './apps/SpritePhysicsLabApp';
+import { SuiteMatrixHostApp } from './apps/SuiteMatrixHostApp';
 import { SynesthesiaApp } from './apps/SynesthesiaApp';
+import { SyntheticHybridApp } from './apps/SyntheticHybridApp';
 import { TerminalApp } from './apps/TerminalApp';
+import { ThinkingMatrixApp } from './apps/ThinkingMatrixApp';
+import { UniversalStreamApp } from './apps/UniversalStreamApp';
 import { VideoEditorApp } from './apps/VideoEditorApp';
 import { VisualSynthApp } from './apps/VisualSynthApp';
+import { VoxelEngineApp } from './apps/VoxelEngineApp';
+
+function Tiny3DAppTile({
+  app,
+  isOpen,
+  isFocused,
+  rms,
+  onOpen,
+}: {
+  app: ResolvedAppItem;
+  isOpen: boolean;
+  isFocused: boolean;
+  rms: number;
+  onOpen: (id: AppId) => void;
+}) {
+  const [tilt, setTilt] = useState<{ rx: number; ry: number; hover: boolean }>({
+    rx: 0,
+    ry: 0,
+    hover: false,
+  });
+
+  const handleMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const nx = (e.clientX - rect.left) / Math.max(1, rect.width) - 0.5;
+    const ny = (e.clientY - rect.top) / Math.max(1, rect.height) - 0.5;
+    setTilt({ rx: -ny * 22, ry: nx * 22, hover: true });
+  };
+
+  const scaleBoost = tilt.hover ? 1.12 : 1 + rms * 0.06;
+
+  return (
+    <button
+      type="button"
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData('text/aether-app', app.id);
+        e.dataTransfer.effectAllowed = 'move';
+      }}
+      onClick={() => onOpen(app.id)}
+      onPointerMove={handleMove}
+      onPointerLeave={() => setTilt({ rx: 0, ry: 0, hover: false })}
+      title={`${app.name} · ${app.category} (Drag into an Organic Folder)`}
+      style={{
+        transform: `perspective(380px) rotateX(${tilt.rx.toFixed(1)}deg) rotateY(${tilt.ry.toFixed(1)}deg) scale(${scaleBoost.toFixed(3)})`,
+        transformStyle: 'preserve-3d',
+      }}
+      className="pointer-events-auto w-[58px] p-1 rounded-lg hover:bg-white/[0.08] transition-[transform,background-color] duration-150 ease-out flex flex-col items-center gap-1 text-center cursor-grab active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+    >
+      <div
+        style={{ transform: 'translateZ(10px)' }}
+        className={`relative w-8 h-8 rounded-lg bg-gradient-to-br ${app.accentGradient} flex items-center justify-center border transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.5),0_7px_14px_-4px_rgba(0,0,0,0.85)] ${
+          isFocused
+            ? 'border-cyan-200 ring-2 ring-cyan-300/80 shadow-[0_0_18px_rgba(34,211,238,0.75)]'
+            : isOpen
+            ? 'border-white/55'
+            : 'border-white/20'
+        }`}
+      >
+        <AppIcon name={app.iconName} className="w-4 h-4 text-white drop-shadow" />
+        {isOpen && (
+          <span
+            className={`absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full ${
+              isFocused ? 'bg-cyan-300' : 'bg-emerald-400'
+            } shadow`}
+          />
+        )}
+      </div>
+      <span className="text-[9.5px] font-medium text-slate-200 leading-tight drop-shadow truncate max-w-full">
+        {app.shortName}
+      </span>
+    </button>
+  );
+}
 
 const CIRCADIAN_ORDER: CircadianMode[] = ['auto', 'dawn', 'noon', 'dusk', 'midnight'];
 
@@ -56,6 +169,20 @@ export default function App() {
   const [kernelHealth, setKernelHealth] = useState(kernelHealer.getState().health);
   const [fractalFps, setFractalFps] = useState(microFractalKernel.getState().measuredFps);
   const [vfsFileCount, setVfsFileCount] = useState(0);
+
+  const [printedApps, setPrintedApps] = useState<PrintedAppDefinition[]>(printedAppsStore.getApps());
+  const [folders, setFolders] = useState<OrganicFolder[]>(desktopFolderEngine.getFolders());
+  const [panelAppIds, setPanelAppIds] = useState<AppId[]>(desktopFolderEngine.getPanelAppIds());
+  const [openFolderId, setOpenFolderId] = useState<string | null>(null);
+  const [aimSpaceState, setAimSpaceState] = useState(() => aimSpaceStore.getState());
+  const [clusterCount, setClusterCount] = useState(() => codeClusterStore.getState().clusters.length);
+  const [hybridBuildCount, setHybridBuildCount] = useState(
+    () => hybridSynthEngine.getState().builds.length
+  );
+  const [sentientMintCount, setSentientMintCount] = useState(
+    () => sentientCoreEngine.getState().drafts.filter((d) => Boolean(d.mintedAppId)).length
+  );
+  const [daemonCount, setDaemonCount] = useState(() => swarmEngine.getDaemons().length);
 
   const [driveTargetFile, setDriveTargetFile] = useState<string | null>(null);
   const [sandboxTargetFile, setSandboxTargetFile] = useState<string | null>('index.html');
@@ -75,17 +202,36 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    void vfs.init();
+    void vfs.init().then(() => awarenessMatrixEngine.syncSuiteAppsToVfs());
     const unsubVfs = vfs.subscribe((files) => setVfsFileCount(files.length));
     const unsubSyn = synesthesiaEngine.subscribe(setSynesthesia);
     const unsubHeal = kernelHealer.subscribe((snap) => setKernelHealth(snap.health));
     const unsubMfk = microFractalKernel.subscribe((mfk) => setFractalFps(mfk.measuredFps));
+    const unsubPrinted = printedAppsStore.subscribe(setPrintedApps);
+    const unsubAimSpace = aimSpaceStore.subscribe(setAimSpaceState);
+    const unsubClusters = codeClusterStore.subscribe((st) => setClusterCount(st.clusters.length));
+    const unsubHybrid = hybridSynthEngine.subscribe((st) => setHybridBuildCount(st.builds.length));
+    const unsubSentient = sentientCoreEngine.subscribe((st) =>
+      setSentientMintCount(st.drafts.filter((d) => Boolean(d.mintedAppId)).length)
+    );
+    const unsubDaemons = swarmEngine.subscribe((d) => setDaemonCount(d.length));
+    const unsubFolders = desktopFolderEngine.subscribe((st) => {
+      setFolders(st.folders);
+      setPanelAppIds(st.panelAppIds);
+    });
 
     return () => {
       unsubVfs();
       unsubSyn();
       unsubHeal();
       unsubMfk();
+      unsubPrinted();
+      unsubAimSpace();
+      unsubClusters();
+      unsubHybrid();
+      unsubSentient();
+      unsubDaemons();
+      unsubFolders();
     };
   }, []);
 
@@ -102,38 +248,48 @@ export default function App() {
   }, [windows]);
 
   const openApp = useCallback((id: AppId) => {
-    const def = OS_APPS.find((a) => a.id === id);
-    if (!def) return;
+    const builtIn = OS_APPS.find((a) => a.id === id);
+    const printed = !builtIn ? printedAppsStore.getById(id) : undefined;
+    if (!builtIn && !printed) return;
+
+    const defaultW = builtIn?.defaultWidth ?? 540;
+    const defaultH = builtIn?.defaultHeight ?? 400;
 
     setWindows((prev) => {
+      const bounds = getWorkspaceBounds();
       const nextZ = ++zCounterRef.current;
       const existing = prev[id];
       if (existing) {
         return {
           ...prev,
-          [id]: { ...existing, minimized: false, zIndex: nextZ },
+          [id]: {
+            ...reclampWindowState(existing, bounds),
+            minimized: false,
+            zIndex: nextZ,
+          },
         };
       }
 
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      const isCompact = vw < 640;
-      const marginX = isCompact ? 8 : 16;
+      const isCompact = bounds.vw < 640;
       const openCount = Object.keys(prev).length;
-      const width = Math.min(vw - marginX * 2, def.defaultWidth);
-      const height = Math.min(vh - (isCompact ? 124 : 130), def.defaultHeight);
+      const width = Math.min(bounds.usableWidth, defaultW);
+      const height = Math.min(bounds.usableHeight, defaultH);
       const offset = isCompact ? 0 : (openCount % 5) * 28;
-      const x = Math.max(marginX, Math.min(vw - width - marginX, Math.round((vw - width) / 2) + offset));
-      const y = Math.max(48, Math.min(vh - height - 74, Math.round((vh - height) / 2) - 10 + offset));
+      const clamped = clampWindowRect(
+        {
+          x: bounds.left + Math.round((bounds.usableWidth - width) / 2) + offset,
+          y: bounds.top + Math.round((bounds.usableHeight - height) / 2) + offset,
+          width,
+          height,
+        },
+        bounds
+      );
 
       return {
         ...prev,
         [id]: {
           id,
-          x,
-          y,
-          width,
-          height,
+          ...clamped,
           zIndex: nextZ,
           minimized: false,
           maximized: false,
@@ -142,6 +298,7 @@ export default function App() {
       };
     });
     setActiveAppId(id);
+    smartSortEngine.recordAppUse(id);
   }, []);
 
   const focusWindow = useCallback((id: AppId) => {
@@ -177,53 +334,92 @@ export default function App() {
     setWindows((prev) => {
       const w = prev[id];
       if (!w) return prev;
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
+      const bounds = getWorkspaceBounds();
       if (!w.maximized) {
-        const marginX = vw < 640 ? 8 : 12;
         return {
           ...prev,
           [id]: {
             ...w,
             prevBounds: { x: w.x, y: w.y, width: w.width, height: w.height },
-            x: marginX,
-            y: vw < 640 ? 48 : 52,
-            width: Math.max(280, vw - marginX * 2),
-            height: Math.max(300, vh - 128),
+            x: bounds.left,
+            y: bounds.top,
+            width: bounds.usableWidth,
+            height: bounds.usableHeight,
             maximized: true,
             snapMode: 'full',
           },
         };
       }
-      const restore = w.prevBounds ?? { x: 80, y: 64, width: 820, height: 560 };
+      const restore = clampWindowRect(
+        w.prevBounds ?? { x: bounds.left + 32, y: bounds.top + 12, width: 640, height: 430 },
+        bounds
+      );
       return {
         ...prev,
         [id]: {
           ...w,
           ...restore,
           maximized: false,
+          miniMode: false,
           snapMode: null,
         },
       };
     });
   }, []);
 
-  const snapWindow = useCallback((id: AppId, side: 'left' | 'right') => {
+  const toggleMiniWindow = useCallback((id: AppId) => {
     setWindows((prev) => {
       const w = prev[id];
       if (!w) return prev;
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      const halfW = Math.floor((vw - 32) / 2);
-      const h = Math.max(320, vh - 132);
+      const bounds = getWorkspaceBounds();
+      if (!w.miniMode) {
+        const miniW = bounds.vw < 640 ? Math.min(290, bounds.usableWidth) : Math.min(360, bounds.usableWidth);
+        const miniH = Math.min(bounds.vw < 640 ? 220 : 250, bounds.usableHeight);
+        const clamped = clampWindowRect({ x: w.x, y: w.y, width: miniW, height: miniH }, bounds);
+        return {
+          ...prev,
+          [id]: {
+            ...w,
+            preMiniBounds: { x: w.x, y: w.y, width: w.width, height: w.height },
+            ...clamped,
+            maximized: false,
+            miniMode: true,
+            snapMode: null,
+            zIndex: ++zCounterRef.current,
+          },
+        };
+      }
+      const restore = clampWindowRect(
+        w.preMiniBounds ?? { x: bounds.left + 40, y: bounds.top + 16, width: 620, height: 420 },
+        bounds
+      );
       return {
         ...prev,
         [id]: {
           ...w,
-          x: side === 'left' ? 12 : halfW + 20,
-          y: 52,
+          ...restore,
+          miniMode: false,
+          zIndex: ++zCounterRef.current,
+        },
+      };
+    });
+    setActiveAppId(id);
+  }, []);
+
+  const snapWindow = useCallback((id: AppId, side: 'left' | 'right') => {
+    setWindows((prev) => {
+      const w = prev[id];
+      if (!w) return prev;
+      const bounds = getWorkspaceBounds();
+      const halfW = Math.floor((bounds.usableWidth - 10) / 2);
+      return {
+        ...prev,
+        [id]: {
+          ...w,
+          x: side === 'left' ? bounds.left : bounds.left + halfW + 10,
+          y: bounds.top,
           width: halfW,
-          height: h,
+          height: bounds.usableHeight,
           maximized: false,
           snapMode: side,
           zIndex: ++zCounterRef.current,
@@ -237,12 +433,11 @@ export default function App() {
     setWindows((prev) => {
       const visibleIds = Object.keys(prev).filter((k) => !prev[k].minimized);
       if (visibleIds.length === 0) return prev;
-      const vw = window.innerWidth - 24;
-      const vh = window.innerHeight - 132;
+      const bounds = getWorkspaceBounds();
       const cols = visibleIds.length === 1 ? 1 : visibleIds.length <= 4 ? 2 : 3;
       const rows = Math.ceil(visibleIds.length / cols);
-      const cellW = Math.floor((vw - (cols - 1) * 10) / cols);
-      const cellH = Math.floor((vh - (rows - 1) * 10) / rows);
+      const cellW = Math.floor((bounds.usableWidth - (cols - 1) * 10) / cols);
+      const cellH = Math.floor((bounds.usableHeight - (rows - 1) * 10) / rows);
 
       const next = { ...prev };
       visibleIds.forEach((id, idx) => {
@@ -250,10 +445,10 @@ export default function App() {
         const row = Math.floor(idx / cols);
         next[id] = {
           ...next[id],
-          x: 12 + col * (cellW + 10),
-          y: 52 + row * (cellH + 10),
-          width: cellW,
-          height: cellH,
+          x: bounds.left + col * (cellW + 10),
+          y: bounds.top + row * (cellH + 10),
+          width: Math.max(240, cellW),
+          height: Math.max(180, cellH),
           maximized: false,
           snapMode: null,
         };
@@ -266,19 +461,26 @@ export default function App() {
     setWindows((prev) => {
       const ids = Object.keys(prev);
       if (ids.length === 0) return prev;
+      const bounds = getWorkspaceBounds();
       const next = { ...prev };
       ids.forEach((id, idx) => {
         const def = OS_APPS.find((a) => a.id === id);
-        const w = Math.min(window.innerWidth - 60, def?.defaultWidth ?? 800);
-        const h = Math.min(window.innerHeight - 140, def?.defaultHeight ?? 540);
+        const w = Math.min(bounds.usableWidth - 20, def?.defaultWidth ?? 800);
+        const h = Math.min(bounds.usableHeight - 20, def?.defaultHeight ?? 540);
+        const clamped = clampWindowRect(
+          {
+            x: bounds.left + 16 + idx * 28,
+            y: bounds.top + idx * 24,
+            width: w,
+            height: h,
+          },
+          bounds
+        );
         next[id] = {
           ...next[id],
           minimized: false,
           maximized: false,
-          x: 40 + idx * 34,
-          y: 56 + idx * 28,
-          width: w,
-          height: h,
+          ...clamped,
           zIndex: ++zCounterRef.current,
         };
       });
@@ -301,11 +503,10 @@ export default function App() {
       const { apps, label, circadian } = trilateralMatrix.getPresetApps(preset);
       if (circadian) synesthesiaEngine.setCircadianMode(circadian);
 
-      const vw = window.innerWidth - 24;
-      const vh = window.innerHeight - 132;
-      const leftW = Math.floor(vw * 0.52);
-      const rightW = vw - leftW - 10;
-      const rightH = Math.floor((vh - 10) / 2);
+      const bounds = getWorkspaceBounds();
+      const leftW = Math.floor(bounds.usableWidth * 0.52);
+      const rightW = bounds.usableWidth - leftW - 10;
+      const rightH = Math.floor((bounds.usableHeight - 10) / 2);
 
       setWindows((prev) => {
         const next: Record<string, WindowState> = {};
@@ -315,11 +516,38 @@ export default function App() {
         apps.forEach((id, idx) => {
           const z = ++zCounterRef.current;
           if (idx === 0) {
-            next[id] = { id, x: 12, y: 52, width: leftW, height: vh, zIndex: z, minimized: false, maximized: false };
+            next[id] = {
+              id,
+              x: bounds.left,
+              y: bounds.top,
+              width: leftW,
+              height: bounds.usableHeight,
+              zIndex: z,
+              minimized: false,
+              maximized: false,
+            };
           } else if (idx === 1) {
-            next[id] = { id, x: 12 + leftW + 10, y: 52, width: rightW, height: rightH, zIndex: z, minimized: false, maximized: false };
+            next[id] = {
+              id,
+              x: bounds.left + leftW + 10,
+              y: bounds.top,
+              width: rightW,
+              height: rightH,
+              zIndex: z,
+              minimized: false,
+              maximized: false,
+            };
           } else {
-            next[id] = { id, x: 12 + leftW + 10, y: 52 + rightH + 10, width: rightW, height: rightH, zIndex: z, minimized: false, maximized: false };
+            next[id] = {
+              id,
+              x: bounds.left + leftW + 10,
+              y: bounds.top + rightH + 10,
+              width: rightW,
+              height: rightH,
+              zIndex: z,
+              minimized: false,
+              maximized: false,
+            };
           }
         });
         return next;
@@ -511,63 +739,204 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [activateTriad]);
 
-  // Boot initial workspace: CodeMesh IDE layout (Split Editor + AI Companion + AST Code Auditor)
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      if (vw >= 1024) {
-        const margin = 12;
-        const usableW = vw - margin * 2 - 10;
-        const usableH = vh - 132;
-        const leftW = Math.floor(usableW * 0.58);
-        const rightW = usableW - leftW;
-        const rightTopH = Math.floor((usableH - 10) * 0.54);
-        const rightBottomH = usableH - rightTopH - 10;
-        setWindows({
-          drive: {
-            id: 'drive',
-            x: margin,
-            y: 52,
-            width: leftW,
-            height: usableH,
-            zIndex: ++zCounterRef.current,
-            minimized: false,
-            maximized: false,
-          },
-          terminal: {
-            id: 'terminal',
-            x: margin + leftW + 10,
-            y: 52,
-            width: rightW,
-            height: rightTopH,
-            zIndex: ++zCounterRef.current,
-            minimized: false,
-            maximized: false,
-          },
-          auditor: {
-            id: 'auditor',
-            x: margin + leftW + 10,
-            y: 52 + rightTopH + 10,
-            width: rightW,
-            height: rightBottomH,
-            zIndex: ++zCounterRef.current,
-            minimized: false,
-            maximized: false,
-          },
-        });
-        setActiveAppId('drive');
-      } else {
-        openApp('drive');
-      }
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [openApp]);
+  const tileSpecificApps = useCallback(
+    (appIds: AppId[]) => {
+      const uniqueIds = Array.from(new Set(appIds)).filter((id) =>
+        OS_APPS.some((a) => a.id === id) || Boolean(printedAppsStore.getById(id))
+      );
+      if (uniqueIds.length === 0) return;
 
-  const activeAppDef = OS_APPS.find((a) => a.id === activeAppId);
+      const bounds = getWorkspaceBounds();
+      const cols = uniqueIds.length === 1 ? 1 : 2;
+      const rows = Math.ceil(uniqueIds.length / cols);
+      const cellW = Math.floor((bounds.usableWidth - (cols - 1) * 10) / cols);
+      const cellH = Math.floor((bounds.usableHeight - (rows - 1) * 10) / rows);
+
+      setWindows((prev) => {
+        const next: Record<string, WindowState> = {};
+        for (const k of Object.keys(prev)) {
+          next[k] = { ...prev[k], minimized: true };
+        }
+        uniqueIds.forEach((id, idx) => {
+          const col = idx % cols;
+          const row = Math.floor(idx / cols);
+          next[id] = {
+            id,
+            x: bounds.left + col * (cellW + 10),
+            y: bounds.top + row * (cellH + 10),
+            width: Math.max(260, cellW),
+            height: Math.max(180, cellH),
+            zIndex: ++zCounterRef.current,
+            minimized: false,
+            maximized: false,
+            snapMode: null,
+          };
+        });
+        return next;
+      });
+      setActiveAppId(uniqueIds[0]);
+      uniqueIds.forEach((id) => smartSortEngine.recordAppUse(id));
+      showToast(`Orchestrated ${uniqueIds.length} participating app(s) on workspace.`);
+    },
+    [showToast]
+  );
+
+  // Boot initial workspace: Sentient AI Core Main Prompt & App Minter inside safe workspace bounds
+  useEffect(() => {
+    const initBootWindow = () => {
+      const bounds = getWorkspaceBounds();
+      const restoreW = Math.min(960, Math.max(300, bounds.usableWidth - 24));
+      const restoreH = Math.min(620, Math.max(240, bounds.usableHeight - 24));
+
+      setWindows({
+        sentientai: {
+          id: 'sentientai',
+          x: bounds.left,
+          y: bounds.top,
+          width: bounds.usableWidth,
+          height: bounds.usableHeight,
+          zIndex: ++zCounterRef.current,
+          minimized: false,
+          maximized: true,
+          snapMode: 'full',
+          prevBounds: {
+            x: bounds.left + Math.round((bounds.usableWidth - restoreW) / 2),
+            y: bounds.top + Math.round((bounds.usableHeight - restoreH) / 2),
+            width: restoreW,
+            height: restoreH,
+          },
+        },
+      });
+      setActiveAppId('sentientai');
+    };
+
+    const timer = window.setTimeout(initBootWindow, 80);
+
+    const onViewportChange = () => {
+      const bounds = getWorkspaceBounds();
+      setWindows((prev) => {
+        const next: Record<string, WindowState> = {};
+        let changed = false;
+        for (const key of Object.keys(prev)) {
+          const updated = reclampWindowState(prev[key], bounds);
+          next[key] = updated;
+          if (
+            updated.x !== prev[key].x ||
+            updated.y !== prev[key].y ||
+            updated.width !== prev[key].width ||
+            updated.height !== prev[key].height
+          ) {
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
+    };
+
+    window.addEventListener('resize', onViewportChange);
+    window.addEventListener('orientationchange', onViewportChange);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', onViewportChange);
+      window.removeEventListener('orientationchange', onViewportChange);
+    };
+  }, []);
+
+  const activeBuiltIn = OS_APPS.find((a) => a.id === activeAppId);
+  const activePrinted = !activeBuiltIn ? printedApps.find((p) => p.id === activeAppId) : undefined;
+  const activeAppName = activeBuiltIn?.name ?? activePrinted?.name ?? 'Desktop Workspace';
+
+  const openAppIds = Object.values(windows)
+    .filter((w) => !w.minimized)
+    .map((w) => w.id);
 
   const renderAppBody = (id: AppId) => {
+    if (id.startsWith('printed:')) {
+      const printed = printedApps.find((p) => p.id === id);
+      if (!printed) return null;
+      return (
+        <PrintedAppRuntime
+          app={printed}
+          openAppIds={openAppIds}
+          onOpenApp={openApp}
+          onShowToast={showToast}
+        />
+      );
+    }
+
     switch (id) {
+      case 'sentientai':
+        return <SentientNexusApp onOpenApp={openApp} onShowToast={showToast} />;
+      case 'synthhybrid':
+        return <SyntheticHybridApp onOpenApp={openApp} onShowToast={showToast} />;
+      case 'liveplayground':
+        return <LivePlaygroundApp onOpenApp={openApp} onShowToast={showToast} />;
+      case 'aimworkstation':
+      case 'fractalcsp':
+      case 'heliocell':
+      case 'aimspacejet':
+      case 'modelforgesuite':
+      case 'sovereignfps':
+      case 'odonatamesh':
+      case 'sentientsun':
+      case 'cometicmatrix':
+      case 'aimosnexus':
+      case 'liquidquantum':
+      case 'cometicballistic':
+      case 'zerocrossingcad':
+      case 'aimosv7':
+        return (
+          <SuiteMatrixHostApp
+            suiteId={id}
+            onOpenApp={openApp}
+            onShowToast={showToast}
+          />
+        );
+      case 'aimspace':
+        return <AIMSpaceApp onOpenApp={openApp} onShowToast={showToast} />;
+      case 'companion':
+        return (
+          <SmartCompanionApp
+            openAppIds={openAppIds}
+            onOpenApp={openApp}
+            onTileApps={tileSpecificApps}
+            onCleanDesktop={minimizeAllWindows}
+            onShowToast={showToast}
+          />
+        );
+      case 'codeunifier':
+        return <CodeUnificatorApp onOpenApp={openApp} onShowToast={showToast} />;
+      case 'meshunifier':
+        return <MeshUnificatorApp onOpenApp={openApp} onShowToast={showToast} />;
+      case 'kineticengine':
+        return <KineticEngineApp onOpenApp={openApp} onShowToast={showToast} />;
+      case 'voxelengine':
+        return <VoxelEngineApp onOpenApp={openApp} onShowToast={showToast} />;
+      case 'hyperface':
+        return <HyperFaceStudioApp onOpenApp={openApp} onShowToast={showToast} />;
+      case 'smartbrain':
+        return <SmartBrainForgeApp onOpenApp={openApp} onShowToast={showToast} />;
+      case 'gameforge':
+        return <GameForgeApp onOpenApp={openApp} onShowToast={showToast} />;
+      case 'spritecomposer':
+        return <SpritePhysicsLabApp onOpenApp={openApp} onShowToast={showToast} />;
+      case 'jsonvault':
+        return <JsonResearchVaultApp onOpenApp={openApp} onShowToast={showToast} />;
+      case 'masterbrain':
+        return <MasterBrainApp onOpenApp={openApp} onShowToast={showToast} />;
+      case 'thinkmatrix':
+        return <ThinkingMatrixApp onOpenApp={openApp} onShowToast={showToast} />;
+      case 'streamhub':
+        return <UniversalStreamApp onOpenApp={openApp} onShowToast={showToast} />;
+      case 'htmlprinter':
+        return (
+          <HtmlAppPrinterApp
+            openAppIds={openAppIds}
+            onOpenApp={openApp}
+            onShowToast={showToast}
+          />
+        );
       case 'architect':
         return (
           <PromptArchitectApp
@@ -582,6 +951,8 @@ export default function App() {
         return <VideoEditorApp />;
       case 'doom3d':
         return <Doom3DApp />;
+      case 'fractalcinema':
+        return <FractalCinemaApp />;
       case 'blocks':
         return <EngineBlocksApp onOpenApp={openApp} onActivateTriad={activateTriad} />;
       case 'liquidmp3':
@@ -644,12 +1015,63 @@ export default function App() {
     }
   };
 
+  // Build unified desktop items: loose built-in apps + printed HTML5 apps not stored in any organic folder
+  const foldedSet = new Set(folders.flatMap((f) => f.appIds));
+  const looseDesktopApps = [
+    ...OS_APPS.map((a) => resolveUnifiedApp(a.id, OS_APPS, printedApps)),
+    ...printedApps.map((p) => resolveUnifiedApp(p.id, OS_APPS, printedApps)),
+  ]
+    .filter((item): item is ResolvedAppItem => Boolean(item))
+    .filter((item) => !foldedSet.has(item.id));
+
+  const openWindowSet = new Set(Object.keys(windows));
+  const openFolder = folders.find((f) => f.id === openFolderId) ?? null;
+
+  const allWindowAppDefs: OSAppDefinition[] = [
+    ...OS_APPS,
+    ...printedApps.map((p) => ({
+      id: p.id,
+      name: p.name,
+      shortName: p.shortName,
+      category: `Printed v${p.version}`,
+      axis: 'persistence' as const,
+      blockId: 'block-sandbox',
+      defaultWidth: 540,
+      defaultHeight: 400,
+      accentGradient: p.accentGradient,
+      iconName: 'printer',
+    })),
+  ];
+
+  const handleDesktopDropExtract = (e: React.DragEvent<HTMLDivElement>) => {
+    const appId = e.dataTransfer.getData('text/aether-app') as AppId;
+    const fromFolder = e.dataTransfer.getData('text/aether-source-folder');
+    if (appId && fromFolder) {
+      e.preventDefault();
+      desktopFolderEngine.extractAppToDesktop(appId);
+      showToast(`Extracted "${appId.replace('printed:', '')}" to main desktop.`);
+    }
+  };
+
   return (
-    <div className="aether-wallpaper relative w-full h-full overflow-hidden select-none">
-      <SynesthesiaBackdrop />
+    <div
+      onDragOver={(e) => {
+        if (e.dataTransfer.types.includes('text/aether-source-folder')) {
+          e.preventDefault();
+        }
+      }}
+      onDrop={handleDesktopDropExtract}
+      className="aether-wallpaper relative w-full h-full overflow-hidden select-none"
+    >
+      <SynesthesiaBackdrop
+        openAppIds={openAppIds}
+        activeAppId={activeAppId}
+        onSelectApp={openApp}
+        interactive3D
+      />
 
       <TopBar
-        activeAppName={activeAppDef?.name ?? 'Desktop Workspace'}
+        activeAppName={activeAppName}
         kernelHealth={kernelHealth}
         vfsFileCount={vfsFileCount}
         fractalFps={fractalFps}
@@ -667,35 +1089,224 @@ export default function App() {
         }}
       />
 
+      <SmartAppSortTab
+        printedApps={printedApps}
+        openAppIds={openAppIds}
+        activeAppId={activeAppId}
+        onOpenApp={openApp}
+        onShowToast={showToast}
+      />
+
       {toastMsg && (
-        <div className="fixed top-14 left-1/2 -translate-x-1/2 z-[1400] px-4 py-2 rounded-xl aether-glass text-xs font-medium text-slate-100 shadow-xl">
+        <div className="fixed top-[calc(98px+env(safe-area-inset-top))] left-1/2 -translate-x-1/2 z-[1400] px-4 py-2 rounded-xl aether-glass text-xs font-medium text-slate-100 shadow-xl">
           {toastMsg}
         </div>
       )}
 
-      <main className="relative z-10 w-full h-full pt-14 pb-20 px-4 overflow-hidden">
-        <div className="grid grid-flow-col grid-rows-7 gap-1.5 w-fit">
-          {OS_APPS.map((app) => (
-            <button
-              key={app.id}
-              type="button"
-              onClick={() => openApp(app.id)}
-              className="w-24 p-2 rounded-xl hover:bg-white/10 transition-colors flex flex-col items-center gap-1.5 text-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
-            >
-              <div
-                className={`w-10 h-10 rounded-xl bg-gradient-to-br ${app.accentGradient} flex items-center justify-center shadow-lg border border-white/20`}
-              >
-                <AppIcon name={app.iconName} className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-[11px] font-medium text-slate-200 leading-tight drop-shadow">
-                {app.shortName}
-              </span>
-            </button>
+      <main className="relative z-10 w-full h-full pt-[102px] pb-24 px-2.5 overflow-hidden pointer-events-none">
+        <div className="grid grid-flow-col grid-rows-6 sm:grid-rows-7 gap-1 w-fit pointer-events-none">
+          {/* Organic Desktop Folders */}
+          {folders.map((folder) => (
+            <OrganicFolderTile
+              key={folder.id}
+              folder={folder}
+              builtInApps={OS_APPS}
+              printedApps={printedApps}
+              rms={synesthesia.rms}
+              isOpen={openFolderId === folder.id}
+              onToggleOpen={() =>
+                setOpenFolderId((curr) => (curr === folder.id ? null : folder.id))
+              }
+              onDropApp={(appId, folderId) => {
+                desktopFolderEngine.moveAppIntoFolder(appId, folderId);
+                showToast(`Moved into "${folder.name}".`);
+              }}
+            />
           ))}
+
+          {/* Create New Organic Pod button */}
+          <button
+            type="button"
+            onClick={() => {
+              const created = desktopFolderEngine.createFolder(`Pod ${folders.length + 1}`);
+              setOpenFolderId(created.id);
+              showToast(`Created Organic Folder "${created.name}"`);
+            }}
+            title="Create new Organic Desktop Folder"
+            className="pointer-events-auto w-[58px] p-1 rounded-lg hover:bg-white/[0.08] flex flex-col items-center gap-1 text-center cursor-pointer"
+          >
+            <div
+              style={{ borderRadius: '44% 56% 48% 52% / 50% 44% 56% 50%' }}
+              className="w-8 h-8 border border-dashed border-cyan-400/50 bg-cyan-500/10 flex items-center justify-center text-cyan-300"
+            >
+              <FolderPlus className="w-3.5 h-3.5" />
+            </div>
+            <span className="text-[9px] font-medium text-cyan-300 leading-tight">New Pod</span>
+          </button>
+
+          {/* Loose Desktop Apps & Printed HTML5 Apps */}
+          {looseDesktopApps
+            .filter((app) => app.id !== 'aimspace')
+            .map((app) => {
+              const win = windows[app.id];
+              const isOpen = Boolean(win);
+              const isFocused = activeAppId === app.id && Boolean(win) && !win.minimized;
+              return (
+                <Tiny3DAppTile
+                  key={app.id}
+                  app={app}
+                  isOpen={isOpen}
+                  isFocused={isFocused}
+                  rms={synesthesia.rms}
+                  onOpen={openApp}
+                />
+              );
+            })}
         </div>
 
-        <div className="absolute inset-0 pointer-events-none">
-          {OS_APPS.map((app) => {
+        {/* Clean Desktop Bottom-Left Launch Cards: AIM Space Live Screen + Sentient & Synthetic Systems Dock */}
+        <div className="mt-3 flex flex-wrap items-end gap-3 pointer-events-none">
+          {looseDesktopApps.some((app) => app.id === 'aimspace') && (
+            <button
+              type="button"
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData('text/aether-app', 'aimspace');
+                e.dataTransfer.effectAllowed = 'move';
+              }}
+              onClick={() => openApp('aimspace')}
+              title={`${aimSpaceState.gameTitle} · AIM Space · 50 Mounted Daemons`}
+              className={`pointer-events-auto group w-[144px] rounded-xl bg-slate-950/85 hover:bg-slate-900/95 border transition-transform duration-150 hover:scale-[1.03] p-1.5 text-left cursor-pointer shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
+                activeAppId === 'aimspace' && windows.aimspace && !windows.aimspace.minimized
+                  ? 'border-amber-400/75 ring-1 ring-amber-400/45'
+                  : 'border-white/15 hover:border-amber-400/50'
+              }`}
+            >
+              <div className="aspect-[4/3] w-full rounded-lg overflow-hidden bg-slate-900 border border-white/10">
+                <img
+                  src={aimSpaceState.gamePictureUrl}
+                  alt="AIM Space Game Preview"
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                />
+              </div>
+              <div className="mt-1.5 px-0.5">
+                <div className="text-[11px] font-semibold text-slate-100 truncate">AIM Space</div>
+                <div className="text-[9.5px] text-slate-400 truncate tabular-nums">
+                  {aimSpaceState.genre.split(' ')[0]} · 50 Daemons
+                </div>
+              </div>
+            </button>
+          )}
+
+          {/* Sentient Cohesive Systems Hub Card */}
+          <div className="hidden md:flex flex-col gap-2 w-[316px] rounded-2xl aether-spotlight-card p-3 pointer-events-auto">
+            <div className="flex items-center justify-between gap-2 border-b border-white/[0.08] pb-2">
+              <div>
+                <div className="text-[10px] font-mono uppercase tracking-wider text-cyan-300/90">
+                  Unified Cognitive OS
+                </div>
+                <div className="text-xs font-semibold text-slate-100">
+                  Sentient & Synthetic Systems
+                </div>
+              </div>
+              <span className="text-[11px] font-mono tabular-nums text-emerald-300">
+                {daemonCount} Daemons
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 text-center py-0.5">
+              <div className="rounded-lg bg-white/[0.03] border border-white/[0.07] py-1.5 px-1">
+                <div className="text-sm font-semibold font-mono tabular-nums text-cyan-200">
+                  {clusterCount}
+                </div>
+                <div className="text-[9.5px] text-slate-400">Clusters</div>
+              </div>
+              <div className="rounded-lg bg-white/[0.03] border border-white/[0.07] py-1.5 px-1">
+                <div className="text-sm font-semibold font-mono tabular-nums text-emerald-200">
+                  {hybridBuildCount}
+                </div>
+                <div className="text-[9.5px] text-slate-400">Hybrid Apps</div>
+              </div>
+              <div className="rounded-lg bg-white/[0.03] border border-white/[0.07] py-1.5 px-1">
+                <div className="text-sm font-semibold font-mono tabular-nums text-fuchsia-200">
+                  {sentientMintCount}
+                </div>
+                <div className="text-[9.5px] text-slate-400">Minted</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                onClick={() => openApp('sentientai')}
+                className="px-2.5 py-1.5 rounded-lg bg-cyan-500/18 hover:bg-cyan-500/28 border border-cyan-400/40 text-cyan-100 text-[11px] font-medium inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+              >
+                <Atom className="w-3.5 h-3.5 text-cyan-300 shrink-0" />
+                <span>Sentient AI</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => openApp('synthhybrid')}
+                className="px-2.5 py-1.5 rounded-lg bg-emerald-500/18 hover:bg-emerald-500/28 border border-emerald-400/40 text-emerald-100 text-[11px] font-medium inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+              >
+                <Zap className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+                <span>Hybrid 10</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => openApp('liveplayground')}
+                className="px-2.5 py-1.5 rounded-lg bg-violet-500/18 hover:bg-violet-500/28 border border-violet-400/40 text-violet-100 text-[11px] font-medium inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+              >
+                <Layers className="w-3.5 h-3.5 text-violet-300 shrink-0" />
+                <span>Playground</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => openApp('companion')}
+                className="px-2.5 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 text-slate-100 text-[11px] font-medium inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+              >
+                <BrainCircuit className="w-3.5 h-3.5 text-sky-300 shrink-0" />
+                <span>Smart AI</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Expanded Organic Folder Drawer */}
+        {openFolder && (
+          <OrganicFolderDrawer
+            folder={openFolder}
+            builtInApps={OS_APPS}
+            printedApps={printedApps}
+            openWindowIds={openWindowSet}
+            activeAppId={activeAppId}
+            onClose={() => setOpenFolderId(null)}
+            onOpenApp={(id) => {
+              openApp(id);
+            }}
+            onExtractApp={(id) => {
+              desktopFolderEngine.extractAppToDesktop(id);
+              showToast(`Extracted to main desktop.`);
+            }}
+            onDropApp={(appId, folderId) => {
+              desktopFolderEngine.moveAppIntoFolder(appId, folderId);
+            }}
+            onRename={(fid, name) => desktopFolderEngine.renameFolder(fid, name)}
+            onCycleHue={(fid) => desktopFolderEngine.cycleFolderHue(fid)}
+            onDissolve={(fid) => desktopFolderEngine.dissolveFolder(fid)}
+            onCreateNewFolder={() => {
+              const created = desktopFolderEngine.createFolder(`Pod ${folders.length + 1}`);
+              setOpenFolderId(created.id);
+            }}
+          />
+        )}
+
+        <div
+          style={{ perspective: '1300px' }}
+          className="absolute inset-0 pointer-events-none"
+        >
+          {allWindowAppDefs.map((app) => {
             const win = windows[app.id];
             if (!win) return null;
             return (
@@ -708,6 +1319,7 @@ export default function App() {
                 onClose={closeWindow}
                 onMinimize={minimizeWindow}
                 onToggleMaximize={toggleMaximize}
+                onToggleMini={toggleMiniWindow}
                 onSnap={snapWindow}
                 onMoveResize={handleMoveResize}
               >
@@ -718,7 +1330,17 @@ export default function App() {
         </div>
       </main>
 
-      <Dock windows={windows} activeAppId={activeAppId} onSelectApp={handleDockSelect} />
+      <Dock
+        panelAppIds={panelAppIds}
+        printedApps={printedApps}
+        windows={windows}
+        activeAppId={activeAppId}
+        onSelectApp={handleDockSelect}
+        onSwapSlot={(slotIdx, droppedId) => {
+          desktopFolderEngine.setPanelSlot(slotIdx, droppedId);
+          showToast(`Pinned to 9-App Glowing Panel slot #${slotIdx + 1}.`);
+        }}
+      />
 
       <CommandOverlay
         open={commandOpen}

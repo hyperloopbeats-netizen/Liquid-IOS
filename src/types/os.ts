@@ -1,4 +1,10 @@
-export type AppId =
+export type BuiltInAppId =
+  | 'aimspace'
+  | 'aimworkstation'
+  | 'fractalcsp'
+  | 'heliocell'
+  | 'aimspacejet'
+  | 'companion'
   | 'drive'
   | 'terminal'
   | 'architect'
@@ -13,6 +19,7 @@ export type AppId =
   | 'liquidmp3'
   | 'organicmp4'
   | 'liquidvideo'
+  | 'fractalcinema'
   | 'liquideq'
   | 'visualsynth'
   | 'microfractal'
@@ -20,7 +27,35 @@ export type AppId =
   | 'synesthesia'
   | 'healer'
   | 'gamedev'
-  | 'neuralbus';
+  | 'neuralbus'
+  | 'thinkmatrix'
+  | 'streamhub'
+  | 'htmlprinter'
+  | 'gameforge'
+  | 'spritecomposer'
+  | 'jsonvault'
+  | 'masterbrain'
+  | 'hyperface'
+  | 'smartbrain'
+  | 'kineticengine'
+  | 'voxelengine'
+  | 'codeunifier'
+  | 'meshunifier'
+  | 'modelforgesuite'
+  | 'sovereignfps'
+  | 'odonatamesh'
+  | 'sentientsun'
+  | 'cometicmatrix'
+  | 'aimosnexus'
+  | 'liquidquantum'
+  | 'cometicballistic'
+  | 'zerocrossingcad'
+  | 'aimosv7'
+  | 'synthhybrid'
+  | 'liveplayground'
+  | 'sentientai';
+
+export type AppId = BuiltInAppId | `printed:${string}`;
 
 export type TrilateralAxis = 'cognitive' | 'spatial' | 'persistence';
 
@@ -46,8 +81,10 @@ export interface WindowState {
   zIndex: number;
   minimized: boolean;
   maximized: boolean;
+  miniMode?: boolean;
   snapMode?: 'left' | 'right' | 'full' | null;
   prevBounds?: { x: number; y: number; width: number; height: number };
+  preMiniBounds?: { x: number; y: number; width: number; height: number };
 }
 
 export type VFSFileKind = 'js' | 'ts' | 'html' | 'css' | 'json' | 'md';
@@ -143,14 +180,106 @@ export type DaemonRole =
   | 'webgl-recovery'
   | 'vfs-compactor'
   | 'bus-balancer'
-  | 'binary-refract-agent';
+  | 'binary-refract-agent'
+  | 'style-curator'
+  | 'logic-weaver'
+  | 'physics-tuner'
+  | 'sprite-optimizer'
+  | 'narrator-scribe'
+  | 'json-indexer'
+  | 'asset-linker'
+  | 'performance-watchdog'
+  | 'safety-sanitizer'
+  | 'knowledge-synthesizer'
+  | 'code-intent-analyzer'
+  | 'dep-resolver'
+  | 'game-hook-injector'
+  | 'state-bridge-weaver'
+  | 'hud-auto-binder'
+  | 'collision-mesh-sync'
+  | 'input-mapper-daemon'
+  | 'shader-unifier'
+  | 'sprite-rig-binder'
+  | 'audio-sfx-synthesizer'
+  | 'entity-pool-optimizer'
+  | 'kinetic-engine-sync'
+  | 'voxel-engine-sync'
+  | 'synthetic-patch-verifier'
+  | 'smart-sort-classifier'
+  | 'affinity-router'
+  | 'cross-game-exporter'
+  | 'brain-memory-linker'
+  | 'rollback-guardian'
+  | 'coherence-calibrator'
+  // 50 Mounted AIM Space & Synthetic Designer Assist Daemons
+  | 'aim-world-architect'
+  | 'aim-sector-cartographer'
+  | 'aim-skybox-nebula'
+  | 'aim-station-rig'
+  | 'aim-asteroid-belt'
+  | 'aim-parallax-depth'
+  | 'aim-portal-beacon'
+  | 'aim-terrain-lattice'
+  | 'aim-zone-transitions'
+  | 'aim-ambient-dust'
+  | 'aim-flight-kinematics'
+  | 'aim-thrust-damper'
+  | 'aim-plasma-ballistics'
+  | 'aim-drone-ai-swarm'
+  | 'aim-boss-choreographer'
+  | 'aim-hitbox-precision'
+  | 'aim-shield-harmonics'
+  | 'aim-wave-director'
+  | 'aim-combo-multiplier'
+  | 'aim-recoil-camera'
+  | 'aim-syntax-restructurer'
+  | 'aim-designer-unifier'
+  | 'aim-hyperface-bridge'
+  | 'aim-mesh-promoter'
+  | 'aim-kinetic-adapter'
+  | 'aim-voxel-adapter'
+  | 'aim-shader-caustics'
+  | 'aim-hud-telemetry'
+  | 'aim-input-normalizer'
+  | 'aim-state-serializer'
+  | 'aim-audio-pulse-sfx'
+  | 'aim-music-tempo-sync'
+  | 'aim-voice-narrator'
+  | 'aim-subtitle-director'
+  | 'aim-item-drop-forge'
+  | 'aim-loot-balancer'
+  | 'aim-sprite-synthesizer'
+  | 'aim-frame-snapshot'
+  | 'aim-thumbnail-sync'
+  | 'aim-particle-culler'
+  | 'aim-vfs-archiver'
+  | 'aim-library-publisher'
+  | 'aim-vault-indexer'
+  | 'aim-bus-router'
+  | 'aim-brain-diplomat'
+  | 'aim-companion-uplink'
+  | 'aim-delta-watchdog'
+  | 'aim-memory-guard'
+  | 'aim-sandbox-verifier'
+  | 'aim-coherence-marshal'
+  // 10 Dedicated Hybrid App-Builder Synthesis Daemons
+  | 'hybrid-scanner'
+  | 'hybrid-ast-fuser'
+  | 'hybrid-cluster-binder'
+  | 'hybrid-ui-weaver'
+  | 'hybrid-physics-bridge'
+  | 'hybrid-audio-bridge'
+  | 'hybrid-self-improver'
+  | 'hybrid-test-verifier'
+  | 'hybrid-vfs-packager'
+  | 'hybrid-sentient-publisher';
 
 export type ModelBackend = 'gemini-cloud' | 'ollama-local' | 'edge-ast';
 
 export interface DaemonConfig {
   role: DaemonRole;
   name: string;
-  category: 'core' | 'upgrade';
+  category: 'core' | 'upgrade' | 'brain-sorter' | 'unificator-support' | 'aimspace-assist' | 'hybrid-synth';
   description: string;
   backend: ModelBackend;
   ollamaUrl: string;
@@ -336,3 +465,287 @@ export interface MicroFractalState {
   frameHistoryMs: number[];
   agents: BinaryRefractionAgent[];
 }
+
+export interface PrintedAppDefinition {
+  id: `printed:${string}`;
+  slug: string;
+  name: string;
+  shortName: string;
+  description: string;
+  html: string;
+  version: number;
+  accentGradient: string;
+  createdAt: number;
+  updatedAt: number;
+  lastImprovementNote?: string;
+  busMessagesSent: number;
+}
+
+export interface OrganicFolder {
+  id: string;
+  name: string;
+  hue: 'cyan' | 'emerald' | 'fuchsia' | 'amber' | 'indigo';
+  appIds: AppId[];
+}
+
+export type JsonEntryCategory =
+  | 'game-spec'
+  | 'sprite-pack'
+  | 'physics-rig'
+  | 'style-theme'
+  | 'narration'
+  | 'research'
+  | 'system-sort';
+
+export interface JsonLibraryEntry {
+  id: string;
+  slug: string;
+  title: string;
+  category: JsonEntryCategory;
+  tags: string[];
+  summary: string;
+  sideNotes: string[];
+  linkedEntryIds: string[];
+  linkedAppIds: string[];
+  data: Record<string, unknown>;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface SpriteAssetSpec {
+  id: string;
+  name: string;
+  role: 'player' | 'enemy' | 'collectible' | 'tile' | 'fx';
+  width: number;
+  height: number;
+  dataUrl: string;
+  palette: string[];
+}
+
+export interface PhysicsPresetSpec {
+  id: string;
+  name: string;
+  gravity: number;
+  friction: number;
+  restitution: number;
+  maxSpeed: number;
+  collisionShape: 'circle' | 'aabb';
+}
+
+export interface MasterBrainPlan {
+  id: string;
+  timestamp: number;
+  coherenceScore: number;
+  summary: string;
+  dispatchedDaemons: DaemonRole[];
+  folderActions: Array<{ folderName: string; appIds: string[]; reason: string }>;
+  crossAppLinks: Array<{ sourceApp: string; targetApp: string; payloadSummary: string }>;
+  researchRecommendations: string[];
+}
+
+export type SmartGameItemCategory =
+  | 'weapon'
+  | 'powerup'
+  | 'upgrade'
+  | 'enemy'
+  | 'obstacle'
+  | 'npc'
+  | 'relic'
+  | 'fx-module';
+
+export type SmartGameItemRarity = 'common' | 'rare' | 'epic' | 'sovereign';
+
+export interface SmartGameItem {
+  id: string;
+  name: string;
+  category: SmartGameItemCategory;
+  rarity: SmartGameItemRarity;
+  targetGame: string;
+  originMode: 'user-prompt' | 'auto-blank-fill';
+  summary: string;
+  upgradeReason: string;
+  stats: Array<{ label: string; value: string }>;
+  spawnRule: string;
+  iconColor: string;
+  codeSnippet: string;
+  createdAt: number;
+}
+
+export interface ContentBlankGap {
+  id: string;
+  title: string;
+  category: SmartGameItemCategory;
+  severity: 'high' | 'medium';
+  targetGame: string;
+  description: string;
+  suggestedPrompt: string;
+}
+
+export interface SyntheticIntegrationRecord {
+  id: string;
+  title: string;
+  targetId: string;
+  targetName: string;
+  sourceCode: string;
+  detectedRequirements: string[];
+  synthesisSummary: string;
+  bridgeCode: string;
+  unifiedHtml: string;
+  supportDaemonsUsed: string[];
+  createdAt: number;
+}
+
+export type SmartSortGroupKey =
+  | 'smart-auto'
+  | 'game-engines'
+  | 'unificators'
+  | 'brain-daemons'
+  | 'media-synth'
+  | 'workspace';
+
+export interface SmartSortedAppEntry {
+  id: AppId;
+  name: string;
+  shortName: string;
+  category: string;
+  axis: TrilateralAxis;
+  accentGradient: string;
+  iconName: string;
+  group: SmartSortGroupKey;
+  score: number;
+  isOpen: boolean;
+  isFocused: boolean;
+}
+
+export interface StorageSubsystemStat {
+  id: string;
+  label: string;
+  location: 'IndexedDB' | 'LocalStorage';
+  bytes: number;
+  itemCount: number;
+  targetAppId: AppId;
+  color: string;
+}
+
+export interface StorageGrowthPoint {
+  timestamp: number;
+  timeLabel: string;
+  trackedBytes: number;
+  vfsBytes: number;
+  browserUsageBytes: number;
+}
+
+export interface StorageTelemetrySnapshot {
+  quotaBytes: number;
+  browserUsageBytes: number;
+  freeBytes: number;
+  percentAllocatedUsed: number;
+  totalTrackedBytes: number;
+  baselineBytes: number;
+  netGrowthBytes: number;
+  growthRateBytesPerMin: number;
+  subsystems: StorageSubsystemStat[];
+  growthHistory: StorageGrowthPoint[];
+  lastSampledAt: number;
+  estimateSupported: boolean;
+}
+
+export interface EnvironmentSynthesisResult {
+  id: string;
+  mode: 'synthesize-prompt' | 'build-environment';
+  environmentName: string;
+  userPrompt: string;
+  synthesizedPrompt: string;
+  architectureSummary: string;
+  orchestratedApps: Array<{
+    appId: AppId;
+    appName: string;
+    roleInEnvironment: string;
+  }>;
+  vfsFilesWritten: Array<{
+    name: string;
+    path: string;
+    size: number;
+  }>;
+  hookCode: string;
+  environmentHtml5: string;
+  printedAppId?: AppId;
+  createdAt: number;
+}
+
+export type LibraryClusterDomain =
+  | 'webgl-shader'
+  | 'audio-dsp'
+  | 'swarm-ai'
+  | 'physics-ballistics'
+  | 'cad-geometry'
+  | 'ui-chrome'
+  | 'hybrid-runtime';
+
+export interface CodeLibraryModule {
+  id: string;
+  name: string;
+  sourceLabel: string;
+  language: 'js' | 'html' | 'css' | 'glsl';
+  symbols: string[];
+  code: string;
+  bytes: number;
+}
+
+export interface CodeLibraryCluster {
+  id: string;
+  name: string;
+  domain: LibraryClusterDomain;
+  summary: string;
+  colorHex: string;
+  dependencies: string[];
+  modules: CodeLibraryModule[];
+  previewHtml: string;
+  generation: number;
+  updatedAt: number;
+}
+
+export interface HybridDaemonStepReport {
+  role: DaemonRole;
+  name: string;
+  contribution: string;
+  status: 'complete' | 'active';
+}
+
+export interface HybridAppBuild {
+  id: string;
+  appName: string;
+  shortName: string;
+  description: string;
+  architectureSummary: string;
+  sourcesUsed: string[];
+  clustersUsed: string[];
+  daemonReports: HybridDaemonStepReport[];
+  html5Code: string;
+  improvementPass: number;
+  printedAppId?: AppId;
+  createdAt: number;
+}
+
+export interface SentientContentDraft {
+  id: string;
+  title: string;
+  kind: 'game' | 'visual-tool' | 'audio-synth' | 'simulation' | 'workspace-app';
+  userPrompt: string;
+  synthesizedNarrative: string;
+  architectureNotes: string;
+  systemsUsed: string[];
+  clustersBound: string[];
+  daemonsEngaged: number;
+  smartItemName?: string;
+  smartItemSummary?: string;
+  smartItemSnippet?: string;
+  html5Code: string;
+  revision: number;
+  mintedAppId?: AppId;
+  createdAt: number;
+  updatedAt: number;
+}
+
+
+

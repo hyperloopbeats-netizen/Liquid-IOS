@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cometic Engine - Photo Fabric Ballistic Range v5</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #030712; font-family: ui-monospace, monospace; user-select: none; touch-action: none; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.90);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75);
+        }
+        #fireBtn:active, #fireBtn.firing {
+            transform: scale(0.92);
+            background: rgba(244, 63, 94, 0.45);
+            border-color: #fb7185;
+            box-shadow: 0 0 35px rgba(244, 63, 94, 0.7);
+        }
+    </style>
+</head>
+<body class="text-slate-100 overflow-hidden">
+
+    <!-- 3D Viewport -->
+    <canvas id="simCanvas"></canvas>
+
+    <!-- Hidden File Input for Custom Photo Fabrics -->
+    <input type="file" id="photoInput" accept="image/*" class="hidden">
+
+    <!-- Restore HUD Button -->
+    <button id="btnRestoreHud" onclick="toggleHud(true)" class="absolute top-4 left-4 glass-panel text-cyan-300 px-3.5 py-2 rounded-xl text-xs font-bold border border-cyan-500/40 hidden z-30 cursor-pointer">
+        📂 Weapons & Photo Target
+    </button>
+
+    <!-- Movable & Collapsible Control Panel -->
+    <div id="hudPanel" class="absolute top-4 left-4 flex flex-col gap-3 max-w-xs w-[88vw] z-20">
+        <div class="glass-panel p-4 rounded-2xl flex flex-col gap-3">
+            <!-- Header -->
+            <div id="hudHeader" class="flex items-center justify-between border-b border-slate-800 pb-2 cursor-move">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                    <h1 class="text-cyan-400 font-bold tracking-wider text-xs">BALLISTIC RANGE v5.0</h1>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <button onclick="resetCloth()" class="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded hover:bg-emerald-500/30 cursor-pointer">Repair</button>
+                    <button onclick="toggleHud(false)" class="text-slate-400 hover:text-cyan-300 text-xs px-2 py-0.5 rounded bg-slate-800 border border-slate-700 cursor-pointer">[ - ]</button>
+                </div>
+            </div>
+
+            <!-- Load Photo Fabric Button -->
+            <button onclick="document.getElementById('photoInput').click()" class="w-full bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer">
+                <span>📁 Load Photo Target as Fabric</span>
+            </button>
+
+            <!-- 4 Weapon Systems -->
+            <div class="grid grid-cols-2 gap-1.5">
+                <button onclick="setWeapon('pistol')" id="btn-pistol" class="py-2 rounded-xl bg-cyan-500/25 text-cyan-300 border border-cyan-400 text-[11px] font-bold cursor-pointer">Pistol (Piercing)</button>
+                <button onclick="setWeapon('smg')" id="btn-smg" class="py-2 rounded-xl bg-slate-900 text-slate-400 border border-slate-800 text-[11px] font-semibold cursor-pointer">SMG (Auto Shred)</button>
+                <button onclick="setWeapon('shotgun')" id="btn-shotgun" class="py-2 rounded-xl bg-slate-900 text-slate-400 border border-slate-800 text-[11px] font-semibold cursor-pointer">Shotgun (12-Ga)</button>
+                <button onclick="setWeapon('cannon')" id="btn-cannon" class="py-2 rounded-xl bg-slate-900 text-slate-400 border border-slate-800 text-[11px] font-semibold cursor-pointer">Cannon (Breach)</button>
+            </div>
+
+            <!-- Tear Threshold Slider -->
+            <div class="flex flex-col gap-1 pt-1 border-t border-slate-800 text-xs">
+                <div class="flex justify-between text-[10px] text-slate-400">
+                    <span>Fabric Tensile Strength</span>
+                    <span id="val-tear" class="text-cyan-300">2.4x</span>
+                </div>
+                <input type="range" id="sliderTear" min="1.4" max="4.5" step="0.1" value="2.4" class="accent-cyan-400 cursor-pointer">
+            </div>
+
+            <!-- Live Stats -->
+            <div class="grid grid-cols-3 gap-1.5 pt-1 border-t border-slate-800 text-center">
+                <div class="bg-slate-900/70 p-1.5 rounded-lg border border-slate-800">
+                    <span class="text-slate-500 block text-[8px]">FPS</span>
+                    <span id="hud-fps" class="text-cyan-300 font-bold text-xs">60</span>
+                </div>
+                <div class="bg-slate-900/70 p-1.5 rounded-lg border border-slate-800">
+                    <span class="text-slate-500 block text-[8px]">ROUNDS</span>
+                    <span id="hud-rounds" class="text-amber-400 font-bold text-xs">0</span>
+                </div>
+                <div class="bg-slate-900/70 p-1.5 rounded-lg border border-slate-800">
+                    <span class="text-slate-500 block text-[8px]">TORN LINKS</span>
+                    <span id="hud-tears" class="text-rose-400 font-bold text-xs">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOTTOM-LEFT: AIMING THUMBSTICK -->
+    <div id="joystickZone" class="absolute bottom-8 left-8 w-32 h-32 rounded-full glass-panel border-2 border-cyan-500/40 flex items-center justify-center z-20 cursor-pointer">
+        <div class="absolute inset-3 rounded-full border border-dashed border-cyan-400/25 pointer-events-none"></div>
+        <span class="absolute top-1.5 text-[8px] text-cyan-400/60 font-bold tracking-widest pointer-events-none">AIM</span>
+        <div id="joystickKnob" class="w-12 h-12 rounded-full bg-cyan-400/30 border-2 border-cyan-300 shadow-[0_0_20px_rgba(56,189,248,0.6)] pointer-events-none transition-transform duration-75"></div>
+    </div>
+
+    <!-- BOTTOM-RIGHT: TACTILE FIRE BUTTON -->
+    <button id="fireBtn" class="absolute bottom-8 right-8 w-28 h-28 rounded-full glass-panel border-2 border-rose-500/70 bg-rose-500/20 flex flex-col items-center justify-center z-20 cursor-pointer shadow-[0_0_30px_rgba(244,63,94,0.35)]">
+        <span class="text-rose-300 font-black tracking-widest text-sm">FIRE</span>
+        <span id="fireWeaponLabel" class="text-[9px] text-rose-200/70 mt-0.5 uppercase">PISTOL</span>
+    </button>
+
+    <script>
+        // --- HUD DRAG & COLLAPSE ---
+        const hudPanel = document.getElementById('hudPanel');
+        const hudHeader = document.getElementById('hudHeader');
+        let isDraggingHud = false, dragOffX = 0, dragOffY = 0;
+
+        hudHeader.addEventListener('pointerdown', (e) => {
+            if (e.target.tagName === 'BUTTON') return;
+            isDraggingHud = true;
+            dragOffX = e.clientX - hudPanel.offsetLeft;
+            dragOffY = e.clientY - hudPanel.offsetTop;
+        });
+        window.addEventListener('pointermove', (e) => {
+            if (!isDraggingHud) return;
+            hudPanel.style.left = Math.max(0, Math.min(window.innerWidth - 260, e.clientX - dragOffX)) + 'px';
+            hudPanel.style.top = Math.max(0, Math.min(window.innerHeight - 200, e.clientY - dragOffY)) + 'px';
+        });
+        window.addEventListener('pointerup', () => { isDraggingHud = false; });
+
+        window.toggleHud = function(show) {
+            hudPanel.style.display = show ? 'flex' : 'none';
+            document.getElementById('btnRestoreHud').style.display = show ? 'none' : 'block';
+        };
+
+        // --- 1. TEARABLE VERLET CLOTH SOLVER ---
+        class TearableClothSolver {
+            constructor(wSeg, hSeg, restLen, centerZ) {
+                this.wSeg = wSeg;
+                this.hSeg = hSeg;
+                this.restLen = restLen;
+                this.centerZ = centerZ;
+                this.gravity = 9.81;
+                this.damping = 0.985;
+                this.tearMultiplier = 2.4;
+                this.tornCount = 0;
+                this.needsIndexRebuild = false;
+                this.init();
+            }
+
+            init() {
+                this.particles = [];
+                this.constraints = [];
+                this.tornCount = 0;
+                this.needsIndexRebuild = true;
+
+                const cols = this.wSeg + 1;
+                for (let y = 0; y <= this.hSeg; y++) {
+                    for (let x = 0; x <= this.wSeg; x++) {
+                        const px = (x - this.wSeg / 2) * this.restLen;
+                        const py = (y - this.hSeg / 2) * this.restLen + 2.0;
+                        const pz = this.centerZ;
+                        const isTopEdge = (y === this.hSeg) && (x % 4 === 0 || x === this.wSeg);
+                        this.particles.push({
+                            pos: new THREE.Vector3(px, py, pz),
+                            prev: new THREE.Vector3(px, py, pz),
+                            pinned: isTopEdge
+                        });
+                    }
+                }
+
+                for (let y = 0; y <= this.hSeg; y++) {
+                    for (let x = 0; x <= this.wSeg; x++) {
+                        const i = x + y * cols;
+                        if (x < this.wSeg) {
+                            this.constraints.push({ i1: i, i2: i + 1, p1: this.particles[i], p2: this.particles[i + 1], len: this.restLen, intact: true });
+                        }
+                        if (y < this.hSeg) {
+                            this.constraints.push({ i1: i, i2: i + cols, p1: this.particles[i], p2: this.particles[i + cols], len: this.restLen, intact: true });
+                        }
+                    }
+                }
+            }
+
+            update(delta) {
+                const dtSq = Math.min(delta, 0.033) ** 2;
+                const gravVec = new THREE.Vector3(0, -this.gravity * 0.45, 0);
+
+                for (let p of this.particles) {
+                    if (p.pinned) continue;
+                    const vel = p.pos.clone().sub(p.prev).multiplyScalar(this.damping);
+                    p.prev.copy(p.pos);
+                    p.pos.add(vel).addScaledVector(gravVec, dtSq);
+                }
+
+                const maxStretch = this.restLen * this.tearMultiplier;
+
+                for (let iter = 0; iter < 5; iter++) {
+                    for (let c of this.constraints) {
+                        if (!c.intact) continue;
+                        const dir = c.p2.pos.clone().sub(c.p1.pos);
+                        const dist = dir.length();
+                        if (dist === 0) continue;
+
+                        if (dist > maxStretch) {
+                            c.intact = false;
+                            this.tornCount++;
+                            this.needsIndexRebuild = true;
+                            continue;
+                        }
+
+                        const diff = (dist - c.len) / dist * 0.5;
+                        const correction = dir.multiplyScalar(diff);
+                        if (!c.p1.pinned) c.p1.pos.add(correction);
+                        if (!c.p2.pinned) c.p2.pos.sub(correction);
+                    }
+                }
+            }
+
+            tearRadius(center, radius, forceVec) {
+                for (let c of this.constraints) {
+                    if (!c.intact) continue;
+                    const mid = c.p1.pos.clone().add(c.p2.pos).multiplyScalar(0.5);
+                    if (mid.distanceTo(center) < radius) {
+                        c.intact = false;
+                        this.tornCount++;
+                        this.needsIndexRebuild = true;
+                    }
+                }
+                for (let p of this.particles) {
+                    if (p.pinned) continue;
+                    const d = p.pos.distanceTo(center);
+                    if (d < radius * 2.5) {
+                        const falloff = 1 - d / (radius * 2.5);
+                        p.pos.addScaledVector(forceVec, falloff);
+                    }
+                }
+            }
+
+            syncGeometry(geo) {
+                const pos = geo.attributes.position;
+                for (let i = 0; i < this.particles.length; i++) {
+                    pos.setXYZ(i, this.particles[i].pos.x, this.particles[i].pos.y, this.particles[i].pos.z);
+                }
+                pos.needsUpdate = true;
+
+                if (this.needsIndexRebuild) {
+                    const cols = this.wSeg + 1;
+                    const horizIntact = new Uint8Array((this.wSeg + 1) * (this.hSeg + 1));
+                    const vertIntact = new Uint8Array((this.wSeg + 1) * (this.hSeg + 1));
+
+                    for (let c of this.constraints) {
+                        if (!c.intact) continue;
+                        if (c.i2 === c.i1 + 1) horizIntact[c.i1] = 1;
+                        else if (c.i2 === c.i1 + cols) vertIntact[c.i1] = 1;
+                    }
+
+                    const indices = [];
+                    for (let y = 0; y < this.hSeg; y++) {
+                        for (let x = 0; x < this.wSeg; x++) {
+                            const a = x + y * cols;
+                            const b = a + 1;
+                            const c = a + cols;
+                            const d = c + 1;
+
+                            if (horizIntact[a] && vertIntact[a]) indices.push(a, b, c);
+                            if (vertIntact[b] && horizIntact[c]) indices.push(b, d, c);
+                        }
+                    }
+                    geo.setIndex(indices);
+                    this.needsIndexRebuild = false;
+                    document.getElementById('hud-tears').innerText = this.tornCount;
+                }
+
+                geo.computeVertexNormals();
+            }
+        }
+
+        // --- 2. THREE.JS SCENE & RETICLE ---
+        const canvas = document.getElementById('simCanvas');
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.outputEncoding = THREE.sRGBEncoding;
+
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x030712, 0.012);
+
+        const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 1.5, 14);
+        camera.lookAt(0, 1.5, -24);
+
+        // Neutral white lighting so custom photos retain true, accurate colors
+        scene.add(new THREE.AmbientLight(0xffffff, 1.1));
+        const keyLight = new THREE.DirectionalLight(0xffffff, 1.25);
+        keyLight.position.set(12, 18, 22);
+        scene.add(keyLight);
+
+        const floorGrid = new THREE.GridHelper(120, 40, 0x1e293b, 0x0f172a);
+        floorGrid.position.y = -18;
+        scene.add(floorGrid);
+
+        // Fabric Material & Custom Photo Loader
+        const fabricMat = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            roughness: 0.55,
+            metalness: 0.05,
+            side: THREE.DoubleSide
+        });
+
+        function createDefaultGridTexture() {
+            const texCanvas = document.createElement('canvas');
+            texCanvas.width = 512; texCanvas.height = 512;
+            const ctx2d = texCanvas.getContext('2d');
+            ctx2d.fillStyle = '#090d16'; ctx2d.fillRect(0, 0, 512, 512);
+            ctx2d.strokeStyle = '#38bdf8'; ctx2d.lineWidth = 6;
+            for (let i = 0; i <= 512; i += 32) {
+                ctx2d.beginPath(); ctx2d.moveTo(i, 0); ctx2d.lineTo(i, 512); ctx2d.stroke();
+                ctx2d.beginPath(); ctx2d.moveTo(0, i); ctx2d.lineTo(512, i); ctx2d.stroke();
+            }
+            const t = new THREE.CanvasTexture(texCanvas);
+            t.encoding = THREE.sRGBEncoding;
+            t.wrapS = THREE.RepeatWrapping;
+            t.wrapT = THREE.RepeatWrapping;
+            t.repeat.set(10, 10);
+            return t;
+        }
+
+        fabricMat.map = createDefaultGridTexture();
+        fabricMat.needsUpdate = true;
+
+        // Handle Photo Upload with proper vertical orientation (flipY = true) & sRGB color encoding
+        const textureLoader = new THREE.TextureLoader();
+        document.getElementById('photoInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const objectUrl = URL.createObjectURL(file);
+            textureLoader.load(objectUrl, (texture) => {
+                texture.flipY = true;
+                texture.encoding = THREE.sRGBEncoding;
+                texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+                texture.wrapS = THREE.ClampToEdgeWrapping;
+                texture.wrapT = THREE.ClampToEdgeWrapping;
+                texture.needsUpdate = true;
+
+                if (fabricMat.map) fabricMat.map.dispose();
+                fabricMat.map = texture;
+                fabricMat.needsUpdate = true;
+                URL.revokeObjectURL(objectUrl);
+            });
+            e.target.value = '';
+        });
+
+        const clothSolver = new TearableClothSolver(44, 36, 0.95, -24);
+        const clothGeo = new THREE.PlaneGeometry(41.8, 34.2, 44, 36);
+        const clothMesh = new THREE.Mesh(clothGeo, fabricMat);
+        scene.add(clothMesh);
+
+        // 3D Reticle
+        const reticleGroup = new THREE.Group();
+        const ringGeo = new THREE.RingGeometry(0.45, 0.65, 32);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e, side: THREE.DoubleSide });
+        const reticleRing = new THREE.Mesh(ringGeo, ringMat);
+        reticleGroup.add(reticleRing);
+
+        const dotMesh = new THREE.Mesh(new THREE.CircleGeometry(0.14, 16), ringMat);
+        reticleGroup.add(dotMesh);
+        reticleGroup.position.set(0, 1.5, -23.5);
+        scene.add(reticleGroup);
+
+        const laserGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0.2, 12), reticleGroup.position]);
+        const laserMat = new THREE.LineBasicMaterial({ color: 0xf43f5e, transparent: true, opacity: 0.45 });
+        const laserLine = new THREE.Line(laserGeo, laserMat);
+        scene.add(laserLine);
+
+        // --- 3. BALLISTIC WEAPON DESIGNS ---
+        class BallisticSystem {
+            constructor(scene) {
+                this.scene = scene;
+                this.rounds = [];
+                this.sparks = [];
+                this.sparkGeo = new THREE.BoxGeometry(0.16, 0.16, 0.16);
+            }
+
+            spawnSparks(pos, colorHex, count) {
+                const mat = new THREE.MeshBasicMaterial({ color: colorHex });
+                for (let i = 0; i < count; i++) {
+                    const m = new THREE.Mesh(this.sparkGeo, mat);
+                    m.position.copy(pos);
+                    this.scene.add(m);
+                    this.sparks.push({
+                        mesh: m,
+                        vel: new THREE.Vector3((Math.random() - 0.5) * 20, (Math.random() - 0.5) * 20, (Math.random() - 0.3) * 16),
+                        life: 0.4
+                    });
+                }
+            }
+
+            fire(origin, targetPos, weapon) {
+                const configs = {
+                    pistol:  { speed: 100, count: 1,  spread: 0.003, radius: 0.9,  impulse: 3.5, tearRad: 0.65, color: 0x38bdf8, size: 0.18 },
+                    smg:     { speed: 110, count: 1,  spread: 0.025, radius: 0.85, impulse: 2.6, tearRad: 0.55, color: 0xfacc15, size: 0.15 },
+                    shotgun: { speed: 90,  count: 12, spread: 0.07,  radius: 1.1,  impulse: 3.0, tearRad: 0.85, color: 0xfb923c, size: 0.16 },
+                    cannon:  { speed: 70,  count: 1,  spread: 0.001, radius: 3.5,  impulse: 10.5, tearRad: 3.0,  color: 0xf43f5e, size: 0.55 }
+                };
+
+                const cfg = configs[weapon];
+                const baseDir = targetPos.clone().sub(origin).normalize();
+
+                for (let i = 0; i < cfg.count; i++) {
+                    const dir = baseDir.clone();
+                    dir.x += (Math.random() - 0.5) * cfg.spread;
+                    dir.y += (Math.random() - 0.5) * cfg.spread;
+                    dir.z += (Math.random() - 0.5) * cfg.spread;
+                    dir.normalize();
+
+                    const mesh = new THREE.Mesh(
+                        new THREE.SphereGeometry(cfg.size, 10, 10),
+                        new THREE.MeshBasicMaterial({ color: cfg.color })
+                    );
+                    mesh.position.copy(origin);
+                    this.scene.add(mesh);
+
+                    this.rounds.push({
+                        mesh,
+                        vel: dir.multiplyScalar(cfg.speed),
+                        cfg,
+                        active: true
+                    });
+                }
+            }
+
+            update(delta, solver) {
+                for (let r of this.rounds) {
+                    if (!r.active) continue;
+                    r.vel.z -= 9.81 * delta * 0.1;
+                    r.mesh.position.addScaledVector(r.vel, delta);
+
+                    let hitParticle = null;
+                    let closestDist = r.cfg.radius;
+
+                    for (let p of solver.particles) {
+                        const d = r.mesh.position.distanceTo(p.pos);
+                        if (d < closestDist) {
+                            closestDist = d;
+                            hitParticle = p;
+                        }
+                    }
+
+                    if (hitParticle) {
+                        const impulseVec = r.vel.clone().normalize().multiplyScalar(r.cfg.impulse);
+                        solver.tearRadius(r.mesh.position, r.cfg.tearRad, impulseVec);
+                        this.spawnSparks(r.mesh.position, r.cfg.color, r.cfg.size > 0.4 ? 20 : 6);
+
+                        r.active = false;
+                        this.scene.remove(r.mesh);
+                    } else if (r.mesh.position.z < -45 || r.mesh.position.length() > 90) {
+                        r.active = false;
+                        this.scene.remove(r.mesh);
+                    }
+                }
+                this.rounds = this.rounds.filter(r => r.active);
+                document.getElementById('hud-rounds').innerText = this.rounds.length;
+
+                for (let s of this.sparks) {
+                    s.life -= delta;
+                    s.vel.y -= 25 * delta;
+                    s.mesh.position.addScaledVector(s.vel, delta);
+                    s.mesh.scale.setScalar(Math.max(0.01, s.life * 2.5));
+                    if (s.life <= 0) this.scene.remove(s.mesh);
+                }
+                this.sparks = this.sparks.filter(s => s.life > 0);
+            }
+        }
+
+        const ballistics = new BallisticSystem(scene);
+
+        // --- 4. THUMBSTICK AIMING & FIRE CONTROLS ---
+        const joystickZone = document.getElementById('joystickZone');
+        const joystickKnob = document.getElementById('joystickKnob');
+        let aimInput = { x: 0, y: 0 };
+        let aimTarget = new THREE.Vector2(0, 1.5);
+        let stickPointerId = null;
+
+        function handleStickMove(clientX, clientY) {
+            const rect = joystickZone.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            const maxR = rect.width / 2 - 20;
+
+            let dx = clientX - cx;
+            let dy = clientY - cy;
+            const dist = Math.hypot(dx, dy);
+            if (dist > maxR) {
+                dx = (dx / dist) * maxR;
+                dy = (dy / dist) * maxR;
+            }
+            joystickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+            aimInput.x = dx / maxR;
+            aimInput.y = -dy / maxR;
+        }
+
+        joystickZone.addEventListener('pointerdown', (e) => {
+            stickPointerId = e.pointerId;
+            joystickZone.setPointerCapture(e.pointerId);
+            handleStickMove(e.clientX, e.clientY);
+        });
+        joystickZone.addEventListener('pointermove', (e) => {
+            if (e.pointerId !== stickPointerId) return;
+            handleStickMove(e.clientX, e.clientY);
+        });
+        const resetStick = (e) => {
+            if (e.pointerId !== stickPointerId) return;
+            stickPointerId = null;
+            aimInput.x = 0;
+            aimInput.y = 0;
+            joystickKnob.style.transform = `translate(0px, 0px)`;
+        };
+        joystickZone.addEventListener('pointerup', resetStick);
+        joystickZone.addEventListener('pointercancel', resetStick);
+
+        let currentWeapon = 'pistol';
+        let isFiring = false;
+        let fireCooldown = 0;
+        const fireRates = { pistol: 0.2, smg: 0.06, shotgun: 0.5, cannon: 0.7 };
+
+        window.setWeapon = function(w) {
+            currentWeapon = w;
+            document.getElementById('fireWeaponLabel').innerText = w.toUpperCase();
+            ['pistol', 'smg', 'shotgun', 'cannon'].forEach(id => {
+                const btn = document.getElementById(`btn-${id}`);
+                btn.className = id === w
+                    ? "py-2 rounded-xl bg-cyan-500/25 text-cyan-300 border border-cyan-400 text-[11px] font-bold cursor-pointer"
+                    : "py-2 rounded-xl bg-slate-900 text-slate-400 border border-slate-800 text-[11px] font-semibold cursor-pointer";
+            });
+        };
+
+        window.resetCloth = function() {
+            clothSolver.init();
+            document.getElementById('hud-tears').innerText = '0';
+        };
+
+        const fireBtn = document.getElementById('fireBtn');
+        const triggerShot = () => {
+            const muzzlePos = new THREE.Vector3(0, -0.5, 11.5);
+            ballistics.fire(muzzlePos, reticleGroup.position, currentWeapon);
+            fireCooldown = fireRates[currentWeapon];
+            camera.position.z = 14.35;
+        };
+
+        fireBtn.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            isFiring = true;
+            fireBtn.classList.add('firing');
+            if (fireCooldown <= 0) triggerShot();
+        });
+        const stopFiring = () => {
+            isFiring = false;
+            fireBtn.classList.remove('firing');
+        };
+        fireBtn.addEventListener('pointerup', stopFiring);
+        fireBtn.addEventListener('pointerleave', stopFiring);
+        fireBtn.addEventListener('pointercancel', stopFiring);
+
+        document.getElementById('sliderTear').addEventListener('input', (e) => {
+            clothSolver.tearMultiplier = parseFloat(e.target.value);
+            document.getElementById('val-tear').innerText = e.target.value + 'x';
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // --- 5. MAIN LOOP ---
+        const clock = new THREE.Clock();
+        let frames = 0, lastFpsTime = performance.now();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = Math.min(clock.getDelta(), 0.05);
+
+            frames++;
+            if (performance.now() - lastFpsTime >= 1000) {
+                document.getElementById('hud-fps').innerText = frames;
+                frames = 0;
+                lastFpsTime = performance.now();
+            }
+
+            aimTarget.x = THREE.MathUtils.clamp(aimTarget.x + aimInput.x * 26 * delta, -19, 19);
+            aimTarget.y = THREE.MathUtils.clamp(aimTarget.y + aimInput.y * 22 * delta, -13, 17);
+
+            reticleGroup.position.set(aimTarget.x, aimTarget.y, -23.5);
+            reticleRing.rotation.z += delta * 2.5;
+
+            const positions = laserLine.geometry.attributes.position.array;
+            positions[3] = reticleGroup.position.x;
+            positions[4] = reticleGroup.position.y;
+            positions[5] = reticleGroup.position.z;
+            laserLine.geometry.attributes.position.needsUpdate = true;
+
+            camera.position.z += (14 - camera.position.z) * 12 * delta;
+
+            if (fireCooldown > 0) fireCooldown -= delta;
+            if (isFiring && fireCooldown <= 0) {
+                triggerShot();
+            }
+
+            clothSolver.update(delta);
+            ballistics.update(delta, clothSolver);
+            clothSolver.syncGeometry(clothGeo);
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    </script>
+</body>
+</html>

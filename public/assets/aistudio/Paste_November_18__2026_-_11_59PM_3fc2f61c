@@ -1,0 +1,3268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>HyperFace AI Studio v12.0 — OS-Safe Studio & Full Design Matrix</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #03060c;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #e2e8f0;
+      user-select: none;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.45);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.35);
+      border-radius: 9999px;
+    }
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 5px;
+      background: rgba(30, 41, 59, 0.95);
+      border-radius: 9999px;
+      outline: none;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #38bdf8;
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.7);
+    }
+    .glass-card {
+      background: rgba(6, 11, 22, 0.88);
+      border: 1px solid rgba(56, 189, 248, 0.22);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+    @media (min-width: 768px) {
+      .glass-card {
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+      }
+    }
+    .matrix-cell-active {
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.26), rgba(232, 121, 249, 0.22));
+      border-color: rgba(56, 189, 248, 0.65) !important;
+      box-shadow: 0 0 12px rgba(34, 211, 238, 0.22);
+    }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body class="h-screen w-screen overflow-hidden relative bg-slate-950 text-slate-100">
+
+  <!-- Full-Viewport Stage: WebGL 3D Canvas + OS-Safe 2D Canvas Fallback / Eco Renderer -->
+  <div id="canvas-container" class="absolute inset-0 w-full h-full z-0"></div>
+  <canvas id="fallback-2d-canvas" class="hidden absolute inset-0 w-full h-full z-0 block"></canvas>
+
+  <!-- Symmetrical Top Bar: Mirrored Left & Right Clusters, Smart App Switcher, Eco Mode & HUD Toggle -->
+  <header class="fixed top-2 left-2 right-2 z-30 grid grid-cols-1 lg:grid-cols-12 gap-2 items-center pointer-events-none">
+    <!-- Left Top Cluster: Identity, Telemetry Badges & Status -->
+    <div class="lg:col-span-4 glass-card rounded-2xl px-3 py-1.5 flex items-center justify-between gap-2 pointer-events-auto min-w-0">
+      <div class="flex items-center gap-2 min-w-0">
+        <div id="status-dot" class="w-2.5 h-2.5 shrink-0 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]"></div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-1.5">
+            <h1 class="text-xs sm:text-sm font-bold tracking-wider uppercase text-cyan-300 truncate">HyperFace AI v12.0</h1>
+            <span id="fps-badge" class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-400/25 shrink-0">60 FPS</span>
+            <span id="reaction-badge" class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-fuchsia-500/20 text-fuchsia-200 border border-fuchsia-400/30 shrink-0">CALM</span>
+          </div>
+          <p id="status-text" class="text-[10px] text-slate-300 font-mono truncate">Initializing OS-Safe Studio v12.0, Full Design Matrix &amp; 20 Daemons...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center Top Cluster: Smart App 1 / Smart App 2 Switcher -->
+    <div class="lg:col-span-4 glass-card rounded-2xl p-1 flex items-center justify-center gap-1 pointer-events-auto">
+      <button id="app1-btn" type="button" class="flex-1 py-1 px-2 rounded-xl text-[11px] font-semibold bg-cyan-500/25 text-cyan-200 border border-cyan-400/40 transition truncate">
+        App 1: AI Studio &amp; Matrix
+      </button>
+      <button id="app2-btn" type="button" class="flex-1 py-1 px-2 rounded-xl text-[11px] font-semibold text-slate-300 hover:bg-slate-800/70 border border-transparent transition truncate">
+        App 2: Vector, Post-FX &amp; 20D
+      </button>
+    </div>
+
+    <!-- Right Top Cluster: Decoupled Op Modes, Zoom, Eco Mode, Snapshot & HUD Toggle -->
+    <div class="lg:col-span-4 glass-card rounded-2xl p-1 flex flex-wrap items-center justify-between lg:justify-end gap-1 pointer-events-auto">
+      <div class="flex items-center gap-1">
+        <button id="mode-sculpt-btn" type="button" class="px-2 py-1 rounded-xl text-[10px] font-semibold bg-emerald-500/25 text-emerald-200 border border-emerald-400/40 transition">Sculpt</button>
+        <button id="mode-orbit-btn" type="button" class="px-2 py-1 rounded-xl text-[10px] font-semibold text-slate-300 hover:bg-slate-800/70 border border-transparent transition">Orbit</button>
+        <button id="mode-ping-btn" type="button" class="px-2 py-1 rounded-xl text-[10px] font-semibold text-slate-300 hover:bg-slate-800/70 border border-transparent transition">Ping</button>
+        <button id="mode-rotate-btn" type="button" class="px-2 py-1 rounded-xl text-[10px] font-semibold text-slate-300 hover:bg-slate-800/70 border border-transparent transition">Rotate</button>
+      </div>
+      <div class="flex items-center gap-0.5 bg-slate-950/80 rounded-xl px-1 py-0.5 border border-white/10">
+        <button id="zoom-out-btn" type="button" class="w-5 h-5 rounded font-mono text-xs text-cyan-200 hover:bg-slate-800 flex items-center justify-center" title="Zoom Out">−</button>
+        <span id="zoom-readout" class="font-mono text-[10px] text-cyan-300 px-1">1.00x</span>
+        <button id="zoom-in-btn" type="button" class="w-5 h-5 rounded font-mono text-xs text-cyan-200 hover:bg-slate-800 flex items-center justify-center" title="Zoom In">+</button>
+        <button id="zoom-reset-btn" type="button" class="px-1 rounded font-mono text-[9px] text-slate-300 hover:bg-slate-800" title="Reset Zoom">1:1</button>
+      </div>
+      <button id="eco-mode-btn" type="button" class="px-2 py-1 rounded-xl text-[10px] font-mono font-semibold bg-slate-900 hover:bg-slate-800 text-emerald-300 border border-white/15 transition" title="Toggle Low-CPU Eco Mode">
+        Eco: OFF
+      </button>
+      <button id="capture-snapshot-btn" type="button" class="px-2 py-1 rounded-xl text-[10px] font-mono font-semibold bg-indigo-500/25 hover:bg-indigo-500/35 text-indigo-200 border border-indigo-400/35 transition" title="Export PNG Snapshot">
+        Snap
+      </button>
+      <button id="toggle-all-hud-btn" type="button" class="px-2 py-1 rounded-xl text-[10px] font-mono font-semibold text-cyan-200 hover:bg-slate-800/80 border border-white/10 transition">
+        HUD [−]
+      </button>
+    </div>
+  </header>
+
+  <!-- ======================================================================= -->
+  <!-- SMART APP 1 LEFT DOCK: FULL DESIGN MATRIX (4x4 / 16-CELL) & AI PRESETS  -->
+  <!-- ======================================================================= -->
+  <aside id="left-hud-wrapper" class="fixed top-28 lg:top-16 left-2 z-20 w-[calc(100vw-1rem)] sm:w-[356px] pointer-events-none">
+    <section class="glass-card rounded-2xl overflow-hidden pointer-events-auto">
+      <div class="px-3 py-2 flex items-center justify-between border-b border-white/10 bg-slate-900/65">
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="w-2 h-2 shrink-0 rounded-full bg-cyan-400"></span>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-cyan-200 truncate">Design Matrix · AI Studio Presets</h2>
+        </div>
+        <button id="collapse-left-btn" type="button" class="font-mono text-xs px-2 py-0.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-cyan-300 border border-white/10 shrink-0">
+          [−]
+        </button>
+      </div>
+
+      <div id="left-panel-body" class="p-3 space-y-2.5 max-h-[60vh] lg:max-h-[73vh] overflow-y-auto">
+        <!-- AI Studio Scene & Expression Synthesis Presets -->
+        <div class="rounded-xl bg-slate-950/85 border border-cyan-400/25 p-2.5 space-y-1.5">
+          <div class="flex items-center justify-between text-[10px] font-mono">
+            <span class="text-cyan-300 font-semibold">AI STUDIO SYNTHESIS PRESETS</span>
+            <span id="studio-preset-badge" class="text-fuchsia-300">VOCAL STUDIO</span>
+          </div>
+          <div class="grid grid-cols-5 gap-1 text-[9px] font-mono">
+            <button type="button" data-studio-preset="vocal" class="studio-preset-btn py-1 px-1 rounded-lg bg-cyan-500/25 text-cyan-200 border border-cyan-400/40 truncate">Vocal</button>
+            <button type="button" data-studio-preset="liquid" class="studio-preset-btn py-1 px-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-white/10 truncate">Liquid</button>
+            <button type="button" data-studio-preset="vector" class="studio-preset-btn py-1 px-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-white/10 truncate">Vector</button>
+            <button type="button" data-studio-preset="chromatic" class="studio-preset-btn py-1 px-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-white/10 truncate">Glass</button>
+            <button type="button" data-studio-preset="sonar" class="studio-preset-btn py-1 px-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-white/10 truncate">Sonar</button>
+          </div>
+        </div>
+
+        <!-- 4x4 / 16-Cell Full Design Matrix -->
+        <div class="rounded-xl bg-slate-950/90 border border-fuchsia-400/30 p-2.5 space-y-2">
+          <div class="flex items-center justify-between text-[10px] font-mono">
+            <span class="text-fuchsia-300 font-bold">FULL DESIGN MATRIX (4×4 · 16 CELLS)</span>
+            <span id="matrix-cell-readout" class="text-cyan-300">M01 · GEOM</span>
+          </div>
+
+          <div id="full-design-matrix-grid" class="grid grid-cols-4 gap-1.5 text-[9px] font-mono"></div>
+
+          <div class="rounded-lg bg-slate-900/90 border border-white/10 p-2 space-y-1.5">
+            <div class="flex items-center justify-between text-[10px] font-mono">
+              <span id="matrix-selected-title" class="text-cyan-200 font-semibold">M01: Sculpted Face Mesh</span>
+              <span id="matrix-selected-val" class="text-fuchsia-300">1.00</span>
+            </div>
+            <p id="matrix-selected-desc" class="text-[10px] text-slate-400 leading-snug">
+              Anatomical brow, orbital socket, nasal bridge, cheekbone, 8-node lip &amp; jaw topology.
+            </p>
+            <div class="flex items-center gap-2">
+              <input id="matrix-param-slider" type="range" min="0" max="1" step="0.01" value="0.5" class="flex-1" />
+              <button id="matrix-inject-btn" type="button" class="px-2 py-0.5 rounded bg-fuchsia-500/25 hover:bg-fuchsia-500/35 text-fuchsia-200 border border-fuchsia-400/35 text-[10px] font-mono">
+                Inject
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-1.5 text-[10px] font-mono">
+            <button id="matrix-randomize-btn" type="button" class="py-1 px-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-white/15 text-cyan-200 truncate">
+              Harmonize
+            </button>
+            <button id="matrix-pulse-btn" type="button" class="py-1 px-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-white/15 text-fuchsia-200 truncate">
+              Matrix Pulse
+            </button>
+            <button id="matrix-reset-btn" type="button" class="py-1 px-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-white/15 text-emerald-200 truncate">
+              Reset Matrix
+            </button>
+          </div>
+        </div>
+
+        <!-- Image Upload & Full Manipulation Controls -->
+        <div class="rounded-xl bg-slate-950/85 border border-cyan-400/25 p-2.5 space-y-2">
+          <div class="flex items-center justify-between text-[10px] font-mono">
+            <span class="text-cyan-300 font-semibold">IMAGE RELIEF &amp; MORPH</span>
+            <span id="image-status-badge" class="text-slate-400">NO IMAGE</span>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5">
+            <label for="image-file-input" class="col-span-2 cursor-pointer py-1.5 px-2 rounded-lg text-[10px] font-mono font-semibold text-center bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border border-cyan-400/35 transition truncate">
+              Upload Image
+            </label>
+            <input id="image-file-input" type="file" accept="image/*,.png,.jpg,.jpeg,.webp,.gif" class="hidden" />
+            <button id="clear-image-btn" type="button" class="py-1.5 px-2 rounded-lg text-[10px] font-mono font-semibold bg-slate-900 hover:bg-slate-800 text-rose-300 border border-white/15 transition">
+              Clear
+            </button>
+          </div>
+          <div class="flex items-center gap-2">
+            <canvas id="image-preview-canvas" width="96" height="56" class="w-20 h-12 rounded-lg bg-slate-900 border border-white/10 shrink-0 object-cover"></canvas>
+            <div class="flex-1 space-y-1.5 min-w-0">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-mono text-slate-300">Mirror Symmetry</span>
+                <button id="image-mirror-btn" type="button" class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-cyan-500/20 text-cyan-200 border border-cyan-400/30">
+                  MIRROR: ON
+                </button>
+              </div>
+              <div>
+                <div class="flex justify-between text-[10px] font-mono mb-0.5">
+                  <span class="text-slate-400">Relief Depth</span>
+                  <span id="relief-depth-val" class="text-cyan-300">0.24</span>
+                </div>
+                <input id="relief-depth-slider" type="range" min="0.00" max="0.65" step="0.01" value="0.24" class="w-full" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Decoupled Zoom & Rotate Controls -->
+        <div class="rounded-xl bg-slate-950/85 border border-cyan-400/25 p-2.5 space-y-2">
+          <div class="flex items-center justify-between text-[10px] font-mono">
+            <span class="text-cyan-300 font-semibold">DECOUPLED ZOOM &amp; ROTATE</span>
+            <span id="decouple-state-badge" class="text-emerald-300">ISOLATED</span>
+          </div>
+          <div class="grid grid-cols-4 gap-1">
+            <button id="lock-zoom-btn" type="button" class="py-1 px-1 rounded-lg text-[9px] font-mono font-semibold bg-slate-900 hover:bg-slate-800 border border-white/15 text-cyan-200 transition truncate">
+              Zoom: FREE
+            </button>
+            <button id="lock-ops-btn" type="button" class="py-1 px-1 rounded-lg text-[9px] font-mono font-semibold bg-slate-900 hover:bg-slate-800 border border-white/15 text-amber-200 transition truncate">
+              Ops: FREE
+            </button>
+            <button id="auto-orbit-btn" type="button" class="py-1 px-1 rounded-lg text-[9px] font-mono font-semibold bg-slate-900 hover:bg-slate-800 border border-white/15 text-fuchsia-200 transition truncate">
+              Orbit: OFF
+            </button>
+            <button id="reset-orbit-cam-btn" type="button" class="py-1 px-1 rounded-lg text-[9px] font-mono font-semibold bg-slate-900 hover:bg-slate-800 border border-white/15 text-emerald-200 transition truncate">
+              Cam: 0,0
+            </button>
+          </div>
+          <div>
+            <div class="flex justify-between text-[10px] font-mono mb-0.5">
+              <span class="text-slate-400">Camera Zoom</span>
+              <span id="zoom-slider-val" class="text-cyan-300">1.00x</span>
+            </div>
+            <input id="zoom-slider" type="range" min="0.55" max="2.10" step="0.01" value="1.00" class="w-full" />
+          </div>
+          <div class="grid grid-cols-3 gap-1.5">
+            <div>
+              <div class="flex justify-between text-[9px] font-mono">
+                <span class="text-slate-400">Yaw</span>
+                <span id="yaw-val" class="text-cyan-300">0°</span>
+              </div>
+              <input id="yaw-slider" type="range" min="-90" max="90" step="1" value="0" class="w-full" />
+            </div>
+            <div>
+              <div class="flex justify-between text-[9px] font-mono">
+                <span class="text-slate-400">Pitch</span>
+                <span id="pitch-val" class="text-cyan-300">0°</span>
+              </div>
+              <input id="pitch-slider" type="range" min="-55" max="55" step="1" value="0" class="w-full" />
+            </div>
+            <div>
+              <div class="flex justify-between text-[9px] font-mono">
+                <span class="text-slate-400">Roll</span>
+                <span id="roll-val" class="text-cyan-300">0°</span>
+              </div>
+              <input id="roll-slider" type="range" min="-45" max="45" step="1" value="0" class="w-full" />
+            </div>
+          </div>
+          <button id="snap-zero-rot-btn" type="button" class="w-full py-1 px-2 rounded-lg text-[10px] font-mono font-semibold bg-slate-900 hover:bg-slate-800 border border-white/15 text-emerald-200 transition">
+            Zero-Center Snap Rotation
+          </button>
+        </div>
+
+        <!-- Shader Skin & Liquid Push/Pull Brush -->
+        <div>
+          <label for="skin-select" class="block text-[11px] font-medium text-slate-300 mb-1">GLSL Sovereign Shader Skin</label>
+          <select id="skin-select" class="w-full rounded-xl bg-slate-900/95 border border-cyan-400/25 px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-cyan-400">
+            <option value="0" selected>01 · Liquid Chrome / Obsidian</option>
+            <option value="1">02 · Biometric Wireframe Matrix</option>
+            <option value="2">03 · Spartan Crystal Facets</option>
+            <option value="3">04 · Acoustic Plasma Glass</option>
+          </select>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[11px] font-medium text-slate-300">Liquid Push / Pull Field</span>
+            <span id="brush-mode-label" class="text-[10px] font-mono text-cyan-300">PUSH OUTWARD</span>
+          </div>
+          <div class="grid grid-cols-4 gap-1 bg-slate-950/90 p-1 rounded-xl border border-white/10">
+            <button type="button" data-brush="push" class="brush-btn py-1.5 rounded-lg text-[11px] font-semibold bg-cyan-500/30 text-cyan-200 border border-cyan-400/40">Push +</button>
+            <button type="button" data-brush="pull" class="brush-btn py-1.5 rounded-lg text-[11px] font-semibold text-slate-400 hover:text-slate-100">Pull −</button>
+            <button type="button" data-brush="vortex" class="brush-btn py-1.5 rounded-lg text-[11px] font-semibold text-slate-400 hover:text-slate-100">Vortex</button>
+            <button type="button" data-brush="pinch" class="brush-btn py-1.5 rounded-lg text-[11px] font-semibold text-slate-400 hover:text-slate-100">Pinch</button>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <div>
+            <div class="flex justify-between text-[11px] mb-0.5">
+              <span class="text-slate-300">Brush Radius</span>
+              <span id="radius-val" class="font-mono text-cyan-300">0.42</span>
+            </div>
+            <input id="radius-slider" type="range" min="0.15" max="0.95" step="0.01" value="0.42" class="w-full" />
+          </div>
+          <div>
+            <div class="flex justify-between text-[11px] mb-0.5">
+              <span class="text-slate-300">Liquid Viscosity</span>
+              <span id="viscosity-val" class="font-mono text-cyan-300">0.88</span>
+            </div>
+            <input id="viscosity-slider" type="range" min="0.15" max="0.99" step="0.01" value="0.88" class="w-full" />
+          </div>
+          <div>
+            <div class="flex justify-between text-[11px] mb-0.5">
+              <span class="text-slate-300">Force Polarity &amp; Gain</span>
+              <span id="polarity-val" class="font-mono text-cyan-300">+1.25</span>
+            </div>
+            <input id="polarity-slider" type="range" min="-2.50" max="2.50" step="0.05" value="1.25" class="w-full" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <button id="freeze-liquid-btn" type="button" class="py-1.5 px-2.5 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 border border-white/15 text-amber-300 transition">
+            Freeze Liquid: Off
+          </button>
+          <button id="reset-sculpt-btn" type="button" class="py-1.5 px-2.5 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 border border-white/15 text-emerald-300 transition">
+            Reset Sculpt
+          </button>
+        </div>
+      </div>
+    </section>
+  </aside>
+
+  <!-- ======================================================================= -->
+  <!-- SMART APP 1 RIGHT DOCK: LIPS ENGINE, SONAR PING, REACTIONS & VECTORS   -->
+  <!-- ======================================================================= -->
+  <aside id="right-hud-wrapper" class="fixed top-28 lg:top-16 right-2 z-20 w-[calc(100vw-1rem)] sm:w-[356px] pointer-events-none flex flex-col gap-2">
+    <section class="glass-card rounded-2xl overflow-hidden pointer-events-auto">
+      <div class="px-3 py-2 flex items-center justify-between border-b border-white/10 bg-slate-900/65">
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="w-2 h-2 shrink-0 rounded-full bg-fuchsia-400"></span>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-fuchsia-200 truncate">Lips, Ping, Reactions &amp; Vectors</h2>
+        </div>
+        <button id="collapse-right-btn" type="button" class="font-mono text-xs px-2 py-0.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-fuchsia-300 border border-white/10 shrink-0">
+          [−]
+        </button>
+      </div>
+
+      <div id="right-panel-body" class="p-3 space-y-2.5 max-h-[58vh] lg:max-h-[73vh] overflow-y-auto">
+        <!-- Real MP3 / MP4-to-Lips Formant Telemetry -->
+        <div class="rounded-xl bg-slate-950/85 border border-cyan-400/20 p-2.5 space-y-1.5">
+          <div class="flex items-center justify-between text-[10px] font-mono">
+            <span class="text-cyan-300 font-semibold">MP3/MP4 → LIPS ENGINE</span>
+            <span id="lip-aperture-readout" class="text-fuchsia-300">F1:0% F2:0%</span>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5 text-[10px] font-mono">
+            <div>
+              <div class="flex justify-between text-slate-400 mb-0.5"><span>F1 Open</span></div>
+              <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                <div id="bar-f1" class="h-full bg-cyan-400 w-0 transition-all duration-75"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-slate-400 mb-0.5"><span>F2 Spread</span></div>
+              <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                <div id="bar-f2" class="h-full bg-fuchsia-400 w-0 transition-all duration-75"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-slate-400 mb-0.5"><span>Plosive</span></div>
+              <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                <div id="bar-plosive" class="h-full bg-emerald-400 w-0 transition-all duration-75"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sonar / Acoustic Ping Controller -->
+        <div class="rounded-xl bg-slate-950/85 border border-cyan-400/25 p-2.5 space-y-1.5">
+          <div class="flex items-center justify-between text-[10px] font-mono">
+            <span class="text-cyan-300 font-semibold">SONAR / ACOUSTIC PING</span>
+            <span id="ping-telemetry-badge" class="text-emerald-300">ECHO: 0.00 | 0ms</span>
+          </div>
+          <div class="grid grid-cols-2 gap-1.5">
+            <button id="trigger-ping-btn" type="button" class="py-1 px-2 rounded-lg text-[10px] font-mono font-semibold bg-cyan-500/25 hover:bg-cyan-500/35 text-cyan-200 border border-cyan-400/40 transition">
+              Emit Ping Wave
+            </button>
+            <button id="auto-ping-btn" type="button" class="py-1 px-2 rounded-lg text-[10px] font-mono font-semibold bg-slate-900 hover:bg-slate-800 text-fuchsia-200 border border-white/15 transition">
+              AUTO: OFF
+            </button>
+          </div>
+          <div>
+            <div class="flex justify-between text-[10px] font-mono mb-0.5">
+              <span class="text-slate-400">Ping Echo Decay</span>
+              <span id="ping-decay-val" class="text-cyan-300">0.92</span>
+            </div>
+            <input id="ping-decay-slider" type="range" min="0.70" max="0.98" step="0.01" value="0.92" class="w-full" />
+          </div>
+        </div>
+
+        <!-- Smart Reactions Controller -->
+        <div class="rounded-xl bg-slate-950/85 border border-fuchsia-400/25 p-2.5 space-y-1.5">
+          <div class="flex items-center justify-between text-[10px] font-mono">
+            <span class="text-fuchsia-300 font-semibold">SMART REACTIONS</span>
+            <button id="auto-reaction-btn" type="button" class="px-1.5 py-0.5 rounded bg-fuchsia-500/20 text-fuchsia-200 border border-fuchsia-400/30">
+              AUTO: ON
+            </button>
+          </div>
+          <div class="grid grid-cols-3 gap-1 text-[10px] font-mono">
+            <button type="button" data-reaction="surprise" class="react-btn py-1 px-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-white/10 text-cyan-200 truncate">Gasp</button>
+            <button type="button" data-reaction="pout" class="react-btn py-1 px-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-white/10 text-fuchsia-200 truncate">Plosive</button>
+            <button type="button" data-reaction="bassnod" class="react-btn py-1 px-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-white/10 text-emerald-200 truncate">Bass Nod</button>
+            <button type="button" data-reaction="squint" class="react-btn py-1 px-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-white/10 text-amber-200 truncate">Squint</button>
+            <button type="button" data-reaction="ripple" class="react-btn py-1 px-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-white/10 text-sky-200 truncate">Surge</button>
+            <button type="button" data-reaction="calm" class="react-btn py-1 px-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-white/10 text-slate-300 truncate">Calm</button>
+          </div>
+          <div id="reaction-detail" class="text-[10px] font-mono text-slate-400 truncate">Rule: Adaptive audio &amp; kinetic state</div>
+        </div>
+
+        <!-- Smart Observation Matrix -->
+        <div class="rounded-xl bg-slate-950/85 border border-cyan-400/20 p-2.5 space-y-1.5">
+          <div class="flex items-center justify-between text-[10px] font-mono">
+            <span class="text-cyan-300 font-semibold">SMART OBSERVATION MATRIX</span>
+            <span id="obs-regime-badge" class="text-emerald-300">NOMINAL</span>
+          </div>
+          <div id="smart-obs-list" class="space-y-1 text-[10px] font-mono"></div>
+        </div>
+
+        <!-- Sort, Impact & Trajectory Vector Matrix -->
+        <div class="flex items-center justify-between gap-2">
+          <label for="vector-sort-select" class="text-[11px] font-medium text-slate-300">Vector Sort</label>
+          <select id="vector-sort-select" class="rounded-xl bg-slate-900 border border-white/15 px-2 py-1 text-[11px] font-mono text-cyan-200 focus:outline-none">
+            <option value="impact" selected>Impact Force ↓</option>
+            <option value="trajectory">Trajectory Vel ↓</option>
+            <option value="resonance">Audio Res ↓</option>
+            <option value="nodeId">Node ID ↑</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-1.5">
+          <button id="toggle-vectors-btn" type="button" class="py-1.5 px-2 rounded-xl text-[11px] font-mono font-semibold bg-cyan-500/20 text-cyan-200 border border-cyan-400/35">
+            3D Vectors: ON
+          </button>
+          <button id="pulse-shockwave-btn" type="button" class="py-1.5 px-2 rounded-xl text-[11px] font-mono font-semibold bg-fuchsia-500/20 text-fuchsia-200 border border-fuchsia-400/35">
+            Shockwave (<span id="shockwave-count">0</span>)
+          </button>
+        </div>
+
+        <div class="rounded-xl bg-slate-950/90 border border-white/10 overflow-hidden">
+          <div class="grid grid-cols-12 px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-wider text-slate-400 bg-slate-900/90 border-b border-white/10">
+            <span class="col-span-5">Node</span>
+            <span class="col-span-3 text-right">Impact</span>
+            <span class="col-span-2 text-right">Vel</span>
+            <span class="col-span-2 text-right">Res</span>
+          </div>
+          <div id="vector-table-body" class="divide-y divide-white/5 max-h-40 overflow-y-auto text-[11px] font-mono"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Collapsible MP4 Video Monitor (Shown automatically when an MP4/video is uploaded) -->
+    <section id="video-monitor-card" class="hidden glass-card rounded-2xl overflow-hidden pointer-events-auto">
+      <div class="px-3 py-1.5 flex items-center justify-between border-b border-white/10 bg-slate-900/70">
+        <span class="text-[11px] font-mono font-semibold text-cyan-300">MP4 SYNC FEED</span>
+        <button id="toggle-video-monitor-btn" type="button" class="font-mono text-xs px-1.5 py-0.5 rounded bg-slate-800 text-cyan-200">[−]</button>
+      </div>
+      <div id="video-monitor-body" class="p-2 bg-black">
+        <video id="mp4-video-el" playsinline controls class="w-full max-h-40 rounded-xl object-contain bg-black"></video>
+      </div>
+    </section>
+  </aside>
+
+  <!-- ======================================================================= -->
+  <!-- SMART APP 2 OVERLAY: VECTOR, PING, POST-FX & 20-DAEMON LAB            -->
+  <!-- ======================================================================= -->
+  <section id="app2-telemetry-lab" class="hidden fixed inset-0 z-20 pt-28 lg:pt-16 pb-24 px-2.5 sm:px-4 overflow-y-auto bg-slate-950/92">
+    <div class="max-w-6xl mx-auto space-y-3">
+      <div class="glass-card rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 class="text-sm sm:text-base font-bold text-cyan-300 uppercase tracking-wider">Smart App 2 · Neural Vector, Post-FX &amp; 20-Daemon Lab</h2>
+          <p class="text-[11px] text-slate-400 font-mono">Continuous Wave Tracking · Zero-Crossing Sync Pulses · Signal Purification · 20 Daemons (D01–D20)</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="lab-ping-btn" type="button" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-cyan-500/25 hover:bg-cyan-500/35 text-cyan-200 border border-cyan-400/40 transition">
+            Sonar Ping
+          </button>
+          <button id="lab-pulse-all-btn" type="button" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-fuchsia-500/25 hover:bg-fuchsia-500/35 text-fuchsia-200 border border-fuchsia-400/35 transition">
+            Pulse All 20 Daemons
+          </button>
+          <button id="back-to-studio-btn" type="button" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/25 hover:bg-emerald-500/35 text-emerald-200 border border-emerald-400/40 transition">
+            Return to Smart App 1
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <div class="glass-card rounded-2xl p-3 lg:col-span-2 space-y-2">
+          <div class="flex items-center justify-between text-[11px] font-mono">
+            <span class="text-cyan-300 font-semibold">DUAL-TRACE WAVE &amp; ZERO-CROSSING SCOPE</span>
+            <span id="lab-signal-readout" class="text-fuchsia-300">RMS: 0.00 | ZC: 0 | PURIFIED: 0.00</span>
+          </div>
+          <canvas id="telemetry-oscilloscope" class="w-full h-44 sm:h-52 rounded-xl bg-slate-950 border border-white/10 block"></canvas>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[10px] font-mono">
+            <div>
+              <div class="flex justify-between text-slate-400 mb-0.5">
+                <span>Exposure Gain</span>
+                <span id="fx-exposure-val" class="text-cyan-300">1.15</span>
+              </div>
+              <input id="fx-exposure-slider" type="range" min="0.60" max="2.00" step="0.02" value="1.15" class="w-full" />
+            </div>
+            <div>
+              <div class="flex justify-between text-slate-400 mb-0.5">
+                <span>Fog Density</span>
+                <span id="fx-fog-val" class="text-cyan-300">0.075</span>
+              </div>
+              <input id="fx-fog-slider" type="range" min="0.00" max="0.22" step="0.005" value="0.075" class="w-full" />
+            </div>
+            <div>
+              <div class="flex justify-between text-slate-400 mb-0.5">
+                <span>Starfield Drift</span>
+                <span id="fx-stars-val" class="text-fuchsia-300">1.00x</span>
+              </div>
+              <input id="fx-stars-slider" type="range" min="0.00" max="4.00" step="0.10" value="1.00" class="w-full" />
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-card rounded-2xl p-3 space-y-2">
+          <div class="flex items-center justify-between text-[11px] font-mono">
+            <span class="text-fuchsia-300 font-semibold">SMART OBSERVATION MATRIX</span>
+            <span id="lab-obs-regime" class="text-emerald-300">NOMINAL</span>
+          </div>
+          <div id="lab-obs-list" class="space-y-1.5 text-[11px] font-mono"></div>
+        </div>
+      </div>
+
+      <div class="glass-card rounded-2xl p-3 space-y-2.5">
+        <div class="flex items-center justify-between text-xs font-mono">
+          <span class="text-cyan-300 font-bold">20 ACTIVE DAEMONS (D01–D20)</span>
+          <span id="lab-daemon-summary" class="text-emerald-300">20/20 ONLINE · 0 PULSES</span>
+        </div>
+        <div id="lab-daemons-grid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2 text-[10px] font-mono"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bottom Symmetrical Transport Bar -->
+  <footer class="fixed bottom-2 left-2 right-2 z-30 flex justify-center pointer-events-none">
+    <div class="glass-card rounded-2xl w-full max-w-5xl pointer-events-auto px-3 py-2 space-y-1.5">
+      <div class="flex flex-wrap items-center justify-between gap-1.5">
+        <div class="flex flex-wrap items-center gap-1.5">
+          <button id="synth-btn" type="button" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-cyan-500/30 to-fuchsia-500/30 hover:from-cyan-500/45 hover:to-fuchsia-500/45 text-cyan-100 border border-cyan-400/40 transition">
+            ▶ Synth Beat
+          </button>
+
+          <label for="media-file-input" class="cursor-pointer px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-slate-200 border border-white/15 transition">
+            Upload MP3 / MP4
+          </label>
+          <input id="media-file-input" type="file" accept="audio/*,video/*,.mp3,.mp4,.webm,.ogg,.wav,.m4a" class="hidden" />
+
+          <button id="mic-btn" type="button" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-emerald-300 border border-white/15 transition">
+            Live Mic
+          </button>
+
+          <button id="play-pause-btn" type="button" disabled class="px-2.5 py-1.5 rounded-xl text-xs font-mono font-bold bg-slate-900 disabled:opacity-40 hover:bg-slate-800 border border-white/15 text-cyan-300 transition">
+            ❚❚ Pause
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] font-mono text-slate-400">VOL</span>
+          <input id="volume-slider" type="range" min="0" max="1" step="0.01" value="0.85" class="w-20 sm:w-24" />
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2.5">
+        <span id="track-title" class="text-[11px] font-medium text-cyan-200 truncate max-w-[140px] sm:max-w-[240px]">No MP3 / MP4 Loaded</span>
+        <input id="seek-slider" type="range" min="0" max="100" step="0.1" value="0" disabled class="flex-1" />
+        <span id="track-time" class="text-[10px] font-mono text-slate-300 shrink-0">00:00 / 00:00</span>
+      </div>
+    </div>
+  </footer>
+
+  <audio id="html-audio" crossorigin="anonymous" preload="auto"></audio>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // =========================================================================
+    // 1. STATUS, OS-SAFE LIFECYCLE, ECO MODE & SMART APP SWITCHER
+    // =========================================================================
+    const statusText = document.getElementById('status-text');
+    const statusDot = document.getElementById('status-dot');
+    const fpsBadge = document.getElementById('fps-badge');
+    const reactionBadge = document.getElementById('reaction-badge');
+
+    let isDocumentHidden = false;
+    let ecoModeEnabled = false;
+    let webglAvailable = true;
+    let webglContextLost = false;
+    let activeApp = 1;
+    let hudVisible = true;
+    let elapsedSimTime = 0;
+
+    function setEngineStatus(msg, mode = 'ready') {
+      statusText.textContent = msg;
+      if (mode === 'error') {
+        statusDot.className = 'w-2.5 h-2.5 shrink-0 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e]';
+      } else if (mode === 'active') {
+        statusDot.className = 'w-2.5 h-2.5 shrink-0 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]';
+      } else {
+        statusDot.className = 'w-2.5 h-2.5 shrink-0 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]';
+      }
+    }
+
+    window.addEventListener('error', (ev) => {
+      setEngineStatus(`Notice: ${ev.message}`, 'error');
+    });
+
+    window.addEventListener('unhandledrejection', (ev) => {
+      const reason = ev.reason && ev.reason.message ? ev.reason.message : String(ev.reason || 'Async notice');
+      setEngineStatus(`Notice: ${reason}`, 'error');
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      isDocumentHidden = document.hidden;
+      if (!isDocumentHidden) {
+        lastFrameMs = performance.now();
+      }
+    });
+
+    const app1Btn = document.getElementById('app1-btn');
+    const app2Btn = document.getElementById('app2-btn');
+    const app2Lab = document.getElementById('app2-telemetry-lab');
+    const leftWrapper = document.getElementById('left-hud-wrapper');
+    const rightWrapper = document.getElementById('right-hud-wrapper');
+
+    const oscCanvas = document.getElementById('telemetry-oscilloscope');
+    const oscCtx = oscCanvas.getContext('2d');
+
+    function resizeOscilloscopeCanvas() {
+      if (!oscCtx) return;
+      const rect = oscCanvas.getBoundingClientRect();
+      const capDpr = ecoModeEnabled ? 1 : Math.min(window.devicePixelRatio || 1, 1.5);
+      if (rect.width > 0 && rect.height > 0) {
+        oscCanvas.width = Math.max(1, Math.floor(rect.width * capDpr));
+        oscCanvas.height = Math.max(1, Math.floor(rect.height * capDpr));
+      }
+    }
+
+    function switchActiveApp(appNum) {
+      activeApp = appNum;
+      if (appNum === 1) {
+        app2Lab.classList.add('hidden');
+        app1Btn.className = 'flex-1 py-1 px-2 rounded-xl text-[11px] font-semibold bg-cyan-500/25 text-cyan-200 border border-cyan-400/40 transition truncate';
+        app2Btn.className = 'flex-1 py-1 px-2 rounded-xl text-[11px] font-semibold text-slate-300 hover:bg-slate-800/70 border border-transparent transition truncate';
+        if (hudVisible) {
+          leftWrapper.classList.remove('hidden');
+          rightWrapper.classList.remove('hidden');
+        }
+        setEngineStatus('Smart App 1 Active: AI Studio & Design Matrix', 'active');
+      } else {
+        app2Lab.classList.remove('hidden');
+        app2Btn.className = 'flex-1 py-1 px-2 rounded-xl text-[11px] font-semibold bg-fuchsia-500/25 text-fuchsia-200 border border-fuchsia-400/40 transition truncate';
+        app1Btn.className = 'flex-1 py-1 px-2 rounded-xl text-[11px] font-semibold text-slate-300 hover:bg-slate-800/70 border border-transparent transition truncate';
+        leftWrapper.classList.add('hidden');
+        rightWrapper.classList.add('hidden');
+        resizeOscilloscopeCanvas();
+        setEngineStatus('Smart App 2 Active: Vector, Post-FX & 20-Daemon Lab', 'active');
+      }
+    }
+
+    app1Btn.addEventListener('click', () => switchActiveApp(1));
+    app2Btn.addEventListener('click', () => switchActiveApp(2));
+    document.getElementById('back-to-studio-btn').addEventListener('click', () => switchActiveApp(1));
+
+    // =========================================================================
+    // 2. THREE.JS SCENE, SAFE FALLBACK & DECOUPLED ZOOM / ROTATE RIG
+    // =========================================================================
+    const container = document.getElementById('canvas-container');
+    const fallback2dCanvas = document.getElementById('fallback-2d-canvas');
+    const fallback2dCtx = fallback2dCanvas.getContext('2d');
+
+    let scene = null;
+    let camera = null;
+    let renderer = null;
+    let controls = null;
+    let starField = null;
+    let headGeometry = null;
+    let headMaterial = null;
+    let headMesh = null;
+    let aiUnitGroup = null;
+    const aiSatMeshes = [];
+    let vectorGroup = null;
+    const arrowHelpers = [];
+    const ribbonLines = [];
+    const RIBBON_LEN = 12;
+    let shockwaveGroup = null;
+    const shockwaves = [];
+
+    const BASE_CAMERA_DISTANCE = 4.15;
+    let zoomMultiplier = 1.0;
+    let targetZoomMultiplier = 1.0;
+    let zoomLocked = false;
+    let faceOpsLocked = false;
+    let autoOrbitEnabled = false;
+    let opMode = 'sculpt'; // 'sculpt' | 'orbit' | 'ping' | 'rotate'
+    let isOrbitDragging = false;
+    let lastOrbitPointerX = 0;
+    let lastOrbitPointerY = 0;
+
+    let targetYaw = 0;
+    let targetPitch = 0;
+    let targetRoll = 0;
+    let curYaw = 0;
+    let curPitch = 0;
+    let curRoll = 0;
+    let velYaw = 0;
+    let velPitch = 0;
+    let isRotateDragging = false;
+    let lastRotPointerX = 0;
+    let lastRotPointerY = 0;
+
+    const RELIEF_W = 96;
+    const RELIEF_H = 96;
+    const reliefHeightMap = new Float32Array(RELIEF_W * RELIEF_H);
+    let hasUploadedImage = false;
+    let mirrorImageEnabled = true;
+
+    const editCanvas = document.createElement('canvas');
+    editCanvas.width = 256;
+    editCanvas.height = 256;
+    const editCtx = editCanvas.getContext('2d');
+
+    let uploadedImageTexture = null;
+    let shaderUniforms = {
+      uTime: { value: 0 },
+      uSkinMode: { value: 0 },
+      uF1: { value: 0 },
+      uF2: { value: 0 },
+      uPlosive: { value: 0 },
+      uReactionBoost: { value: 0 },
+      uPingWave: { value: 0 },
+      uHasImage: { value: 0.0 },
+      uImageTex: { value: null },
+      uBrushCenter: { value: new THREE.Vector3(0, -0.45, 1.1) },
+      uBrushRadius: { value: 0.42 },
+      uBrushActive: { value: 0.0 },
+      uBrushPolarity: { value: 1.0 }
+    };
+
+    const ZONE_COUNT = 16;
+    const ANATOMICAL_ZONES = [
+      { id: 0,  name: 'LipUpperC',  anchor: new THREE.Vector3(0.00, -0.42, 1.08) },
+      { id: 1,  name: 'LipLowerC',  anchor: new THREE.Vector3(0.00, -0.52, 1.07) },
+      { id: 2,  name: 'LipCornerL', anchor: new THREE.Vector3(-0.24, -0.46, 0.99) },
+      { id: 3,  name: 'LipCornerR', anchor: new THREE.Vector3(0.24, -0.46, 0.99) },
+      { id: 4,  name: 'LipUpperL',  anchor: new THREE.Vector3(-0.13, -0.43, 1.05) },
+      { id: 5,  name: 'LipUpperR',  anchor: new THREE.Vector3(0.13, -0.43, 1.05) },
+      { id: 6,  name: 'LipLowerL',  anchor: new THREE.Vector3(-0.13, -0.51, 1.04) },
+      { id: 7,  name: 'LipLowerR',  anchor: new THREE.Vector3(0.13, -0.51, 1.04) },
+      { id: 8,  name: 'JawMentum',  anchor: new THREE.Vector3(0.00, -0.82, 0.95) },
+      { id: 9,  name: 'CheekL',     anchor: new THREE.Vector3(-0.52, -0.05, 0.92) },
+      { id: 10, name: 'CheekR',     anchor: new THREE.Vector3(0.52, -0.05, 0.92) },
+      { id: 11, name: 'NasalTip',   anchor: new THREE.Vector3(0.00, -0.14, 1.24) },
+      { id: 12, name: 'BrowL',      anchor: new THREE.Vector3(-0.34, 0.37, 1.05) },
+      { id: 13, name: 'BrowR',      anchor: new THREE.Vector3(0.34, 0.37, 1.05) },
+      { id: 14, name: 'Frontalis',  anchor: new THREE.Vector3(0.00, 0.72, 0.96) },
+      { id: 15, name: 'Temporal',   anchor: new THREE.Vector3(0.76, 0.22, 0.65) }
+    ];
+
+    const springPos = new Float32Array(ZONE_COUNT);
+    const springVel = new Float32Array(ZONE_COUNT);
+    const springTarget = new Float32Array(ZONE_COUNT);
+
+    const vectorNodes = ANATOMICAL_ZONES.map((z) => ({
+      id: z.id,
+      name: z.name,
+      anchor: z.anchor.clone(),
+      velocityVec: new THREE.Vector3(0, 0, 0.01),
+      impactForce: 0,
+      trajectoryVel: 0,
+      resonance: 0,
+      lastShockTime: -10
+    }));
+
+    function sampleImageRelief(x, y) {
+      if (!hasUploadedImage) return 0;
+      const u = Math.max(0, Math.min(0.999, x * 0.55 + 0.5));
+      const v = Math.max(0, Math.min(0.999, -y * 0.45 + 0.5));
+      const ix = Math.floor(u * RELIEF_W);
+      const iy = Math.floor(v * RELIEF_H);
+      return reliefHeightMap[iy * RELIEF_W + ix] || 0;
+    }
+
+    function createSculptedFaceGeometry(segments = 84) {
+      const geo = new THREE.SphereGeometry(1.18, segments, segments);
+      const pos = geo.attributes.position;
+      const v = new THREE.Vector3();
+
+      for (let i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos, i);
+        const nx = v.x / 1.18;
+        const ny = v.y / 1.18;
+        const nz = v.z / 1.18;
+
+        let x = nx * 0.94;
+        let y = ny * 1.32;
+        let z = nz * 1.05;
+
+        if (y < 0.0) {
+          const jawT = Math.min(1.0, -y / 1.32);
+          const taper = 1.0 - 0.34 * Math.pow(jawT, 1.45);
+          x *= taper;
+          z *= (1.0 - 0.14 * Math.pow(jawT, 1.8));
+        }
+
+        const templeMask = Math.exp(-Math.pow(y - 0.25, 2) / 0.18) * Math.max(0, Math.abs(x) - 0.55);
+        x -= Math.sign(x) * templeMask * 0.12;
+
+        if (nz > 0.0) {
+          const frontWeight = Math.pow(nz, 0.75);
+          const browRidge = Math.exp(-Math.pow(y - 0.36, 2) / 0.016) * Math.exp(-Math.pow(x, 2) / 0.48);
+          z += browRidge * 0.12 * frontWeight;
+
+          const socketL = Math.exp(-(Math.pow(x + 0.34, 2) / 0.046 + Math.pow(y - 0.21, 2) / 0.026));
+          const socketR = Math.exp(-(Math.pow(x - 0.34, 2) / 0.046 + Math.pow(y - 0.21, 2) / 0.026));
+          z -= (socketL + socketR) * 0.24 * frontWeight;
+
+          const noseBridge = Math.exp(-(Math.pow(x, 2) / 0.016 + Math.pow(y - 0.02, 2) / 0.095));
+          const noseTip = Math.exp(-(Math.pow(x, 2) / 0.024 + Math.pow(y + 0.14, 2) / 0.018));
+          const nostrilL = Math.exp(-(Math.pow(x + 0.11, 2) / 0.011 + Math.pow(y + 0.18, 2) / 0.011));
+          const nostrilR = Math.exp(-(Math.pow(x - 0.11, 2) / 0.011 + Math.pow(y + 0.18, 2) / 0.011));
+          z += (noseBridge * 0.21 + noseTip * 0.19 + (nostrilL + nostrilR) * 0.075) * frontWeight;
+
+          const cheekL = Math.exp(-(Math.pow(x + 0.50, 2) / 0.075 + Math.pow(y + 0.02, 2) / 0.055));
+          const cheekR = Math.exp(-(Math.pow(x - 0.50, 2) / 0.075 + Math.pow(y + 0.02, 2) / 0.055));
+          z += (cheekL + cheekR) * 0.11 * frontWeight;
+          x += (cheekR - cheekL) * 0.045 * frontWeight;
+
+          const philtrum = Math.exp(-(Math.pow(x, 2) / 0.006 + Math.pow(y + 0.31, 2) / 0.012));
+          z -= philtrum * 0.032 * frontWeight;
+
+          const cupidDip = 1.0 - 0.28 * Math.exp(-Math.pow(x, 2) / 0.004);
+          const upperLip = Math.exp(-(Math.pow(x, 2) / 0.078 + Math.pow(y + 0.42, 2) / 0.0055)) * cupidDip;
+          const lowerLip = Math.exp(-(Math.pow(x, 2) / 0.068 + Math.pow(y + 0.51, 2) / 0.0075));
+          const oralSeam = Math.exp(-(Math.pow(x, 2) / 0.085 + Math.pow(y + 0.465, 2) / 0.0014));
+          z += (upperLip * 0.145 + lowerLip * 0.135 - oralSeam * 0.075) * frontWeight;
+
+          const chinSulcus = Math.exp(-(Math.pow(x, 2) / 0.065 + Math.pow(y + 0.62, 2) / 0.009));
+          const chinBoss = Math.exp(-(Math.pow(x, 2) / 0.068 + Math.pow(y + 0.82, 2) / 0.032));
+          z += (chinBoss * 0.14 - chinSulcus * 0.055) * frontWeight;
+        }
+
+        pos.setXYZ(i, x, y, z);
+      }
+
+      geo.computeVertexNormals();
+      geo.userData.basePositions = new Float32Array(pos.array);
+      geo.userData.sculptOffsets = new Float32Array(pos.array.length);
+      return geo;
+    }
+
+    function createScleraTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      const grad = ctx.createRadialGradient(128, 128, 15, 128, 128, 130);
+      grad.addColorStop(0.0, '#f8fafc');
+      grad.addColorStop(0.7, '#e2e8f0');
+      grad.addColorStop(1.0, '#cbd5e1');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 256, 256);
+
+      ctx.strokeStyle = 'rgba(225, 29, 72, 0.16)';
+      ctx.lineWidth = 0.8;
+      for (let i = 0; i < 24; i++) {
+        const a = (i / 24) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(128 + Math.cos(a) * 68, 128 + Math.sin(a) * 68);
+        ctx.lineTo(128 + Math.cos(a + 0.08) * 116, 128 + Math.sin(a + 0.08) * 116);
+        ctx.stroke();
+      }
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    function createIrisTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      const grad = ctx.createRadialGradient(128, 128, 22, 128, 128, 122);
+      grad.addColorStop(0.0, '#38bdf8');
+      grad.addColorStop(0.55, '#0284c7');
+      grad.addColorStop(0.9, '#082f49');
+      grad.addColorStop(1.0, '#020617');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(128, 128, 124, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(186, 230, 253, 0.25)';
+      ctx.lineWidth = 1.2;
+      for (let i = 0; i < 64; i++) {
+        const a = (i / 64) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(128 + Math.cos(a) * 34, 128 + Math.sin(a) * 34);
+        ctx.lineTo(128 + Math.cos(a) * 110, 128 + Math.sin(a) * 110);
+        ctx.stroke();
+      }
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    let scleraTex = null;
+    let irisTex = null;
+    let leftEyeRig = null;
+    let rightEyeRig = null;
+
+    function buildAnatomicalEye(sideSign) {
+      const eyePivot = new THREE.Group();
+      eyePivot.position.set(sideSign * 0.34, 0.21, 0.83);
+
+      const ballGroup = new THREE.Group();
+      eyePivot.add(ballGroup);
+
+      const scleraMat = new THREE.MeshStandardMaterial({ map: scleraTex, roughness: 0.25, metalness: 0.02 });
+      const scleraMesh = new THREE.Mesh(new THREE.SphereGeometry(0.145, 28, 28), scleraMat);
+      ballGroup.add(scleraMesh);
+
+      const irisMat = new THREE.MeshStandardMaterial({
+        map: irisTex,
+        color: new THREE.Color(0x38bdf8),
+        roughness: 0.32,
+        metalness: 0.1,
+        emissive: new THREE.Color(0x0284c7),
+        emissiveIntensity: 0.25
+      });
+      const irisMesh = new THREE.Mesh(new THREE.CircleGeometry(0.068, 28), irisMat);
+      irisMesh.position.set(0, 0, 0.138);
+      ballGroup.add(irisMesh);
+
+      const pupilMesh = new THREE.Mesh(
+        new THREE.CircleGeometry(0.029, 24),
+        new THREE.MeshBasicMaterial({ color: 0x020617 })
+      );
+      pupilMesh.position.set(0, 0, 0.140);
+      ballGroup.add(pupilMesh);
+
+      const corneaMesh = new THREE.Mesh(
+        new THREE.SphereGeometry(0.151, 24, 24),
+        new THREE.MeshPhysicalMaterial({
+          color: 0xffffff,
+          transparent: true,
+          opacity: 0.22,
+          roughness: 0.05,
+          clearcoat: 1.0,
+          depthWrite: false
+        })
+      );
+      corneaMesh.scale.set(1.0, 1.0, 0.72);
+      corneaMesh.position.set(0, 0, 0.035);
+      ballGroup.add(corneaMesh);
+
+      const catchlight = new THREE.Mesh(
+        new THREE.CircleGeometry(0.014, 12),
+        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, depthWrite: false })
+      );
+      catchlight.position.set(-0.032, 0.034, 0.148);
+      ballGroup.add(catchlight);
+
+      const lidMat = new THREE.MeshStandardMaterial({ color: 0x162238, roughness: 0.55, metalness: 0.15 });
+      const upperLid = new THREE.Mesh(new THREE.SphereGeometry(0.158, 24, 12, 0, Math.PI * 2, 0, Math.PI * 0.52), lidMat);
+      upperLid.rotation.x = -Math.PI * 0.42;
+      eyePivot.add(upperLid);
+
+      const lowerLid = new THREE.Mesh(new THREE.SphereGeometry(0.156, 24, 12, 0, Math.PI * 2, 0.48, Math.PI * 0.52), lidMat);
+      lowerLid.rotation.x = Math.PI * 0.36;
+      eyePivot.add(lowerLid);
+
+      return { eyePivot, ballGroup, irisMat, pupilMesh, upperLid, lowerLid };
+    }
+
+    function initWebGLScene() {
+      try {
+        const testCanvas = document.createElement('canvas');
+        const gl = testCanvas.getContext('webgl2') || testCanvas.getContext('webgl');
+        if (!gl) {
+          webglAvailable = false;
+          return false;
+        }
+
+        scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x03060c, 0.075);
+
+        camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 0.08, BASE_CAMERA_DISTANCE);
+
+        renderer = new THREE.WebGLRenderer({
+          antialias: !ecoModeEnabled,
+          powerPreference: 'default',
+          preserveDrawingBuffer: true
+        });
+        const dprCap = ecoModeEnabled ? 1.0 : Math.min(window.devicePixelRatio || 1, 1.5);
+        renderer.setPixelRatio(dprCap);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.15;
+        container.innerHTML = '';
+        container.appendChild(renderer.domElement);
+
+        renderer.domElement.addEventListener('webglcontextlost', (e) => {
+          e.preventDefault();
+          webglContextLost = true;
+          activateCanvasFallback('WebGL context lost — switched to 2D Canvas Studio');
+        });
+
+        renderer.domElement.addEventListener('webglcontextrestored', () => {
+          webglContextLost = false;
+          if (!ecoModeEnabled) {
+            initWebGLScene();
+            setEngineStatus('WebGL context restored', 'ready');
+          }
+        });
+
+        controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.065;
+        controls.enableZoom = false;
+        controls.enableRotate = false;
+        controls.enablePan = false;
+
+        const ambLight = new THREE.AmbientLight(0x94a3b8, 0.9);
+        scene.add(ambLight);
+        const keyLight = new THREE.DirectionalLight(0x38bdf8, 1.4);
+        keyLight.position.set(2, 3, 4);
+        scene.add(keyLight);
+
+        const starCount = ecoModeEnabled ? 120 : 280;
+        const starGeo = new THREE.BufferGeometry();
+        const starPositions = new Float32Array(starCount * 3);
+        for (let i = 0; i < starCount; i++) {
+          const r = 3.5 + Math.random() * 7.0;
+          const theta = Math.random() * Math.PI * 2;
+          const phi = Math.acos(2 * Math.random() - 1);
+          starPositions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+          starPositions[i * 3 + 1] = r * Math.cos(phi);
+          starPositions[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+        }
+        starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+        starField = new THREE.Points(
+          starGeo,
+          new THREE.PointsMaterial({ color: 0x38bdf8, size: 0.022, transparent: true, opacity: 0.38 })
+        );
+        scene.add(starField);
+
+        uploadedImageTexture = new THREE.CanvasTexture(editCanvas);
+        uploadedImageTexture.colorSpace = THREE.SRGBColorSpace;
+        shaderUniforms.uImageTex.value = uploadedImageTexture;
+        shaderUniforms.uHasImage.value = hasUploadedImage ? 1.0 : 0.0;
+
+        headGeometry = createSculptedFaceGeometry(ecoModeEnabled ? 56 : 84);
+        headMaterial = new THREE.ShaderMaterial({
+          uniforms: shaderUniforms,
+          vertexShader: /* glsl */ `
+            varying vec3 vNormal;
+            varying vec3 vWorldPos;
+            varying vec3 vLocalPos;
+            varying float vBrushProx;
+            uniform vec3 uBrushCenter;
+            uniform float uBrushRadius;
+            uniform float uBrushActive;
+            void main() {
+              vLocalPos = position;
+              vec4 worldPos = modelMatrix * vec4(position, 1.0);
+              vWorldPos = worldPos.xyz;
+              vNormal = normalize(normalMatrix * normal);
+              float d = distance(position, uBrushCenter);
+              vBrushProx = exp(-(d * d) / max(0.01, uBrushRadius * uBrushRadius)) * uBrushActive;
+              gl_Position = projectionMatrix * viewMatrix * worldPos;
+            }
+          `,
+          fragmentShader: /* glsl */ `
+            varying vec3 vNormal;
+            varying vec3 vWorldPos;
+            varying vec3 vLocalPos;
+            varying float vBrushProx;
+            uniform float uTime;
+            uniform int uSkinMode;
+            uniform float uF1;
+            uniform float uF2;
+            uniform float uPlosive;
+            uniform float uReactionBoost;
+            uniform float uPingWave;
+            uniform float uHasImage;
+            uniform sampler2D uImageTex;
+            uniform float uBrushPolarity;
+
+            vec3 envReflection(vec3 refl) {
+              float horizon = smoothstep(-0.4, 0.8, refl.y);
+              vec3 sky = mix(vec3(0.04, 0.09, 0.18), vec3(0.22, 0.78, 0.98), horizon);
+              float rimBand = pow(max(0.0, sin(refl.x * 4.0 + refl.y * 3.0 + uTime * 0.4)), 4.0);
+              return sky + vec3(0.45, 0.18, 0.72) * rimBand * 0.55;
+            }
+
+            void main() {
+              vec3 N = normalize(vNormal);
+              vec3 V = normalize(cameraPosition - vWorldPos);
+              float fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+              vec3 L1 = normalize(vec3(1.6, 2.2, 2.5));
+              vec3 L2 = normalize(vec3(-2.0, -0.6, 1.4));
+              float diff1 = max(dot(N, L1), 0.0);
+              float diff2 = max(dot(N, L2), 0.0);
+              vec3 H1 = normalize(L1 + V);
+              float spec1 = pow(max(dot(N, H1), 0.0), 48.0);
+
+              vec3 color = vec3(0.0);
+              float alpha = 1.0;
+
+              if (uSkinMode == 0) {
+                vec3 R = reflect(-V, N);
+                vec3 chrome = envReflection(R);
+                vec3 obsidian = vec3(0.03, 0.045, 0.075);
+                color = mix(obsidian, chrome, 0.45 + 0.55 * fresnel);
+                color += vec3(0.75, 0.92, 1.0) * spec1 * 1.0;
+                color += vec3(0.12, 0.65, 0.95) * fresnel * (0.45 + uF1 * 0.6 + uReactionBoost * 0.35);
+              } else if (uSkinMode == 1) {
+                float gridX = abs(fract(vLocalPos.x * 16.0) - 0.5);
+                float gridY = abs(fract(vLocalPos.y * 16.0) - 0.5);
+                float line = smoothstep(0.44, 0.49, max(gridX, gridY));
+                float scan = 0.5 + 0.5 * sin(vLocalPos.y * 14.0 - uTime * 3.0);
+                vec3 baseDark = vec3(0.015, 0.035, 0.065);
+                vec3 neonCyan = vec3(0.10, 0.88, 0.98) * (0.75 + uF2 * 0.8);
+                vec3 neonMag = vec3(0.92, 0.25, 0.78) * (0.4 + uF1 * 0.8 + uReactionBoost * 0.4);
+                color = mix(baseDark, mix(neonCyan, neonMag, scan), line);
+                color += neonCyan * fresnel * 0.55;
+              } else if (uSkinMode == 2) {
+                float band = 0.5 + 0.5 * sin(vLocalPos.x * 18.0 + vLocalPos.y * 18.0);
+                vec3 crystalDeep = vec3(0.06, 0.14, 0.28);
+                vec3 crystalEdge = vec3(0.32, 0.86, 1.0);
+                color = crystalDeep * (0.35 + diff1 * 0.85 + band * 0.2) + crystalEdge * fresnel * 0.85 + vec3(1.0) * spec1 * 0.9;
+                color += vec3(0.55, 0.25, 0.95) * diff2 * 0.4;
+              } else {
+                float plasma = sin(vLocalPos.y * 8.0 + uTime * 2.2) * cos(vLocalPos.x * 8.0 - uTime * 1.7);
+                vec3 coreGlass = mix(vec3(0.04, 0.12, 0.26), vec3(0.35, 0.10, 0.48), 0.5 + 0.5 * plasma);
+                vec3 rimEnergy = mix(vec3(0.15, 0.92, 0.98), vec3(0.98, 0.35, 0.75), clamp(uPlosive + uReactionBoost * 0.5, 0.0, 1.0));
+                color = coreGlass * (0.5 + diff1 * 0.6) + rimEnergy * fresnel * (1.0 + uF1 * 0.65) + vec3(0.9, 0.98, 1.0) * spec1 * 0.85;
+                alpha = 0.88 + fresnel * 0.12;
+              }
+
+              if (uHasImage > 0.5 && vLocalPos.z > -0.2) {
+                vec2 uv = clamp(vec2(vLocalPos.x * 0.55 + 0.5, -vLocalPos.y * 0.45 + 0.5), 0.0, 1.0);
+                vec3 imgCol = texture2D(uImageTex, uv).rgb;
+                color = mix(color, imgCol * (0.55 + diff1 * 0.65) + vec3(0.2, 0.8, 1.0) * fresnel * 0.35, 0.78);
+              }
+
+              if (uPingWave > 0.01) {
+                color += vec3(0.18, 0.92, 0.98) * uPingWave * (0.25 + fresnel * 0.55);
+              }
+
+              if (vBrushProx > 0.01) {
+                vec3 brushTint = uBrushPolarity >= 0.0 ? vec3(0.15, 0.95, 1.0) : vec3(0.98, 0.25, 0.75);
+                color = mix(color, brushTint, vBrushProx * 0.42);
+              }
+
+              gl_FragColor = vec4(color, alpha);
+            }
+          `,
+          transparent: true
+        });
+
+        headMesh = new THREE.Mesh(headGeometry, headMaterial);
+        scene.add(headMesh);
+
+        scleraTex = createScleraTexture();
+        irisTex = createIrisTexture();
+        leftEyeRig = buildAnatomicalEye(-1);
+        rightEyeRig = buildAnatomicalEye(1);
+        headMesh.add(leftEyeRig.eyePivot, rightEyeRig.eyePivot);
+
+        aiUnitGroup = new THREE.Group();
+        headMesh.add(aiUnitGroup);
+        aiSatMeshes.length = 0;
+        for (let i = 0; i < 5; i++) {
+          const angle = (i / 5) * Math.PI * 2 + Math.PI * 0.5;
+          const sat = new THREE.Mesh(
+            new THREE.OctahedronGeometry(0.035, 0),
+            new THREE.MeshBasicMaterial({ color: i % 2 === 0 ? 0x38bdf8 : 0xe879f9 })
+          );
+          sat.position.set(Math.cos(angle) * 1.48, Math.sin(angle) * 1.05 + 0.08, 0.25);
+          aiUnitGroup.add(sat);
+          aiSatMeshes.push(sat);
+        }
+
+        vectorGroup = new THREE.Group();
+        headMesh.add(vectorGroup);
+        arrowHelpers.length = 0;
+        ribbonLines.length = 0;
+        for (let i = 0; i < ZONE_COUNT; i++) {
+          const node = vectorNodes[i];
+          const arrow = new THREE.ArrowHelper(
+            new THREE.Vector3(0, 0, 1),
+            node.anchor.clone(),
+            0.16,
+            0x22d3ee,
+            0.055,
+            0.04
+          );
+          vectorGroup.add(arrow);
+          arrowHelpers.push(arrow);
+
+          const trailArr = new Float32Array(RIBBON_LEN * 3);
+          for (let h = 0; h < RIBBON_LEN; h++) {
+            trailArr[h * 3] = node.anchor.x;
+            trailArr[h * 3 + 1] = node.anchor.y;
+            trailArr[h * 3 + 2] = node.anchor.z;
+          }
+          const trailGeo = new THREE.BufferGeometry();
+          trailGeo.setAttribute('position', new THREE.BufferAttribute(trailArr, 3));
+          const line = new THREE.Line(
+            trailGeo,
+            new THREE.LineBasicMaterial({ color: 0xe879f9, transparent: true, opacity: 0.65 })
+          );
+          vectorGroup.add(line);
+          ribbonLines.push(line);
+        }
+
+        shockwaveGroup = new THREE.Group();
+        headMesh.add(shockwaveGroup);
+        shockwaves.length = 0;
+
+        container.classList.remove('hidden');
+        fallback2dCanvas.classList.add('hidden');
+        webglAvailable = true;
+        return true;
+      } catch (err) {
+        webglAvailable = false;
+        activateCanvasFallback(`2D Canvas Fallback Active (${err.message})`);
+        return false;
+      }
+    }
+
+    function activateCanvasFallback(reasonText) {
+      container.classList.add('hidden');
+      fallback2dCanvas.classList.remove('hidden');
+      resizeFallback2dCanvas();
+      setEngineStatus(reasonText, 'active');
+    }
+
+    function resizeFallback2dCanvas() {
+      const capDpr = ecoModeEnabled ? 1 : Math.min(window.devicePixelRatio || 1, 1.5);
+      fallback2dCanvas.width = Math.max(1, Math.floor(window.innerWidth * capDpr));
+      fallback2dCanvas.height = Math.max(1, Math.floor(window.innerHeight * capDpr));
+    }
+
+    // =========================================================================
+    // 3. WEBAUDIO & MP3 / MP4 / MIC / SYNTH ENGINE (WITH SAFE FALLBACK)
+    // =========================================================================
+    const htmlAudio = document.getElementById('html-audio');
+    const mp4VideoEl = document.getElementById('mp4-video-el');
+    const videoMonitorCard = document.getElementById('video-monitor-card');
+    const playPauseBtn = document.getElementById('play-pause-btn');
+    const seekSlider = document.getElementById('seek-slider');
+    const volumeSlider = document.getElementById('volume-slider');
+    const trackTitle = document.getElementById('track-title');
+    const trackTime = document.getElementById('track-time');
+
+    let audioCtx = null;
+    let analyser = null;
+    let masterGain = null;
+    let mediaElementSource = null;
+    let videoElementSource = null;
+    let micStream = null;
+    let micSource = null;
+    let synthTimer = null;
+
+    let decodedAudioBuffer = null;
+    let bufferSource = null;
+    let bufferStartTime = 0;
+    let bufferOffset = 0;
+    let isBufferPlaying = false;
+    let activeAudioMode = 'none';
+
+    let freqData = null;
+    let timeDomainData = null;
+    let bassEnergy = 0;
+    let f1Aperture = 0;
+    let f2Spread = 0;
+    let plosiveEnergy = 0;
+    let purifiedSignal = 0;
+    let zeroCrossCount = 0;
+    let latestRms = 0;
+
+    function ensureAudioContext() {
+      try {
+        if (!audioCtx) {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new Ctx();
+          analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 1024;
+          analyser.smoothingTimeConstant = 0.78;
+          masterGain = audioCtx.createGain();
+          masterGain.gain.value = parseFloat(volumeSlider.value);
+          masterGain.connect(analyser);
+          analyser.connect(audioCtx.destination);
+          freqData = new Uint8Array(analyser.frequencyBinCount);
+          timeDomainData = new Uint8Array(analyser.fftSize);
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume().catch(() => {});
+        }
+      } catch (err) {
+        setEngineStatus(`Audio notice: ${err.message}`, 'error');
+      }
+    }
+
+    function stopAllAudioSources() {
+      if (synthTimer) {
+        clearInterval(synthTimer);
+        synthTimer = null;
+      }
+      if (bufferSource) {
+        try { bufferSource.stop(); } catch (_) {}
+        try { bufferSource.disconnect(); } catch (_) {}
+        bufferSource = null;
+      }
+      isBufferPlaying = false;
+      if (micStream) {
+        micStream.getTracks().forEach((t) => t.stop());
+        micStream = null;
+      }
+      if (micSource) {
+        try { micSource.disconnect(); } catch (_) {}
+        micSource = null;
+      }
+      try { htmlAudio.pause(); } catch (_) {}
+      try { mp4VideoEl.pause(); } catch (_) {}
+    }
+
+    function startBufferPlayback(offsetSec = 0) {
+      if (!audioCtx || !decodedAudioBuffer || !analyser) return;
+      if (bufferSource) {
+        try { bufferSource.stop(); } catch (_) {}
+        try { bufferSource.disconnect(); } catch (_) {}
+      }
+      const src = audioCtx.createBufferSource();
+      src.buffer = decodedAudioBuffer;
+      src.loop = true;
+      src.connect(masterGain);
+      const safeOffset = Math.max(0, offsetSec % Math.max(0.1, decodedAudioBuffer.duration));
+      src.start(0, safeOffset);
+      bufferSource = src;
+      bufferStartTime = audioCtx.currentTime - safeOffset;
+      bufferOffset = safeOffset;
+      isBufferPlaying = true;
+      playPauseBtn.textContent = '❚❚ Pause';
+      playPauseBtn.disabled = false;
+      seekSlider.disabled = false;
+    }
+
+    document.getElementById('media-file-input').addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      ensureAudioContext();
+      stopAllAudioSources();
+      decodedAudioBuffer = null;
+
+      const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|m4v)$/i.test(file.name);
+      const objectUrl = URL.createObjectURL(file);
+      trackTitle.textContent = file.name;
+
+      if (isVideo) {
+        videoMonitorCard.classList.remove('hidden');
+        mp4VideoEl.src = objectUrl;
+        mp4VideoEl.volume = parseFloat(volumeSlider.value);
+        try {
+          if (!videoElementSource && audioCtx) {
+            videoElementSource = audioCtx.createMediaElementSource(mp4VideoEl);
+            videoElementSource.connect(masterGain);
+          }
+          activeAudioMode = 'video-element';
+          playPauseBtn.disabled = false;
+          seekSlider.disabled = false;
+          await mp4VideoEl.play();
+          playPauseBtn.textContent = '❚❚ Pause';
+          setEngineStatus(`MP4 Synced → Driving Lips & 20 Daemons: ${file.name}`, 'active');
+        } catch (err) {
+          setEngineStatus(`MP4 Playback Notice: ${err.message}`, 'error');
+        }
+        return;
+      }
+
+      videoMonitorCard.classList.add('hidden');
+      htmlAudio.src = objectUrl;
+      htmlAudio.volume = parseFloat(volumeSlider.value);
+
+      try {
+        if (!mediaElementSource && audioCtx) {
+          mediaElementSource = audioCtx.createMediaElementSource(htmlAudio);
+          mediaElementSource.connect(masterGain);
+        }
+        activeAudioMode = 'file-element';
+        playPauseBtn.disabled = false;
+        seekSlider.disabled = false;
+        await htmlAudio.play();
+        playPauseBtn.textContent = '❚❚ Pause';
+        setEngineStatus(`MP3 Playing → Driving Lips Engine: ${file.name}`, 'active');
+      } catch (_) {
+        try {
+          const arrBuf = await file.arrayBuffer();
+          decodedAudioBuffer = await audioCtx.decodeAudioData(arrBuf);
+          activeAudioMode = 'file-buffer';
+          startBufferPlayback(0);
+          setEngineStatus(`MP3 Decoded → Driving Lips Engine: ${file.name}`, 'active');
+        } catch (err2) {
+          setEngineStatus(`Audio Decode Notice: ${err2.message}`, 'error');
+        }
+      }
+    });
+
+    // =========================================================================
+    // 4. IMAGE UPLOAD & RELIEF MORPH SYSTEM
+    // =========================================================================
+    const previewCanvas = document.getElementById('image-preview-canvas');
+    const previewCtx = previewCanvas.getContext('2d');
+    const reliefDepthSlider = document.getElementById('relief-depth-slider');
+    const reliefDepthVal = document.getElementById('relief-depth-val');
+    const imageStatusBadge = document.getElementById('image-status-badge');
+    const imageMirrorBtn = document.getElementById('image-mirror-btn');
+
+    function rebuildReliefMapFromCanvas() {
+      const sampleCanvas = document.createElement('canvas');
+      sampleCanvas.width = RELIEF_W;
+      sampleCanvas.height = RELIEF_H;
+      const sCtx = sampleCanvas.getContext('2d');
+      sCtx.drawImage(editCanvas, 0, 0, RELIEF_W, RELIEF_H);
+      const data = sCtx.getImageData(0, 0, RELIEF_W, RELIEF_H).data;
+
+      for (let y = 0; y < RELIEF_H; y++) {
+        for (let x = 0; x < RELIEF_W; x++) {
+          const sx = mirrorImageEnabled && x > RELIEF_W * 0.5 ? (RELIEF_W - 1 - x) : x;
+          const idx = (y * RELIEF_W + sx) * 4;
+          const lum = (0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2]) / 255.0;
+          reliefHeightMap[y * RELIEF_W + x] = (lum - 0.5) * 2.0;
+        }
+      }
+      if (uploadedImageTexture) uploadedImageTexture.needsUpdate = true;
+
+      previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+      previewCtx.drawImage(editCanvas, 0, 0, previewCanvas.width, previewCanvas.height);
+    }
+
+    function applyLiquidBrushToImageCanvas(localPt, radius, effectiveSign) {
+      if (!hasUploadedImage) return;
+      const u = Math.max(0, Math.min(1, localPt.x * 0.65 + 0.5));
+      const v = Math.max(0, Math.min(1, -localPt.y * 0.55 + 0.5));
+      const cx = u * editCanvas.width;
+      const cy = v * editCanvas.height;
+      const rPx = Math.max(8, radius * 85);
+
+      const snapshot = document.createElement('canvas');
+      snapshot.width = editCanvas.width;
+      snapshot.height = editCanvas.height;
+      snapshot.getContext('2d').drawImage(editCanvas, 0, 0);
+
+      editCtx.save();
+      editCtx.beginPath();
+      editCtx.arc(cx, cy, rPx, 0, Math.PI * 2);
+      editCtx.clip();
+      const scale = effectiveSign >= 0 ? 1.04 : 0.96;
+      editCtx.translate(cx, cy);
+      editCtx.scale(scale, scale);
+      editCtx.rotate(activeBrushMode === 'vortex' ? 0.06 * effectiveSign : 0);
+      editCtx.drawImage(snapshot, -cx, -cy);
+      editCtx.restore();
+
+      rebuildReliefMapFromCanvas();
+    }
+
+    document.getElementById('image-file-input').addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          editCtx.clearRect(0, 0, editCanvas.width, editCanvas.height);
+          editCtx.drawImage(img, 0, 0, editCanvas.width, editCanvas.height);
+          hasUploadedImage = true;
+          shaderUniforms.uHasImage.value = 1.0;
+          imageStatusBadge.textContent = 'MAPPED';
+          imageStatusBadge.className = 'text-emerald-300';
+          rebuildReliefMapFromCanvas();
+          setEngineStatus(`Image Relief Mapped: ${file.name}`, 'active');
+        };
+        img.src = String(ev.target.result);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById('clear-image-btn').addEventListener('click', () => {
+      hasUploadedImage = false;
+      shaderUniforms.uHasImage.value = 0.0;
+      reliefHeightMap.fill(0);
+      editCtx.clearRect(0, 0, editCanvas.width, editCanvas.height);
+      previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+      imageStatusBadge.textContent = 'NO IMAGE';
+      imageStatusBadge.className = 'text-slate-400';
+      setEngineStatus('Uploaded image cleared', 'ready');
+    });
+
+    imageMirrorBtn.addEventListener('click', () => {
+      mirrorImageEnabled = !mirrorImageEnabled;
+      imageMirrorBtn.textContent = `MIRROR: ${mirrorImageEnabled ? 'ON' : 'OFF'}`;
+      if (hasUploadedImage) rebuildReliefMapFromCanvas();
+    });
+
+    reliefDepthSlider.addEventListener('input', () => {
+      reliefDepthVal.textContent = parseFloat(reliefDepthSlider.value).toFixed(2);
+    });
+
+    // =========================================================================
+    // 5. SHOCKWAVES, SONAR PING & LIQUID PUSH/PULL BRUSH
+    // =========================================================================
+    function spawnShockwave(localOrigin, normalDir, intensity = 1.0, hex = 0x22d3ee) {
+      if (!shockwaveGroup) return;
+      const maxWaves = ecoModeEnabled ? 8 : 14;
+      if (shockwaves.length >= maxWaves) {
+        const old = shockwaves.shift();
+        shockwaveGroup.remove(old.mesh);
+        old.mesh.geometry.dispose();
+        old.mesh.material.dispose();
+      }
+      const mesh = new THREE.Mesh(
+        new THREE.RingGeometry(0.04, 0.068, 28),
+        new THREE.MeshBasicMaterial({
+          color: hex,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: Math.min(0.95, 0.55 + intensity * 0.4)
+        })
+      );
+      mesh.position.copy(localOrigin).addScaledVector(normalDir, 0.02);
+      mesh.lookAt(localOrigin.clone().add(normalDir));
+      shockwaveGroup.add(mesh);
+      shockwaves.push({ mesh, age: 0, maxAge: 0.85, speed: 1.45 + intensity * 0.85 });
+    }
+
+    let pingEchoLevel = 0;
+    let pingLatencyMs = 0;
+    let lastPingTimestamp = 0;
+    let autoPingEnabled = false;
+    let nextAutoPingTime = 1.5;
+    const pingDecaySlider = document.getElementById('ping-decay-slider');
+    const pingDecayVal = document.getElementById('ping-decay-val');
+    const pingTelemetryBadge = document.getElementById('ping-telemetry-badge');
+
+    const DAEMON_SPECS = [
+      ['D01:WAVE',      'Continuous waveform envelope tracker'],
+      ['D02:ZERO-X',    'Zero-crossing cadence & phase detector'],
+      ['D03:PURIFY',    'Signal purification & jitter suppressor'],
+      ['D04:LIP-LOCK',  'F1/F2 formant-to-lip phase lock'],
+      ['D05:VEC-SORT',  'Impact/trajectory hierarchy sorter'],
+      ['D06:PING-SNR',  'Sonar ping wave & echo ring dispatcher'],
+      ['D07:PLOSIVE',   'Transient plosive burst detector'],
+      ['D08:LIQUID-F',  'Gaussian liquid push/pull flow guard'],
+      ['D09:GAZE-TRK',  'Eyeball saccade & fixation tracker'],
+      ['D10:BLINK-CTL', 'Natural eyelid blink & dilation sync'],
+      ['D11:IMG-RLF',   'Uploaded image luminance & relief mapper'],
+      ['D12:VISCOSITY', 'Spring-damper viscosity stabilizer'],
+      ['D13:POLARITY',  'Push/pull polarity force balancer'],
+      ['D14:REACT-AI',  'Smart expression reaction selector'],
+      ['D15:OBS-SCAN',  'Multi-axis smart observation scanner'],
+      ['D16:ZOOM-DEC',  'Decoupled camera zoom isolation guard'],
+      ['D17:ROT-INRT',  'Inertial yaw/pitch/roll rotation guard'],
+      ['D18:RIBBON-T',  '3D trajectory ribbon trail updater'],
+      ['D19:SHADER-M',  'GLSL skin uniform & fresnel bridge'],
+      ['D20:HARMONIC',  'Global sovereign harmonic integrator']
+    ];
+
+    const daemons = DAEMON_SPECS.map(([id, desc], idx) => ({
+      index: idx,
+      id,
+      desc,
+      enabled: true,
+      pulses: 0,
+      waveVal: 0,
+      state: 'LOCK'
+    }));
+
+    function emitSonarPing(originLocal = new THREE.Vector3(0, -0.05, 1.22), normalLocal = new THREE.Vector3(0, 0, 1)) {
+      const now = performance.now();
+      pingLatencyMs = lastPingTimestamp > 0 ? Math.min(999, Math.round(now - lastPingTimestamp)) : 18;
+      lastPingTimestamp = now;
+      pingEchoLevel = 1.0;
+      shaderUniforms.uPingWave.value = 1.0;
+
+      spawnShockwave(originLocal, normalLocal, 1.45, 0x22d3ee);
+      for (let z = 0; z < ZONE_COUNT; z++) {
+        const d = vectorNodes[z].anchor.distanceTo(originLocal);
+        const waveImpulse = Math.max(0, 1.0 - d * 0.55) * 4.5;
+        springVel[z] += waveImpulse;
+        vectorNodes[z].impactForce = Math.min(3.5, vectorNodes[z].impactForce + waveImpulse * 0.16);
+      }
+
+      const pDaemon = daemons[5];
+      if (pDaemon && pDaemon.enabled) pDaemon.pulses++;
+    }
+
+    pingDecaySlider.addEventListener('input', () => {
+      pingDecayVal.textContent = parseFloat(pingDecaySlider.value).toFixed(2);
+    });
+    document.getElementById('trigger-ping-btn').addEventListener('click', () => emitSonarPing());
+    document.getElementById('lab-ping-btn').addEventListener('click', () => emitSonarPing());
+    const autoPingBtn = document.getElementById('auto-ping-btn');
+    autoPingBtn.addEventListener('click', () => {
+      autoPingEnabled = !autoPingEnabled;
+      autoPingBtn.textContent = `AUTO: ${autoPingEnabled ? 'ON' : 'OFF'}`;
+      autoPingBtn.classList.toggle('bg-cyan-500/25', autoPingEnabled);
+    });
+
+    function updateShockwaves(dt, elapsed) {
+      if (autoPingEnabled && !faceOpsLocked && elapsed >= nextAutoPingTime) {
+        emitSonarPing();
+        nextAutoPingTime = elapsed + 1.8;
+      }
+
+      const decayFactor = Math.pow(parseFloat(pingDecaySlider.value), dt * 4.0);
+      pingEchoLevel *= decayFactor;
+      shaderUniforms.uPingWave.value = pingEchoLevel;
+      pingTelemetryBadge.textContent = `ECHO: ${pingEchoLevel.toFixed(2)} | ${pingLatencyMs}ms`;
+
+      for (let i = shockwaves.length - 1; i >= 0; i--) {
+        const sw = shockwaves[i];
+        sw.age += dt;
+        const t = sw.age / sw.maxAge;
+        if (t >= 1.0) {
+          if (shockwaveGroup) shockwaveGroup.remove(sw.mesh);
+          sw.mesh.geometry.dispose();
+          sw.mesh.material.dispose();
+          shockwaves.splice(i, 1);
+        } else {
+          const s = 1.0 + sw.age * sw.speed * 4.4;
+          sw.mesh.scale.set(s, s, 1);
+          sw.mesh.material.opacity = (1.0 - t) * (1.0 - t) * 0.88;
+        }
+      }
+      document.getElementById('shockwave-count').textContent = String(shockwaves.length);
+    }
+
+    let activeBrushMode = 'push';
+    let freezeLiquid = false;
+    let isSculptDragging = false;
+    const prevDragPt = new THREE.Vector3();
+    let hasPrevDragPt = false;
+    const gazePointerWorld = new THREE.Vector3(0, 0.1, 3.5);
+    let hasPointerGaze = false;
+
+    const raycaster = new THREE.Raycaster();
+    const pointerNdc = new THREE.Vector2();
+    const radiusSlider = document.getElementById('radius-slider');
+    const viscositySlider = document.getElementById('viscosity-slider');
+    const polaritySlider = document.getElementById('polarity-slider');
+
+    function applyLiquidBrushAt(localHit, normalHit, dtStep = 0.016, triggerShock = false) {
+      if (faceOpsLocked) return;
+      const radius = parseFloat(radiusSlider.value);
+      const polarity = parseFloat(polaritySlider.value);
+      const invR2 = 1.0 / Math.max(0.015, radius * radius);
+      const sign = activeBrushMode === 'pull' ? -1.0 : 1.0;
+      const effectiveSign = sign * Math.sign(polarity || 1);
+
+      shaderUniforms.uBrushCenter.value.copy(localHit);
+      shaderUniforms.uBrushRadius.value = radius;
+      shaderUniforms.uBrushActive.value = 1.0;
+      shaderUniforms.uBrushPolarity.value = effectiveSign;
+
+      if (headGeometry && headGeometry.attributes && headGeometry.attributes.position) {
+        const posAttr = headGeometry.attributes.position;
+        const base = headGeometry.userData.basePositions;
+        const sculpt = headGeometry.userData.sculptOffsets;
+        const tangent = new THREE.Vector3();
+        if (hasPrevDragPt) tangent.subVectors(localHit, prevDragPt);
+        const strength = 0.042 * Math.abs(polarity) * (dtStep / 0.016);
+
+        for (let i = 0; i < posAttr.count; i++) {
+          const idx = i * 3;
+          const bx = base[idx] + sculpt[idx];
+          const by = base[idx + 1] + sculpt[idx + 1];
+          const bz = base[idx + 2] + sculpt[idx + 2];
+
+          const dx = bx - localHit.x;
+          const dy = by - localHit.y;
+          const dz = bz - localHit.z;
+          const d2 = dx * dx + dy * dy + dz * dz;
+          if (d2 > radius * radius * 3.2) continue;
+
+          const falloff = Math.exp(-d2 * invR2 * 2.2);
+
+          if (activeBrushMode === 'push' || activeBrushMode === 'pull') {
+            sculpt[idx] += normalHit.x * falloff * strength * effectiveSign;
+            sculpt[idx + 1] += normalHit.y * falloff * strength * effectiveSign;
+            sculpt[idx + 2] += normalHit.z * falloff * strength * effectiveSign;
+          } else if (activeBrushMode === 'vortex') {
+            const rx = dy * normalHit.z - dz * normalHit.y;
+            const ry = dz * normalHit.x - dx * normalHit.z;
+            const rz = dx * normalHit.y - dy * normalHit.x;
+            sculpt[idx] += (rx * 1.6 + tangent.x * 0.45) * falloff * strength * effectiveSign;
+            sculpt[idx + 1] += (ry * 1.6 + tangent.y * 0.45) * falloff * strength * effectiveSign;
+            sculpt[idx + 2] += (rz * 1.6 + tangent.z * 0.45) * falloff * strength * effectiveSign;
+          } else if (activeBrushMode === 'pinch') {
+            sculpt[idx] += (-dx * 0.65 + normalHit.x * 0.25) * falloff * strength * effectiveSign;
+            sculpt[idx + 1] += (-dy * 0.65 + normalHit.y * 0.25) * falloff * strength * effectiveSign;
+            sculpt[idx + 2] += (-dz * 0.65 + normalHit.z * 0.25) * falloff * strength * effectiveSign;
+          }
+
+          const mag = Math.hypot(sculpt[idx], sculpt[idx + 1], sculpt[idx + 2]);
+          if (mag > 0.48) {
+            const s = 0.48 / mag;
+            sculpt[idx] *= s;
+            sculpt[idx + 1] *= s;
+            sculpt[idx + 2] *= s;
+          }
+        }
+      }
+
+      if (hasUploadedImage && triggerShock) {
+        applyLiquidBrushToImageCanvas(localHit, radius, effectiveSign);
+      }
+
+      for (let z = 0; z < ZONE_COUNT; z++) {
+        const node = vectorNodes[z];
+        const dist = node.anchor.distanceTo(localHit);
+        if (dist < radius * 1.75) {
+          const coupling = Math.exp(-(dist * dist) * invR2 * 1.5);
+          springVel[z] += coupling * effectiveSign * Math.abs(polarity) * 4.2;
+          node.impactForce = Math.min(3.5, node.impactForce + coupling * Math.abs(polarity) * 0.85);
+        }
+      }
+
+      if (triggerShock) {
+        spawnShockwave(localHit, normalHit, Math.min(1.5, Math.abs(polarity)), effectiveSign >= 0 ? 0x22d3ee : 0xf472b6);
+      }
+
+      prevDragPt.copy(localHit);
+      hasPrevDragPt = true;
+    }
+
+    function raycastFaceFromClient(clientX, clientY) {
+      if (!renderer || !headMesh || !camera) return null;
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointerNdc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+      pointerNdc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(pointerNdc, camera);
+      gazePointerWorld.copy(raycaster.ray.origin).addScaledVector(raycaster.ray.direction, 3.2);
+      hasPointerGaze = true;
+
+      const hits = raycaster.intersectObject(headMesh, false);
+      if (hits.length > 0) {
+        const localHit = headMesh.worldToLocal(hits[0].point.clone());
+        const normalHit = hits[0].face
+          ? hits[0].face.normal.clone().normalize()
+          : localHit.clone().normalize();
+        return { localHit, normalHit };
+      }
+      return null;
+    }
+
+    // =========================================================================
+    // 6. 4x4 FULL DESIGN MATRIX, AI PRESETS & DECOUPLED CONTROLS
+    // =========================================================================
+    const zoomSlider = document.getElementById('zoom-slider');
+    const zoomReadout = document.getElementById('zoom-readout');
+    const zoomSliderVal = document.getElementById('zoom-slider-val');
+    const lockZoomBtn = document.getElementById('lock-zoom-btn');
+    const lockOpsBtn = document.getElementById('lock-ops-btn');
+    const autoOrbitBtn = document.getElementById('auto-orbit-btn');
+    const decoupleBadge = document.getElementById('decouple-state-badge');
+    const yawSlider = document.getElementById('yaw-slider');
+    const pitchSlider = document.getElementById('pitch-slider');
+    const rollSlider = document.getElementById('roll-slider');
+    const yawValEl = document.getElementById('yaw-val');
+    const pitchValEl = document.getElementById('pitch-val');
+    const rollValEl = document.getElementById('roll-val');
+
+    function syncRotationSliders() {
+      const yDeg = Math.round(THREE.MathUtils.radToDeg(targetYaw));
+      const pDeg = Math.round(THREE.MathUtils.radToDeg(targetPitch));
+      const rDeg = Math.round(THREE.MathUtils.radToDeg(targetRoll));
+      yawSlider.value = String(Math.max(-90, Math.min(90, yDeg)));
+      pitchSlider.value = String(Math.max(-55, Math.min(55, pDeg)));
+      rollSlider.value = String(Math.max(-45, Math.min(45, rDeg)));
+      yawValEl.textContent = `${yDeg}°`;
+      pitchValEl.textContent = `${pDeg}°`;
+      rollValEl.textContent = `${rDeg}°`;
+    }
+
+    yawSlider.addEventListener('input', () => {
+      if (faceOpsLocked) return;
+      targetYaw = THREE.MathUtils.degToRad(parseFloat(yawSlider.value));
+      yawValEl.textContent = `${yawSlider.value}°`;
+    });
+    pitchSlider.addEventListener('input', () => {
+      if (faceOpsLocked) return;
+      targetPitch = THREE.MathUtils.degToRad(parseFloat(pitchSlider.value));
+      pitchValEl.textContent = `${pitchSlider.value}°`;
+    });
+    rollSlider.addEventListener('input', () => {
+      if (faceOpsLocked) return;
+      targetRoll = THREE.MathUtils.degToRad(parseFloat(rollSlider.value));
+      rollValEl.textContent = `${rollSlider.value}°`;
+    });
+
+    document.getElementById('snap-zero-rot-btn').addEventListener('click', () => {
+      if (faceOpsLocked) return;
+      targetYaw = 0;
+      targetPitch = 0;
+      targetRoll = 0;
+      velYaw = 0;
+      velPitch = 0;
+      syncRotationSliders();
+    });
+
+    document.getElementById('reset-orbit-cam-btn').addEventListener('click', () => {
+      if (camera && controls) {
+        camera.position.set(0, 0.08, BASE_CAMERA_DISTANCE / Math.max(0.4, zoomMultiplier));
+        controls.target.set(0, 0, 0);
+        controls.update();
+      }
+      setEngineStatus('Orbit Camera Reset to Origin (0, 0)', 'active');
+    });
+
+    document.getElementById('capture-snapshot-btn').addEventListener('click', () => {
+      try {
+        let dataUrl = '';
+        if (renderer && !fallback2dCanvas.classList.contains('hidden') === false) {
+          renderer.render(scene, camera);
+          dataUrl = renderer.domElement.toDataURL('image/png');
+        } else {
+          dataUrl = fallback2dCanvas.toDataURL('image/png');
+        }
+        const link = document.createElement('a');
+        link.download = `hyperface-v12-snapshot-${Date.now()}.png`;
+        link.href = dataUrl;
+        link.click();
+        setEngineStatus('Exported Studio PNG Snapshot', 'active');
+      } catch (err) {
+        setEngineStatus(`Snapshot Notice: ${err.message}`, 'error');
+      }
+    });
+
+    autoOrbitBtn.addEventListener('click', () => {
+      autoOrbitEnabled = !autoOrbitEnabled;
+      autoOrbitBtn.textContent = `Orbit: ${autoOrbitEnabled ? 'ON' : 'OFF'}`;
+      autoOrbitBtn.classList.toggle('bg-fuchsia-500/25', autoOrbitEnabled);
+    });
+
+    function setZoomLevel(val) {
+      if (zoomLocked) return;
+      targetZoomMultiplier = Math.max(0.55, Math.min(2.10, val));
+      zoomSlider.value = targetZoomMultiplier.toFixed(2);
+      zoomSliderVal.textContent = `${targetZoomMultiplier.toFixed(2)}x`;
+      zoomReadout.textContent = `${targetZoomMultiplier.toFixed(2)}x`;
+    }
+
+    zoomSlider.addEventListener('input', () => setZoomLevel(parseFloat(zoomSlider.value)));
+    document.getElementById('zoom-in-btn').addEventListener('click', () => setZoomLevel(targetZoomMultiplier + 0.15));
+    document.getElementById('zoom-out-btn').addEventListener('click', () => setZoomLevel(targetZoomMultiplier - 0.15));
+    document.getElementById('zoom-reset-btn').addEventListener('click', () => {
+      setZoomLevel(1.0);
+      if (controls) controls.target.set(0, 0, 0);
+    });
+
+    function updateDecoupleBadge() {
+      if (zoomLocked && faceOpsLocked) decoupleBadge.textContent = 'BOTH LOCKED';
+      else if (zoomLocked) decoupleBadge.textContent = 'ZOOM LOCKED';
+      else if (faceOpsLocked) decoupleBadge.textContent = 'OPS LOCKED';
+      else decoupleBadge.textContent = 'ISOLATED';
+    }
+
+    lockZoomBtn.addEventListener('click', () => {
+      zoomLocked = !zoomLocked;
+      lockZoomBtn.textContent = `Zoom: ${zoomLocked ? 'LOCK' : 'FREE'}`;
+      lockZoomBtn.classList.toggle('bg-cyan-500/25', zoomLocked);
+      updateDecoupleBadge();
+    });
+
+    lockOpsBtn.addEventListener('click', () => {
+      faceOpsLocked = !faceOpsLocked;
+      lockOpsBtn.textContent = `Ops: ${faceOpsLocked ? 'LOCK' : 'FREE'}`;
+      lockOpsBtn.classList.toggle('bg-amber-500/25', faceOpsLocked);
+      updateDecoupleBadge();
+    });
+
+    const DESIGN_MATRIX_CELLS = [
+      { id: 'M01', code: 'GEOM', title: 'M01: Sculpted Face Mesh', desc: 'Anatomical brow, orbital, nasal, cheek, lip & jaw mesh.', val: 1.0, apply: (v) => { if (headMesh) headMesh.scale.setScalar(0.86 + v * 0.28); } },
+      { id: 'M02', code: 'SKIN', title: 'M02: GLSL Shader Skin', desc: 'Switches and tunes chrome, wireframe, crystal & plasma skins.', val: 0.25, apply: (v) => { const idx = Math.min(3, Math.floor(v * 4)); shaderUniforms.uSkinMode.value = idx; document.getElementById('skin-select').value = String(idx); } },
+      { id: 'M03', code: 'FRSN', title: 'M03: Fresnel & Rim Boost', desc: 'Controls rim energy and reaction glow intensity.', val: 0.35, apply: (v) => { shaderUniforms.uReactionBoost.value = v * 1.1; } },
+      { id: 'M04', code: 'EXPO', title: 'M04: Tone Exposure Gain', desc: 'Adjusts ACES filmic renderer exposure level.', val: 0.55, apply: (v) => { if (renderer) renderer.toneMappingExposure = 0.65 + v * 1.25; } },
+      { id: 'M05', code: 'F1-O', title: 'M05: F1 Formant Aperture', desc: 'Injects vertical vocal aperture into lip & jaw springs.', val: 0.4, apply: (v) => { springVel[1] += v * 5.0; springVel[8] += v * 4.5; } },
+      { id: 'M06', code: 'F2-S', title: 'M06: F2/F3 Lip Spread', desc: 'Injects horizontal corner spread & vowel width.', val: 0.4, apply: (v) => { springVel[2] += v * 4.2; springVel[3] += v * 4.2; } },
+      { id: 'M07', code: 'PLSV', title: 'M07: Plosive Transient', desc: 'Triggers consonant burst impulse across lip & brow nodes.', val: 0.45, apply: (v) => { springVel[0] += v * 5.5; springVel[12] += v * 3.8; springVel[13] += v * 3.8; } },
+      { id: 'M08', code: 'JAW-D', title: 'M08: Mandible Jaw Drop', desc: 'Modulates chin/jaw spring momentum and resonance.', val: 0.35, apply: (v) => { springVel[8] += v * 6.5; vectorNodes[8].impactForce = Math.min(3.5, vectorNodes[8].impactForce + v * 1.2); } },
+      { id: 'M09', code: 'RADI', title: 'M09: Liquid Brush Radius', desc: 'Sets Gaussian push/pull sculpting field radius.', val: 0.42, apply: (v) => { const r = (0.15 + v * 0.80).toFixed(2); radiusSlider.value = r; document.getElementById('radius-val').textContent = r; } },
+      { id: 'M10', code: 'VISC', title: 'M10: Liquid Viscosity', desc: 'Tunes spring-damper relaxation and fluid persistence.', val: 0.88, apply: (v) => { const vis = (0.15 + v * 0.84).toFixed(2); viscositySlider.value = vis; document.getElementById('viscosity-val').textContent = vis; } },
+      { id: 'M11', code: 'POLR', title: 'M11: Push/Pull Polarity', desc: 'Balances outward push (+1) vs inward pull (-1) force.', val: 0.75, apply: (v) => { const pol = ((v * 2.0 - 1.0) * 2.2).toFixed(2); polaritySlider.value = pol; document.getElementById('polarity-val').textContent = (parseFloat(pol) >= 0 ? '+' : '') + pol; } },
+      { id: 'M12', code: 'RLF-D', title: 'M12: Image Relief Depth', desc: 'Scales uploaded image luminance displacement depth.', val: 0.37, apply: (v) => { const d = (v * 0.65).toFixed(2); reliefDepthSlider.value = d; reliefDepthVal.textContent = d; } },
+      { id: 'M13', code: 'PING', title: 'M13: Sonar Ping Wave', desc: 'Emits a calibrated sonar wave pulse from the face.', val: 0.65, apply: (v) => { emitSonarPing(new THREE.Vector3(0, (v - 0.5) * 0.6, 1.22), new THREE.Vector3(0, 0, 1)); } },
+      { id: 'M14', code: 'VECT', title: 'M14: Trajectory Vector Gain', desc: 'Boosts velocity arrow & trajectory ribbon excitation.', val: 0.6, apply: (v) => { for (let i = 0; i < ZONE_COUNT; i++) { vectorNodes[i].impactForce = Math.min(3.5, vectorNodes[i].impactForce + v * 0.9); } } },
+      { id: 'M15', code: 'GAZE', title: 'M15: Eye Gaze & Pupil Sync', desc: 'Stimulates pupil dilation and ocular fixation response.', val: 0.5, apply: (v) => { if (leftEyeRig && rightEyeRig) { leftEyeRig.pupilMesh.scale.setScalar(0.75 + v * 0.75); rightEyeRig.pupilMesh.scale.setScalar(0.75 + v * 0.75); } } },
+      { id: 'M16', code: 'DMN20', title: 'M16: 20-Daemon Harmonic', desc: 'Pulses all 20 daemons and synchronizes matrix cadence.', val: 0.7, apply: (v) => { daemons.forEach((d) => { if (d.enabled) { d.pulses++; d.waveVal = Math.min(1, 0.3 + v * 0.7); } }); } }
+    ];
+
+    let selectedMatrixIdx = 0;
+    const matrixGridEl = document.getElementById('full-design-matrix-grid');
+    const matrixCellReadoutEl = document.getElementById('matrix-cell-readout');
+    const matrixSelectedTitleEl = document.getElementById('matrix-selected-title');
+    const matrixSelectedValEl = document.getElementById('matrix-selected-val');
+    const matrixSelectedDescEl = document.getElementById('matrix-selected-desc');
+    const matrixParamSlider = document.getElementById('matrix-param-slider');
+
+    function renderDesignMatrixGrid() {
+      matrixGridEl.innerHTML = DESIGN_MATRIX_CELLS.map((cell, idx) => {
+        const isSel = idx === selectedMatrixIdx;
+        return `
+          <button type="button" data-matrix-idx="${idx}" class="matrix-cell-btn p-1.5 rounded-lg border text-left transition ${isSel ? 'matrix-cell-active text-cyan-100' : 'bg-slate-900/85 hover:bg-slate-800/90 border-white/10 text-slate-300'}">
+            <div class="flex items-center justify-between font-bold">
+              <span>${cell.id}</span>
+              <span class="text-[8px] text-fuchsia-300">${cell.code}</span>
+            </div>
+            <div class="mt-1 h-1 bg-slate-800 rounded-full overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-cyan-400 to-fuchsia-400" style="width:${Math.round(cell.val * 100)}%"></div>
+            </div>
+          </button>
+        `;
+      }).join('');
+
+      const cur = DESIGN_MATRIX_CELLS[selectedMatrixIdx];
+      matrixCellReadoutEl.textContent = `${cur.id} · ${cur.code}`;
+      matrixSelectedTitleEl.textContent = cur.title;
+      matrixSelectedValEl.textContent = cur.val.toFixed(2);
+      matrixSelectedDescEl.textContent = cur.desc;
+      matrixParamSlider.value = cur.val.toFixed(2);
+    }
+
+    matrixGridEl.addEventListener('click', (e) => {
+      const btn = e.target.closest('.matrix-cell-btn');
+      if (!btn) return;
+      const idx = parseInt(btn.dataset.matrixIdx, 10);
+      if (isFinite(idx) && DESIGN_MATRIX_CELLS[idx]) {
+        selectedMatrixIdx = idx;
+        renderDesignMatrixGrid();
+      }
+    });
+
+    matrixParamSlider.addEventListener('input', () => {
+      const cell = DESIGN_MATRIX_CELLS[selectedMatrixIdx];
+      if (!cell || faceOpsLocked) return;
+      cell.val = parseFloat(matrixParamSlider.value);
+      matrixSelectedValEl.textContent = cell.val.toFixed(2);
+      cell.apply(cell.val);
+      renderDesignMatrixGrid();
+    });
+
+    document.getElementById('matrix-inject-btn').addEventListener('click', () => {
+      if (faceOpsLocked) return;
+      const cell = DESIGN_MATRIX_CELLS[selectedMatrixIdx];
+      cell.apply(cell.val);
+      spawnShockwave(new THREE.Vector3(0, 0, 1.18), new THREE.Vector3(0, 0, 1), 1.1, 0x22d3ee);
+      setEngineStatus(`Injected ${cell.title} (${cell.val.toFixed(2)})`, 'active');
+    });
+
+    document.getElementById('matrix-pulse-btn').addEventListener('click', () => {
+      if (faceOpsLocked) return;
+      DESIGN_MATRIX_CELLS.forEach((cell) => cell.apply(cell.val));
+      emitSonarPing();
+      setEngineStatus('Full 16-Cell Design Matrix Pulsed', 'active');
+    });
+
+    document.getElementById('matrix-randomize-btn').addEventListener('click', () => {
+      if (faceOpsLocked) return;
+      DESIGN_MATRIX_CELLS.forEach((cell, i) => {
+        cell.val = Number((0.25 + 0.65 * Math.abs(Math.sin((i + 1) * 1.37))).toFixed(2));
+        cell.apply(cell.val);
+      });
+      renderDesignMatrixGrid();
+      setEngineStatus('Design Matrix Harmonized Across 16 Cells', 'active');
+    });
+
+    document.getElementById('matrix-reset-btn').addEventListener('click', () => {
+      if (faceOpsLocked) return;
+      const defaults = [1.0, 0.25, 0.35, 0.55, 0.4, 0.4, 0.45, 0.35, 0.42, 0.88, 0.75, 0.37, 0.65, 0.6, 0.5, 0.7];
+      DESIGN_MATRIX_CELLS.forEach((cell, i) => {
+        cell.val = defaults[i] ?? 0.5;
+        cell.apply(cell.val);
+      });
+      renderDesignMatrixGrid();
+      setEngineStatus('Design Matrix Reset to Defaults', 'ready');
+    });
+
+    const studioPresetBadge = document.getElementById('studio-preset-badge');
+    let autoReactionEnabled = true;
+    let activeReaction = 'calm';
+    let manualReactionHoldUntil = 0;
+
+    document.querySelectorAll('.studio-preset-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        if (faceOpsLocked) return;
+        const preset = btn.dataset.studioPreset;
+        document.querySelectorAll('.studio-preset-btn').forEach((b) => {
+          b.className = 'studio-preset-btn py-1 px-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-white/10 truncate';
+        });
+        btn.className = 'studio-preset-btn py-1 px-1 rounded-lg bg-cyan-500/25 text-cyan-200 border border-cyan-400/40 truncate';
+
+        if (preset === 'vocal') {
+          studioPresetBadge.textContent = 'VOCAL STUDIO';
+          shaderUniforms.uSkinMode.value = 0; document.getElementById('skin-select').value = '0';
+          activeReaction = 'surprise'; manualReactionHoldUntil = elapsedSimTime + 2.5;
+          springVel[1] += 5.5; springVel[8] += 4.5;
+        } else if (preset === 'liquid') {
+          studioPresetBadge.textContent = 'LIQUID SCULPTOR';
+          shaderUniforms.uSkinMode.value = 3; document.getElementById('skin-select').value = '3';
+          viscositySlider.value = '0.94'; document.getElementById('viscosity-val').textContent = '0.94';
+          applyLiquidBrushAt(new THREE.Vector3(0.2, -0.15, 1.12), new THREE.Vector3(0, 0, 1), 0.025, true);
+        } else if (preset === 'vector') {
+          studioPresetBadge.textContent = 'KINETIC VECTOR';
+          shaderUniforms.uSkinMode.value = 1; document.getElementById('skin-select').value = '1';
+          showVectors = true; toggleVecBtn.textContent = '3D Vectors: ON';
+          for (let i = 0; i < ZONE_COUNT; i++) vectorNodes[i].impactForce = Math.min(3.5, vectorNodes[i].impactForce + 1.1);
+        } else if (preset === 'chromatic') {
+          studioPresetBadge.textContent = 'CHROMATIC GLASS';
+          shaderUniforms.uSkinMode.value = 2; document.getElementById('skin-select').value = '2';
+          activeReaction = 'squint'; manualReactionHoldUntil = elapsedSimTime + 2.5;
+        } else if (preset === 'sonar') {
+          studioPresetBadge.textContent = 'SONAR PING';
+          emitSonarPing();
+        }
+        setEngineStatus(`AI Studio Preset Applied: ${studioPresetBadge.textContent}`, 'active');
+      });
+    });
+
+    renderDesignMatrixGrid();
+
+    // =========================================================================
+    // 7. AUDIO FEATURE EXTRACTION, SMART OBSERVATIONS & 20 DAEMONS
+    // =========================================================================
+    const smartObservations = [
+      { key: 'OBS-01:FORMANT', label: 'Vocal Formant F1/F2', value: 0, unit: '%', status: 'CALM' },
+      { key: 'OBS-02:PLOSIVE', label: 'Plosive Transient Rate', value: 0, unit: '%', status: 'STEADY' },
+      { key: 'OBS-03:LIQUID',  label: 'Liquid Shear Strain', value: 0, unit: 'u', status: 'FLUID' },
+      { key: 'OBS-04:PING',    label: 'Sonar Echo Return', value: 0, unit: '%', status: 'IDLE' },
+      { key: 'OBS-05:RELIEF',  label: 'Image Relief Depth', value: 0, unit: '%', status: 'OFF' },
+      { key: 'OBS-06:IMPACT',  label: 'Peak Vector Impact', value: 0, unit: 'N', status: 'IDLE' }
+    ];
+
+    const reactionDetailEl = document.getElementById('reaction-detail');
+    const autoReactionBtn = document.getElementById('auto-reaction-btn');
+    const smartObsListEl = document.getElementById('smart-obs-list');
+    const labObsListEl = document.getElementById('lab-obs-list');
+    const labDaemonsGridEl = document.getElementById('lab-daemons-grid');
+    let prevEnvelope = 0;
+    let lastThrottledHudMs = 0;
+
+    function extractVocalLipFeatures(elapsed) {
+      let rawBass = 0, rawF1 = 0, rawF2 = 0, rawPlosive = 0;
+
+      if (analyser && freqData && timeDomainData && activeAudioMode !== 'none') {
+        analyser.getByteFrequencyData(freqData);
+        analyser.getByteTimeDomainData(timeDomainData);
+
+        const nyquist = (audioCtx ? audioCtx.sampleRate : 48000) * 0.5;
+        const binHz = nyquist / freqData.length;
+
+        const bEnd = Math.max(2, Math.min(freqData.length - 1, Math.ceil(160 / binHz)));
+        let sumB = 0, cntB = 0;
+        for (let i = 1; i <= bEnd; i++) { sumB += freqData[i]; cntB++; }
+        rawBass = cntB > 0 ? (sumB / (cntB * 255)) : 0;
+
+        const f1Start = Math.max(bEnd + 1, Math.floor(180 / binHz));
+        const f1End = Math.min(freqData.length - 1, Math.ceil(900 / binHz));
+        let sum1 = 0, cnt1 = 0;
+        for (let i = f1Start; i <= f1End; i++) { sum1 += freqData[i]; cnt1++; }
+        rawF1 = cnt1 > 0 ? (sum1 / (cnt1 * 255)) : 0;
+
+        const f2Start = Math.max(f1End + 1, Math.floor(900 / binHz));
+        const f2End = Math.min(freqData.length - 1, Math.ceil(3500 / binHz));
+        let sum2 = 0, cnt2 = 0;
+        for (let i = f2Start; i <= f2End; i++) { sum2 += freqData[i]; cnt2++; }
+        rawF2 = cnt2 > 0 ? (sum2 / (cnt2 * 255)) : 0;
+
+        let rmsSum = 0, zc = 0;
+        for (let i = 1; i < timeDomainData.length; i += 2) {
+          const prevS = (timeDomainData[i - 1] - 128) / 128;
+          const curS = (timeDomainData[i] - 128) / 128;
+          rmsSum += curS * curS;
+          if ((prevS < 0 && curS >= 0) || (prevS >= 0 && curS < 0)) zc++;
+        }
+        zeroCrossCount = zc;
+        const rms = Math.sqrt(rmsSum / (timeDomainData.length * 0.5));
+        latestRms = rms;
+        const deltaEnv = Math.max(0, rms - prevEnvelope);
+        prevEnvelope = rms;
+        rawPlosive = Math.min(1.0, (deltaEnv * 5.5) + (rms * 0.45));
+      } else {
+        rawBass = 0.04 + 0.03 * Math.sin(elapsed * 1.4);
+        rawF1 = 0.05 + 0.03 * Math.sin(elapsed * 1.8);
+        rawF2 = 0.04 + 0.03 * Math.cos(elapsed * 2.3);
+        rawPlosive = 0.03 + 0.02 * Math.sin(elapsed * 1.2);
+        latestRms = 0.02;
+      }
+
+      bassEnergy += (Math.min(1.0, rawBass * 1.55) - bassEnergy) * 0.25;
+      f1Aperture += (Math.min(1.0, rawF1 * 1.65) - f1Aperture) * 0.28;
+      f2Spread += (Math.min(1.0, rawF2 * 1.85) - f2Spread) * 0.26;
+      plosiveEnergy += (Math.min(1.0, rawPlosive * 1.5) - plosiveEnergy) * 0.32;
+      purifiedSignal += (((f1Aperture + f2Spread) * 0.5) - purifiedSignal) * 0.14;
+
+      shaderUniforms.uF1.value = f1Aperture;
+      shaderUniforms.uF2.value = f2Spread;
+      shaderUniforms.uPlosive.value = plosiveEnergy;
+    }
+
+    function computeLiquidStrain() {
+      if (!headGeometry || !headGeometry.userData || !headGeometry.userData.sculptOffsets) return 0;
+      const sculpt = headGeometry.userData.sculptOffsets;
+      let sum = 0;
+      const step = ecoModeEnabled ? 24 : 12;
+      for (let i = 0; i < sculpt.length; i += step) {
+        sum += Math.abs(sculpt[i]) + Math.abs(sculpt[i + 1]) + Math.abs(sculpt[i + 2]);
+      }
+      return Math.min(100, (sum / (sculpt.length / step)) * 220);
+    }
+
+    function updateDaemonsAndObservations(dt, elapsed) {
+      const strain = computeLiquidStrain();
+      let peakImpact = 0;
+      for (let i = 0; i < ZONE_COUNT; i++) {
+        if (vectorNodes[i].impactForce > peakImpact) peakImpact = vectorNodes[i].impactForce;
+      }
+
+      if (autoReactionEnabled && elapsed > manualReactionHoldUntil) {
+        if (plosiveEnergy > 0.62) activeReaction = 'pout';
+        else if (f1Aperture > 0.65 && bassEnergy > 0.45) activeReaction = 'surprise';
+        else if (bassEnergy > 0.58) activeReaction = 'bassnod';
+        else if (strain > 32) activeReaction = 'ripple';
+        else if (f2Spread > 0.52) activeReaction = 'squint';
+        else activeReaction = 'calm';
+      }
+
+      const boost = activeReaction === 'calm' ? 0.05 : 0.65;
+      shaderUniforms.uReactionBoost.value += (boost - shaderUniforms.uReactionBoost.value) * Math.min(1, dt * 8);
+
+      smartObservations[0].value = Math.round(((f1Aperture + f2Spread) * 0.5) * 100);
+      smartObservations[0].status = smartObservations[0].value > 55 ? 'VOCAL' : 'CALM';
+      smartObservations[1].value = Math.round(plosiveEnergy * 100);
+      smartObservations[1].status = smartObservations[1].value > 55 ? 'BURST' : 'STEADY';
+      smartObservations[2].value = Math.round(strain);
+      smartObservations[2].status = strain > 30 ? 'STRAIN' : 'FLUID';
+      smartObservations[3].value = Math.round(pingEchoLevel * 100);
+      smartObservations[3].status = pingEchoLevel > 0.15 ? 'ECHO' : 'IDLE';
+      smartObservations[4].value = hasUploadedImage ? Math.round(parseFloat(reliefDepthSlider.value) * 100) : 0;
+      smartObservations[4].status = hasUploadedImage ? (mirrorImageEnabled ? 'MIRROR' : 'DIRECT') : 'OFF';
+      smartObservations[5].value = Number(peakImpact.toFixed(2));
+      smartObservations[5].status = peakImpact > 1.2 ? 'PEAK' : 'IDLE';
+
+      for (let i = 0; i < daemons.length; i++) {
+        const d = daemons[i];
+        const phaseWave = 0.5 + 0.5 * Math.sin(elapsed * (1.5 + i * 0.25) + i * 0.7);
+        const signalMix = f1Aperture * 0.35 + f2Spread * 0.3 + plosiveEnergy * 0.2 + pingEchoLevel * 0.25 + phaseWave * 0.2;
+        d.waveVal = Math.min(1.0, signalMix);
+        if (d.enabled && d.waveVal > 0.52 && Math.floor(elapsed * 8 + i) !== Math.floor((elapsed - dt) * 8 + i)) {
+          d.pulses++;
+        }
+        d.state = !d.enabled ? 'OFF' : (d.waveVal > 0.6 ? 'PEAK' : 'LOCK');
+      }
+
+      if (!ecoModeEnabled) {
+        for (let i = 0; i < aiSatMeshes.length; i++) {
+          const sat = aiSatMeshes[i];
+          const a = (i / aiSatMeshes.length) * Math.PI * 2 + elapsed * 0.35;
+          sat.position.set(
+            Math.cos(a) * (1.46 + f1Aperture * 0.12 + pingEchoLevel * 0.08),
+            Math.sin(a) * 1.05 + 0.08,
+            0.22 + Math.sin(elapsed * 1.8 + i) * 0.1
+          );
+          sat.rotation.y += dt * 2.0;
+        }
+      }
+    }
+
+    // =========================================================================
+    // 8. EYES, LIPS SPRING SOLVER & VECTOR MATRIX
+    // =========================================================================
+    let nextBlinkTime = 2.4;
+    let blinkProgress = 0;
+
+    function updateRealEyes(dt, elapsed) {
+      if (!leftEyeRig || !rightEyeRig) return;
+      if (blinkProgress === 0 && elapsed >= nextBlinkTime) {
+        blinkProgress = 0.01;
+        nextBlinkTime = elapsed + 2.5 + (Math.sin(elapsed * 7.3) * 0.5 + 0.5) * 2.8;
+      }
+
+      let lidCloseAmount = 0;
+      if (blinkProgress > 0) {
+        blinkProgress += dt * 6.5;
+        if (blinkProgress >= 2.0) {
+          blinkProgress = 0;
+          lidCloseAmount = 0;
+        } else {
+          lidCloseAmount = blinkProgress <= 1.0 ? blinkProgress : (2.0 - blinkProgress);
+        }
+      }
+
+      let reactionLidOffset = 0;
+      if (activeReaction === 'surprise') reactionLidOffset = -0.14;
+      else if (activeReaction === 'squint') reactionLidOffset = 0.16;
+
+      const eyeOpenBoost = Math.min(0.18, plosiveEnergy * 0.16);
+      const upperRotX = -0.44 + lidCloseAmount * 0.62 - eyeOpenBoost * 0.4 + reactionLidOffset;
+      const lowerRotX = 0.36 - lidCloseAmount * 0.54 + eyeOpenBoost * 0.3 - reactionLidOffset * 0.6;
+
+      leftEyeRig.upperLid.rotation.x = upperRotX;
+      rightEyeRig.upperLid.rotation.x = upperRotX;
+      leftEyeRig.lowerLid.rotation.x = lowerRotX;
+      rightEyeRig.lowerLid.rotation.x = lowerRotX;
+
+      const targetLook = new THREE.Vector3(0, 0.15, 3.5);
+      if (hasPointerGaze) targetLook.copy(gazePointerWorld);
+      else targetLook.set(Math.sin(elapsed * 0.7) * 0.45, 0.1 - f1Aperture * 0.25, 3.2);
+
+      [leftEyeRig, rightEyeRig].forEach((rig) => {
+        const worldOrigin = new THREE.Vector3();
+        rig.eyePivot.getWorldPosition(worldOrigin);
+        const dir = targetLook.clone().sub(worldOrigin).normalize();
+        const yaw = Math.max(-0.42, Math.min(0.42, Math.atan2(dir.x, dir.z)));
+        const pitch = Math.max(-0.32, Math.min(0.32, Math.asin(Math.max(-0.8, Math.min(0.8, dir.y)))));
+
+        rig.ballGroup.rotation.y += (yaw - rig.ballGroup.rotation.y) * Math.min(1, dt * 12);
+        rig.ballGroup.rotation.x += (-pitch - rig.ballGroup.rotation.x) * Math.min(1, dt * 12);
+
+        const pupilScale = Math.max(0.65, Math.min(1.55, 1.05 + plosiveEnergy * 0.38 - f2Spread * 0.18));
+        rig.pupilMesh.scale.setScalar(pupilScale);
+        rig.irisMat.color.setHSL(0.54 + f2Spread * 0.22, 0.9, 0.55 + plosiveEnergy * 0.15);
+        rig.irisMat.emissiveIntensity = 0.22 + plosiveEnergy * 0.45;
+      });
+    }
+
+    let prevF1 = 0;
+    let prevPlosive = 0;
+    const vectorTableBody = document.getElementById('vector-table-body');
+    const sortSelect = document.getElementById('vector-sort-select');
+    let showVectors = true;
+    let latestRankedVectors = vectorNodes.slice();
+
+    function stepLipsAndVectorMatrix(dt, elapsed) {
+      const safeDt = Math.min(dt, 0.033);
+      const viscosity = parseFloat(viscositySlider.value);
+      const reliefDepth = hasUploadedImage ? parseFloat(reliefDepthSlider.value) : 0;
+
+      const f1Delta = Math.max(0, f1Aperture - prevF1);
+      const plosiveDelta = Math.max(0, plosiveEnergy - prevPlosive);
+      prevF1 = f1Aperture;
+      prevPlosive = plosiveEnergy;
+
+      const rGasp = activeReaction === 'surprise' ? 0.55 : 0;
+      const rPout = activeReaction === 'pout' ? 0.50 : 0;
+      const rNod = activeReaction === 'bassnod' ? 0.45 : 0;
+      const vowelPhase = Math.sin(elapsed * 7.0);
+
+      springTarget[0] = f1Aperture * 0.85 + plosiveEnergy * 0.35 + rGasp * 0.5;
+      springTarget[1] = f1Aperture * 1.15 + plosiveEnergy * 0.42 + rGasp * 0.7 + rNod * 0.4;
+      springTarget[2] = (f2Spread * 0.95 - f1Aperture * 0.25) * (0.85 + 0.15 * vowelPhase) - rPout * 0.45;
+      springTarget[3] = (f2Spread * 0.95 - f1Aperture * 0.25) * (0.85 + 0.15 * vowelPhase) - rPout * 0.45;
+      springTarget[4] = f1Aperture * 0.78 + f2Spread * 0.25 + rGasp * 0.4;
+      springTarget[5] = f1Aperture * 0.78 + f2Spread * 0.25 + rGasp * 0.4;
+      springTarget[6] = f1Aperture * 0.96 + plosiveEnergy * 0.25 + rGasp * 0.5;
+      springTarget[7] = f1Aperture * 0.96 + plosiveEnergy * 0.25 + rGasp * 0.5;
+      springTarget[8] = f1Aperture * 1.22 + plosiveEnergy * 0.35 + rGasp * 0.65 + rNod * 0.6;
+      springTarget[9] = f2Spread * 0.75 + plosiveEnergy * 0.30 + rPout * 0.35;
+      springTarget[10] = f2Spread * 0.75 + plosiveEnergy * 0.30 + rPout * 0.35;
+      springTarget[11] = plosiveEnergy * 0.55 + rPout * 0.35;
+      springTarget[12] = plosiveEnergy * 0.72 + f2Spread * 0.20 + rGasp * 0.65;
+      springTarget[13] = plosiveEnergy * 0.72 + f2Spread * 0.20 + rGasp * 0.65;
+      springTarget[14] = f1Aperture * 0.55 + plosiveEnergy * 0.25 + rGasp * 0.35;
+      springTarget[15] = f2Spread * 0.50 + plosiveEnergy * 0.30;
+
+      const stiffness = 92.0;
+      const damping = 13.8;
+
+      for (let i = 0; i < ZONE_COUNT; i++) {
+        const prevP = springPos[i];
+        const accel = (springTarget[i] - springPos[i]) * stiffness - springVel[i] * damping;
+        springVel[i] += accel * safeDt;
+        springPos[i] += springVel[i] * safeDt;
+
+        const node = vectorNodes[i];
+        node.trajectoryVel = Math.abs(springPos[i] - prevP) / Math.max(0.004, safeDt);
+        node.resonance = Math.abs(springTarget[i]);
+
+        const hitImpulse = f1Delta * (i <= 8 ? 3.5 : 1.0) + plosiveDelta * (i <= 7 ? 3.8 : 1.3);
+        node.impactForce = Math.max(0, node.impactForce * Math.exp(-safeDt * 3.0) + hitImpulse);
+
+        if (!ecoModeEnabled && node.impactForce > 0.78 && (elapsed - node.lastShockTime) > 0.45) {
+          node.lastShockTime = elapsed;
+          spawnShockwave(
+            node.anchor,
+            node.anchor.clone().normalize(),
+            Math.min(1.4, node.impactForce * 0.65),
+            i <= 7 ? 0x22d3ee : 0xe879f9
+          );
+        }
+
+        const rad = node.anchor.clone().normalize();
+        const vSign = (i === 0 || i === 4 || i === 5 || i === 12 || i === 13) ? 1.0 : -1.0;
+        node.velocityVec.set(
+          rad.x * springVel[i] * 0.14,
+          vSign * springVel[i] * 0.18 + Math.sin(elapsed * 2.5 + i) * 0.015,
+          rad.z * (0.08 + Math.abs(springPos[i]) * 0.22)
+        );
+      }
+
+      if (headGeometry && headGeometry.attributes && headGeometry.attributes.position) {
+        const posAttr = headGeometry.attributes.position;
+        const base = headGeometry.userData.basePositions;
+        const sculpt = headGeometry.userData.sculptOffsets;
+        const relax = freezeLiquid ? 1.0 : Math.pow(viscosity, safeDt * 12.0);
+
+        const z0 = springPos[0], z1 = springPos[1], z2 = springPos[2], z3 = springPos[3];
+        const z4 = springPos[4], z5 = springPos[5], z6 = springPos[6], z7 = springPos[7];
+        const z8 = springPos[8], z9 = springPos[9], z10 = springPos[10], z11 = springPos[11];
+        const z12 = springPos[12], z13 = springPos[13], z14 = springPos[14], z15 = springPos[15];
+
+        for (let i = 0; i < posAttr.count; i++) {
+          const idx = i * 3;
+          if (!freezeLiquid && relax < 0.9999) {
+            sculpt[idx] *= relax;
+            sculpt[idx + 1] *= relax;
+            sculpt[idx + 2] *= relax;
+          }
+
+          let x = base[idx] + sculpt[idx];
+          let y = base[idx + 1] + sculpt[idx + 1];
+          let z = base[idx + 2] + sculpt[idx + 2];
+
+          if (z > -0.15) {
+            if (reliefDepth > 0.001) {
+              const hVal = sampleImageRelief(base[idx], base[idx + 1]);
+              z += hVal * reliefDepth * (0.65 + f1Aperture * 0.35 + pingEchoLevel * 0.25);
+            }
+
+            const upperC = Math.exp(-(x * x / 0.022 + Math.pow(y + 0.42, 2) / 0.005));
+            const lowerC = Math.exp(-(x * x / 0.022 + Math.pow(y + 0.51, 2) / 0.006));
+            const upperL = Math.exp(-(Math.pow(x + 0.13, 2) / 0.024 + Math.pow(y + 0.43, 2) / 0.006));
+            const upperR = Math.exp(-(Math.pow(x - 0.13, 2) / 0.024 + Math.pow(y + 0.43, 2) / 0.006));
+            const lowerL = Math.exp(-(Math.pow(x + 0.13, 2) / 0.024 + Math.pow(y + 0.50, 2) / 0.007));
+            const lowerR = Math.exp(-(Math.pow(x - 0.13, 2) / 0.024 + Math.pow(y + 0.50, 2) / 0.007));
+            const cornerL = Math.exp(-(Math.pow(x + 0.23, 2) / 0.018 + Math.pow(y + 0.465, 2) / 0.008));
+            const cornerR = Math.exp(-(Math.pow(x - 0.23, 2) / 0.018 + Math.pow(y + 0.465, 2) / 0.008));
+
+            y += upperC * z0 * 0.08 + upperL * z4 * 0.068 + upperR * z5 * 0.068;
+            y -= lowerC * z1 * 0.12 + lowerL * z6 * 0.10 + lowerR * z7 * 0.10;
+            z += (upperC * z0 + lowerC * z1) * 0.048;
+
+            x -= cornerL * z2 * 0.07;
+            x += cornerR * z3 * 0.07;
+            y += (cornerL * z2 + cornerR * z3) * 0.025;
+
+            if (y < -0.25) {
+              const jt = Math.min(1.0, (-0.25 - y) / 1.05);
+              const sj = jt * jt * (3.0 - 2.0 * jt);
+              y -= sj * z8 * 0.15;
+              z += sj * z8 * 0.055;
+            }
+
+            const cheekL = Math.exp(-(Math.pow(x + 0.50, 2) / 0.07 + Math.pow(y + 0.04, 2) / 0.06));
+            const cheekR = Math.exp(-(Math.pow(x - 0.50, 2) / 0.07 + Math.pow(y + 0.04, 2) / 0.06));
+            x -= cheekL * z9 * 0.05;
+            z += cheekL * z9 * 0.08;
+            x += cheekR * z10 * 0.05;
+            z += cheekR * z10 * 0.08;
+
+            const noseM = Math.exp(-(x * x / 0.025 + Math.pow(y + 0.14, 2) / 0.025));
+            z += noseM * z11 * 0.045;
+
+            const browL = Math.exp(-(Math.pow(x + 0.34, 2) / 0.055 + Math.pow(y - 0.36, 2) / 0.02));
+            const browR = Math.exp(-(Math.pow(x - 0.34, 2) / 0.055 + Math.pow(y - 0.36, 2) / 0.02));
+            y += browL * z12 * 0.065 + browR * z13 * 0.065;
+            z += browL * z12 * 0.035 + browR * z13 * 0.035;
+
+            const frontM = Math.exp(-Math.pow(y - 0.72, 2) / 0.12);
+            z += frontM * z14 * 0.04 * Math.cos(x * 2.6);
+
+            const tempM = Math.exp(-Math.pow(Math.abs(x) - 0.78, 2) / 0.08);
+            x += Math.sign(x) * tempM * z15 * 0.035;
+          }
+
+          posAttr.setXYZ(i, x, y, z);
+        }
+
+        posAttr.needsUpdate = true;
+        if (!ecoModeEnabled) {
+          headGeometry.computeVertexNormals();
+        }
+      }
+
+      const sortBy = sortSelect.value;
+      latestRankedVectors = vectorNodes.slice().sort((a, b) => {
+        if (sortBy === 'trajectory') return b.trajectoryVel - a.trajectoryVel;
+        if (sortBy === 'nodeId') return a.id - b.id;
+        if (sortBy === 'resonance') return b.resonance - a.resonance;
+        return b.impactForce - a.impactForce;
+      });
+
+      if (vectorGroup && arrowHelpers.length === ZONE_COUNT) {
+        vectorGroup.visible = showVectors && !ecoModeEnabled;
+        if (vectorGroup.visible) {
+          const rankMap = new Uint8Array(ZONE_COUNT);
+          for (let r = 0; r < latestRankedVectors.length; r++) rankMap[latestRankedVectors[r].id] = r;
+
+          const dirVec = new THREE.Vector3();
+          for (let i = 0; i < ZONE_COUNT; i++) {
+            const node = vectorNodes[i];
+            const r = rankMap[i];
+            const arrow = arrowHelpers[i];
+            const line = ribbonLines[i];
+
+            const origin = node.anchor.clone().addScaledVector(node.anchor.clone().normalize(), springPos[i] * 0.14);
+            arrow.position.copy(origin);
+
+            if (node.velocityVec.lengthSq() > 0.00001) dirVec.copy(node.velocityVec).normalize();
+            else dirVec.copy(node.anchor).normalize();
+            arrow.setDirection(dirVec);
+
+            const rBoost = r < 3 ? 1.35 : r < 8 ? 1.05 : 0.85;
+            const len = Math.min(0.55, Math.max(0.11, (0.12 + node.trajectoryVel * 0.04 + node.impactForce * 0.16) * rBoost));
+            arrow.setLength(len, Math.min(0.085, len * 0.34), Math.min(0.06, len * 0.24));
+
+            const hex = r < 3 ? 0xf472b6 : (r < 8 ? 0x22d3ee : 0x34d399);
+            arrow.setColor(hex);
+            line.material.color.setHex(hex);
+
+            const tip = origin.clone().addScaledVector(dirVec, len);
+            const pArr = line.geometry.attributes.position.array;
+            for (let h = RIBBON_LEN - 1; h > 0; h--) {
+              pArr[h * 3] = pArr[(h - 1) * 3];
+              pArr[h * 3 + 1] = pArr[(h - 1) * 3 + 1];
+              pArr[h * 3 + 2] = pArr[(h - 1) * 3 + 2];
+            }
+            pArr[0] = tip.x;
+            pArr[1] = tip.y;
+            pArr[2] = tip.z;
+            line.geometry.attributes.position.needsUpdate = true;
+          }
+        }
+      }
+    }
+
+    // =========================================================================
+    // 9. 2D CANVAS STUDIO RENDERER (ECO MODE & AUTOMATIC FALLBACK)
+    // =========================================================================
+    function render2dStudioStage(elapsed) {
+      if (!fallback2dCtx) return;
+      const w = fallback2dCanvas.width;
+      const h = fallback2dCanvas.height;
+      fallback2dCtx.clearRect(0, 0, w, h);
+
+      fallback2dCtx.fillStyle = '#03060c';
+      fallback2dCtx.fillRect(0, 0, w, h);
+
+      const cx = w * 0.5;
+      const cy = h * 0.5;
+      const scale = Math.min(w, h) * 0.26 * zoomMultiplier;
+
+      if (pingEchoLevel > 0.02) {
+        fallback2dCtx.strokeStyle = `rgba(34, 211, 238, ${pingEchoLevel * 0.65})`;
+        fallback2dCtx.lineWidth = 3;
+        fallback2dCtx.beginPath();
+        fallback2dCtx.arc(cx, cy, scale * (1.2 + (1.0 - pingEchoLevel) * 1.4), 0, Math.PI * 2);
+        fallback2dCtx.stroke();
+      }
+
+      fallback2dCtx.save();
+      fallback2dCtx.translate(cx, cy);
+      fallback2dCtx.rotate(curRoll + Math.sin(elapsed * 0.8) * 0.02);
+      const yawScaleX = Math.max(0.45, Math.cos(curYaw));
+      fallback2dCtx.scale(yawScaleX, 1);
+
+      fallback2dCtx.strokeStyle = '#38bdf8';
+      fallback2dCtx.fillStyle = 'rgba(14, 165, 233, 0.12)';
+      fallback2dCtx.lineWidth = 2.5;
+      fallback2dCtx.beginPath();
+      fallback2dCtx.ellipse(0, 0, scale * 0.78, scale * 1.05, 0, 0, Math.PI * 2);
+      fallback2dCtx.fill();
+      fallback2dCtx.stroke();
+
+      if (hasUploadedImage) {
+        fallback2dCtx.save();
+        fallback2dCtx.beginPath();
+        fallback2dCtx.ellipse(0, 0, scale * 0.72, scale * 0.98, 0, 0, Math.PI * 2);
+        fallback2dCtx.clip();
+        fallback2dCtx.globalAlpha = 0.55;
+        fallback2dCtx.drawImage(editCanvas, -scale * 0.72, -scale * 0.98, scale * 1.44, scale * 1.96);
+        fallback2dCtx.restore();
+      }
+
+      const eyeY = -scale * 0.22;
+      const eyeOffsetX = scale * 0.30;
+      const pupilR = scale * (0.055 + plosiveEnergy * 0.035);
+      [-1, 1].forEach((s) => {
+        const ex = s * eyeOffsetX;
+        fallback2dCtx.fillStyle = '#f8fafc';
+        fallback2dCtx.beginPath();
+        fallback2dCtx.ellipse(ex, eyeY, scale * 0.14, scale * 0.085, 0, 0, Math.PI * 2);
+        fallback2dCtx.fill();
+
+        fallback2dCtx.fillStyle = '#0284c7';
+        fallback2dCtx.beginPath();
+        fallback2dCtx.arc(ex, eyeY, scale * 0.085, 0, Math.PI * 2);
+        fallback2dCtx.fill();
+
+        fallback2dCtx.fillStyle = '#020617';
+        fallback2dCtx.beginPath();
+        fallback2dCtx.arc(ex, eyeY, pupilR, 0, Math.PI * 2);
+        fallback2dCtx.fill();
+      });
+
+      const mouthY = scale * 0.42;
+      const mouthW = scale * (0.28 + f2Spread * 0.18);
+      const mouthOpen = scale * (0.04 + f1Aperture * 0.22 + springPos[1] * 0.08);
+      fallback2dCtx.strokeStyle = '#f472b6';
+      fallback2dCtx.fillStyle = 'rgba(232, 121, 249, 0.25)';
+      fallback2dCtx.lineWidth = 2.5;
+      fallback2dCtx.beginPath();
+      fallback2dCtx.ellipse(0, mouthY, mouthW, Math.max(4, mouthOpen), 0, 0, Math.PI * 2);
+      fallback2dCtx.fill();
+      fallback2dCtx.stroke();
+
+      fallback2dCtx.restore();
+    }
+
+    // =========================================================================
+    // 10. THROTTLED HUD (~12 Hz) & OSCILLOSCOPE RENDERER
+    // =========================================================================
+    function renderOscilloscope(elapsed) {
+      if (activeApp !== 2 || !oscCtx || !oscCanvas.width || !oscCanvas.height) return;
+      const w = oscCanvas.width;
+      const h = oscCanvas.height;
+      oscCtx.clearRect(0, 0, w, h);
+
+      oscCtx.strokeStyle = 'rgba(56, 189, 248, 0.12)';
+      oscCtx.lineWidth = 1;
+      for (let gx = 0; gx <= 8; gx++) {
+        const x = (gx / 8) * w;
+        oscCtx.beginPath(); oscCtx.moveTo(x, 0); oscCtx.lineTo(x, h); oscCtx.stroke();
+      }
+      for (let gy = 0; gy <= 4; gy++) {
+        const y = (gy / 4) * h;
+        oscCtx.beginPath(); oscCtx.moveTo(0, y); oscCtx.lineTo(w, y); oscCtx.stroke();
+      }
+
+      oscCtx.strokeStyle = '#22d3ee';
+      oscCtx.lineWidth = 2;
+      oscCtx.beginPath();
+      const samples = ecoModeEnabled ? 64 : 112;
+      for (let i = 0; i <= samples; i++) {
+        const tNorm = i / samples;
+        const x = tNorm * w;
+        let amp = 0;
+        if (timeDomainData && activeAudioMode !== 'none') {
+          const idx = Math.min(timeDomainData.length - 1, Math.floor(tNorm * timeDomainData.length));
+          amp = (timeDomainData[idx] - 128) / 128;
+        } else {
+          amp = (Math.sin(tNorm * Math.PI * 6 + elapsed * 4) * f1Aperture + Math.cos(tNorm * Math.PI * 10 - elapsed * 5) * (f2Spread + pingEchoLevel * 0.4)) * 0.5;
+        }
+        const y = h * 0.5 - amp * (h * 0.38);
+        if (i === 0) oscCtx.moveTo(x, y);
+        else oscCtx.lineTo(x, y);
+      }
+      oscCtx.stroke();
+
+      oscCtx.strokeStyle = '#e879f9';
+      oscCtx.lineWidth = 1.5;
+      oscCtx.beginPath();
+      for (let i = 0; i <= samples; i++) {
+        const tNorm = i / samples;
+        const x = tNorm * w;
+        const y = h * 0.5 - Math.sin(tNorm * Math.PI * 4 + elapsed * 3) * (purifiedSignal * h * 0.38);
+        if (i === 0) oscCtx.moveTo(x, y);
+        else oscCtx.lineTo(x, y);
+      }
+      oscCtx.stroke();
+    }
+
+    function syncThrottledHud(nowMs, elapsed) {
+      if (nowMs - lastThrottledHudMs < 82) return; // ~12 Hz HUD cadence
+      lastThrottledHudMs = nowMs;
+
+      document.getElementById('bar-f1').style.width = `${Math.round(f1Aperture * 100)}%`;
+      document.getElementById('bar-f2').style.width = `${Math.round(f2Spread * 100)}%`;
+      document.getElementById('bar-plosive').style.width = `${Math.round(plosiveEnergy * 100)}%`;
+      document.getElementById('lip-aperture-readout').textContent =
+        `F1:${Math.round(f1Aperture * 100)}% F2:${Math.round(f2Spread * 100)}%`;
+
+      const reactionLabels = {
+        surprise: ['GASP', 'Rule: High F1 + Bass burst → Wide aperture & brow lift'],
+        pout: ['PLOSIVE', 'Rule: Plosive transient spike → Lip pout & shockwave'],
+        bassnod: ['BASS NOD', 'Rule: Sub-bass energy > 0.58 → Jaw & head pulse'],
+        squint: ['SQUINT', 'Rule: High F2 spread → Focused eye & cheek tension'],
+        ripple: ['SURGE', 'Rule: Liquid shear strain elevated → Elastic ripple'],
+        calm: ['CALM', 'Rule: Baseline equilibrium & signal purification']
+      };
+      const [badgeText, ruleText] = reactionLabels[activeReaction] || reactionLabels.calm;
+      reactionBadge.textContent = badgeText;
+      reactionDetailEl.textContent = ruleText;
+
+      const strainVal = smartObservations[2].value;
+      const peakImpact = smartObservations[5].value;
+      const obsRegime = (peakImpact > 1.2 || strainVal > 35 || pingEchoLevel > 0.25) ? 'ACTIVE' : 'NOMINAL';
+      document.getElementById('obs-regime-badge').textContent = obsRegime;
+      document.getElementById('lab-obs-regime').textContent = obsRegime;
+
+      smartObsListEl.innerHTML = smartObservations.map((o) => `
+        <div class="flex items-center justify-between px-2 py-1 rounded bg-slate-900/80 border border-white/5">
+          <span class="text-slate-300 truncate max-w-[125px]">${o.label}</span>
+          <span class="text-cyan-300 font-semibold">${o.value}${o.unit}</span>
+          <span class="text-fuchsia-300 text-[9px]">${o.status}</span>
+        </div>
+      `).join('');
+
+      if (activeApp === 1 && hudVisible) {
+        vectorTableBody.innerHTML = latestRankedVectors.map((item, idx) => {
+          const cls = idx < 3 ? 'text-fuchsia-300 font-semibold' : (idx < 8 ? 'text-cyan-300' : 'text-slate-300');
+          return `
+            <div class="grid grid-cols-12 px-2.5 py-1 items-center hover:bg-white/5">
+              <span class="col-span-5 truncate ${cls}">#${idx + 1} · N${String(item.id).padStart(2, '0')} ${item.name}</span>
+              <span class="col-span-3 text-right text-fuchsia-200">${item.impactForce.toFixed(2)}</span>
+              <span class="col-span-2 text-right text-cyan-200">${item.trajectoryVel.toFixed(1)}</span>
+              <span class="col-span-2 text-right text-emerald-200">${item.resonance.toFixed(2)}</span>
+            </div>
+          `;
+        }).join('');
+      } else if (activeApp === 2) {
+        let totalPulses = 0;
+        let enabledCount = 0;
+        for (let i = 0; i < daemons.length; i++) {
+          if (daemons[i].enabled) enabledCount++;
+          totalPulses += daemons[i].pulses;
+        }
+
+        labObsListEl.innerHTML = smartObservations.map((o) => `
+          <div class="p-2 rounded-xl bg-slate-900/85 border border-white/10 flex items-center justify-between">
+            <div>
+              <div class="text-cyan-200 font-semibold">${o.key}</div>
+              <div class="text-slate-400 text-[10px]">${o.label}</div>
+            </div>
+            <div class="text-right">
+              <div class="text-fuchsia-300 font-bold">${o.value}${o.unit}</div>
+              <div class="text-[10px] text-emerald-300">${o.status}</div>
+            </div>
+          </div>
+        `).join('');
+
+        labDaemonsGridEl.innerHTML = daemons.map((d) => `
+          <button type="button" data-daemon-idx="${d.index}" class="daemon-card-btn text-left p-2 rounded-xl bg-slate-900/85 hover:bg-slate-800/90 border ${d.enabled ? 'border-cyan-400/25' : 'border-slate-700/50 opacity-60'} transition">
+            <div class="flex items-center justify-between font-semibold">
+              <span class="text-cyan-200 truncate">${d.id}</span>
+              <span class="${d.enabled ? 'text-emerald-300' : 'text-rose-400'}">${d.state}</span>
+            </div>
+            <div class="text-[9px] text-slate-400 truncate mt-0.5">${d.desc}</div>
+            <div class="mt-1.5 h-1 bg-slate-800 rounded-full overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-cyan-400 to-fuchsia-400" style="width:${Math.round(d.waveVal * 100)}%"></div>
+            </div>
+            <div class="flex justify-between text-[9px] text-slate-400 mt-1">
+              <span>W:${Math.round(d.waveVal * 100)}%</span>
+              <span>#${d.pulses}</span>
+            </div>
+          </button>
+        `).join('');
+
+        document.getElementById('lab-daemon-summary').textContent = `${enabledCount}/20 ONLINE · ${totalPulses} PULSES`;
+        document.getElementById('lab-signal-readout').textContent =
+          `RMS: ${latestRms.toFixed(2)} | ZC: ${zeroCrossCount} | PURIFIED: ${purifiedSignal.toFixed(2)}`;
+        renderOscilloscope(elapsed);
+      }
+    }
+
+    // =========================================================================
+    // 11. EVENT LISTENERS, ECO TOGGLE & MAIN OS-SAFE LOOP
+    // =========================================================================
+    const ecoModeBtn = document.getElementById('eco-mode-btn');
+    ecoModeBtn.addEventListener('click', () => {
+      ecoModeEnabled = !ecoModeEnabled;
+      ecoModeBtn.textContent = `Eco: ${ecoModeEnabled ? 'ON' : 'OFF'}`;
+      ecoModeBtn.classList.toggle('bg-emerald-500/25', ecoModeEnabled);
+
+      if (ecoModeEnabled) {
+        activateCanvasFallback('Eco Mode Active — Low-CPU 2D Canvas Studio');
+      } else if (!webglContextLost) {
+        initWebGLScene();
+        setEngineStatus('Eco Mode Off — WebGL 3D Studio Active', 'ready');
+      }
+      resizeOscilloscopeCanvas();
+    });
+
+    window.addEventListener('wheel', (e) => {
+      if (activeApp !== 1) return;
+      e.preventDefault();
+      if (!zoomLocked) {
+        setZoomLevel(targetZoomMultiplier + (e.deltaY > 0 ? 0.08 : -0.08));
+      }
+    }, { passive: false });
+
+    function attachPointerListeners(el) {
+      el.addEventListener('pointerdown', (e) => {
+        if (activeApp !== 1) return;
+        const hit = raycastFaceFromClient(e.clientX, e.clientY);
+
+        if (opMode === 'rotate') {
+          if (faceOpsLocked) return;
+          isRotateDragging = true;
+          lastRotPointerX = e.clientX;
+          lastRotPointerY = e.clientY;
+          return;
+        }
+        if (opMode === 'orbit') {
+          isOrbitDragging = true;
+          lastOrbitPointerX = e.clientX;
+          lastOrbitPointerY = e.clientY;
+          return;
+        }
+        if (opMode === 'ping') {
+          if (faceOpsLocked) return;
+          if (hit) emitSonarPing(hit.localHit, hit.normalHit);
+          else emitSonarPing();
+          return;
+        }
+        if (opMode === 'sculpt') {
+          if (faceOpsLocked) return;
+          if (e.pointerType === 'mouse' && e.button !== 0) return;
+          if (hit) {
+            isSculptDragging = true;
+            hasPrevDragPt = false;
+            applyLiquidBrushAt(hit.localHit, hit.normalHit, 0.02, true);
+          } else if (ecoModeEnabled || !webglAvailable) {
+            emitSonarPing();
+          }
+        }
+      });
+
+      el.addEventListener('pointermove', (e) => {
+        if (activeApp !== 1) return;
+        const hit = raycastFaceFromClient(e.clientX, e.clientY);
+
+        if (isOrbitDragging && opMode === 'orbit' && camera && controls) {
+          const dx = e.clientX - lastOrbitPointerX;
+          const dy = e.clientY - lastOrbitPointerY;
+          lastOrbitPointerX = e.clientX;
+          lastOrbitPointerY = e.clientY;
+          const offset = camera.position.clone().sub(controls.target);
+          const spherical = new THREE.Spherical().setFromVector3(offset);
+          spherical.theta -= dx * 0.0065;
+          spherical.phi = Math.max(0.25, Math.min(Math.PI - 0.25, spherical.phi - dy * 0.0065));
+          offset.setFromSpherical(spherical);
+          camera.position.copy(controls.target).add(offset);
+          controls.update();
+          return;
+        }
+
+        if (isRotateDragging && opMode === 'rotate' && !faceOpsLocked) {
+          const dx = e.clientX - lastRotPointerX;
+          const dy = e.clientY - lastRotPointerY;
+          lastRotPointerX = e.clientX;
+          lastRotPointerY = e.clientY;
+          targetYaw = Math.max(-1.57, Math.min(1.57, targetYaw + dx * 0.008));
+          targetPitch = Math.max(-0.95, Math.min(0.95, targetPitch + dy * 0.007));
+          velYaw = dx * 0.04;
+          velPitch = dy * 0.035;
+          syncRotationSliders();
+          return;
+        }
+
+        if (!isSculptDragging || opMode !== 'sculpt' || faceOpsLocked) return;
+        if (hit) applyLiquidBrushAt(hit.localHit, hit.normalHit, 0.016, false);
+      });
+    }
+
+    attachPointerListeners(container);
+    attachPointerListeners(fallback2dCanvas);
+
+    window.addEventListener('pointerup', () => {
+      isSculptDragging = false;
+      hasPrevDragPt = false;
+      isRotateDragging = false;
+      isOrbitDragging = false;
+    });
+
+    const modeSculptBtn = document.getElementById('mode-sculpt-btn');
+    const modeOrbitBtn = document.getElementById('mode-orbit-btn');
+    const modePingBtn = document.getElementById('mode-ping-btn');
+    const modeRotateBtn = document.getElementById('mode-rotate-btn');
+
+    function setOpMode(mode) {
+      opMode = mode;
+      const activeCls = 'px-2 py-1 rounded-xl text-[10px] font-semibold bg-emerald-500/25 text-emerald-200 border border-emerald-400/40 transition';
+      const idleCls = 'px-2 py-1 rounded-xl text-[10px] font-semibold text-slate-300 hover:bg-slate-800/70 border border-transparent transition';
+      modeSculptBtn.className = mode === 'sculpt' ? activeCls : idleCls;
+      modeOrbitBtn.className = mode === 'orbit'
+        ? 'px-2 py-1 rounded-xl text-[10px] font-semibold bg-amber-500/25 text-amber-200 border border-amber-400/40 transition'
+        : idleCls;
+      modePingBtn.className = mode === 'ping'
+        ? 'px-2 py-1 rounded-xl text-[10px] font-semibold bg-fuchsia-500/25 text-fuchsia-200 border border-fuchsia-400/40 transition'
+        : idleCls;
+      modeRotateBtn.className = mode === 'rotate'
+        ? 'px-2 py-1 rounded-xl text-[10px] font-semibold bg-cyan-500/25 text-cyan-200 border border-cyan-400/40 transition'
+        : idleCls;
+    }
+
+    modeSculptBtn.addEventListener('click', () => setOpMode('sculpt'));
+    modeOrbitBtn.addEventListener('click', () => setOpMode('orbit'));
+    modePingBtn.addEventListener('click', () => setOpMode('ping'));
+    modeRotateBtn.addEventListener('click', () => setOpMode('rotate'));
+
+    autoReactionBtn.addEventListener('click', () => {
+      autoReactionEnabled = !autoReactionEnabled;
+      autoReactionBtn.textContent = `AUTO: ${autoReactionEnabled ? 'ON' : 'OFF'}`;
+    });
+
+    document.querySelectorAll('.react-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        activeReaction = btn.dataset.reaction || 'calm';
+        manualReactionHoldUntil = elapsedSimTime + 2.8;
+        if (activeReaction === 'surprise') {
+          springVel[0] += 6.0; springVel[1] += 7.0; springVel[12] += 5.0; springVel[13] += 5.0;
+        } else if (activeReaction === 'pout') {
+          springVel[0] += 5.0; springVel[1] += 5.0; springVel[11] += 4.5;
+          spawnShockwave(new THREE.Vector3(0, -0.46, 1.1), new THREE.Vector3(0, 0, 1), 1.2, 0xf472b6);
+        } else if (activeReaction === 'bassnod') {
+          springVel[8] += 7.5;
+        } else if (activeReaction === 'ripple') {
+          applyLiquidBrushAt(new THREE.Vector3(0, -0.1, 1.15), new THREE.Vector3(0, 0, 1), 0.025, true);
+        }
+      });
+    });
+
+    const leftBody = document.getElementById('left-panel-body');
+    const rightBody = document.getElementById('right-panel-body');
+    const collapseLeftBtn = document.getElementById('collapse-left-btn');
+    const collapseRightBtn = document.getElementById('collapse-right-btn');
+    const toggleAllHudBtn = document.getElementById('toggle-all-hud-btn');
+
+    collapseLeftBtn.addEventListener('click', () => {
+      const h = leftBody.classList.toggle('hidden');
+      collapseLeftBtn.textContent = h ? '[+]' : '[−]';
+    });
+    collapseRightBtn.addEventListener('click', () => {
+      const h = rightBody.classList.toggle('hidden');
+      collapseRightBtn.textContent = h ? '[+]' : '[−]';
+    });
+    toggleAllHudBtn.addEventListener('click', () => {
+      hudVisible = !hudVisible;
+      if (activeApp === 1) {
+        leftWrapper.classList.toggle('hidden', !hudVisible);
+        rightWrapper.classList.toggle('hidden', !hudVisible);
+      }
+      toggleAllHudBtn.textContent = hudVisible ? 'HUD [−]' : 'HUD [+]';
+    });
+
+    const toggleVidMonBtn = document.getElementById('toggle-video-monitor-btn');
+    const vidMonBody = document.getElementById('video-monitor-body');
+    toggleVidMonBtn.addEventListener('click', () => {
+      const h = vidMonBody.classList.toggle('hidden');
+      toggleVidMonBtn.textContent = h ? '[+]' : '[−]';
+    });
+
+    if (window.innerWidth < 640) {
+      leftBody.classList.add('hidden');
+      collapseLeftBtn.textContent = '[+]';
+      rightBody.classList.add('hidden');
+      collapseRightBtn.textContent = '[+]';
+    }
+
+    document.getElementById('skin-select').addEventListener('change', (e) => {
+      shaderUniforms.uSkinMode.value = parseInt(e.target.value, 10) || 0;
+    });
+
+    const brushBtns = document.querySelectorAll('.brush-btn');
+    const brushLabel = document.getElementById('brush-mode-label');
+    const brushNames = { push: 'PUSH OUTWARD', pull: 'PULL INWARD', vortex: 'VORTEX SWIRL', pinch: 'ELASTIC PINCH' };
+
+    brushBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        activeBrushMode = btn.dataset.brush;
+        brushLabel.textContent = brushNames[activeBrushMode] || 'PUSH OUTWARD';
+        brushBtns.forEach((b) => {
+          b.className = 'brush-btn py-1.5 rounded-lg text-[11px] font-semibold text-slate-400 hover:text-slate-100';
+        });
+        btn.className = 'brush-btn py-1.5 rounded-lg text-[11px] font-semibold bg-cyan-500/30 text-cyan-200 border border-cyan-400/40';
+      });
+    });
+
+    radiusSlider.addEventListener('input', () => {
+      document.getElementById('radius-val').textContent = parseFloat(radiusSlider.value).toFixed(2);
+    });
+    viscositySlider.addEventListener('input', () => {
+      document.getElementById('viscosity-val').textContent = parseFloat(viscositySlider.value).toFixed(2);
+    });
+    polaritySlider.addEventListener('input', () => {
+      const v = parseFloat(polaritySlider.value);
+      document.getElementById('polarity-val').textContent = (v >= 0 ? '+' : '') + v.toFixed(2);
+    });
+
+    const freezeBtn = document.getElementById('freeze-liquid-btn');
+    freezeBtn.addEventListener('click', () => {
+      freezeLiquid = !freezeLiquid;
+      freezeBtn.textContent = `Freeze Liquid: ${freezeLiquid ? 'ON' : 'Off'}`;
+      freezeBtn.classList.toggle('bg-amber-500/25', freezeLiquid);
+    });
+
+    document.getElementById('reset-sculpt-btn').addEventListener('click', () => {
+      if (faceOpsLocked) return;
+      if (headGeometry && headGeometry.userData && headGeometry.userData.sculptOffsets) {
+        headGeometry.userData.sculptOffsets.fill(0);
+      }
+      springPos.fill(0);
+      springVel.fill(0);
+      for (let i = 0; i < ZONE_COUNT; i++) {
+        vectorNodes[i].impactForce = 0;
+        vectorNodes[i].trajectoryVel = 0;
+        vectorNodes[i].resonance = 0;
+      }
+      spawnShockwave(new THREE.Vector3(0, 0, 1.15), new THREE.Vector3(0, 0, 1), 1.2, 0x34d399);
+    });
+
+    const toggleVecBtn = document.getElementById('toggle-vectors-btn');
+    toggleVecBtn.addEventListener('click', () => {
+      showVectors = !showVectors;
+      toggleVecBtn.textContent = `3D Vectors: ${showVectors ? 'ON' : 'OFF'}`;
+    });
+
+    document.getElementById('pulse-shockwave-btn').addEventListener('click', () => {
+      for (let i = 0; i < 4; i++) {
+        const n = vectorNodes[i * 3];
+        n.impactForce += 1.35;
+        springVel[n.id] += 5.5;
+        spawnShockwave(n.anchor, n.anchor.clone().normalize(), 1.3, 0xe879f9);
+      }
+    });
+
+    const fxExposureSlider = document.getElementById('fx-exposure-slider');
+    const fxFogSlider = document.getElementById('fx-fog-slider');
+    const fxStarsSlider = document.getElementById('fx-stars-slider');
+    let starDriftRate = 1.0;
+
+    fxExposureSlider.addEventListener('input', () => {
+      const v = parseFloat(fxExposureSlider.value);
+      if (renderer) renderer.toneMappingExposure = v;
+      document.getElementById('fx-exposure-val').textContent = v.toFixed(2);
+    });
+    fxFogSlider.addEventListener('input', () => {
+      const v = parseFloat(fxFogSlider.value);
+      if (scene && scene.fog) scene.fog.density = v;
+      document.getElementById('fx-fog-val').textContent = v.toFixed(3);
+    });
+    fxStarsSlider.addEventListener('input', () => {
+      starDriftRate = parseFloat(fxStarsSlider.value);
+      document.getElementById('fx-stars-val').textContent = `${starDriftRate.toFixed(2)}x`;
+    });
+
+    function startSynthVocalBeat() {
+      ensureAudioContext();
+      stopAllAudioSources();
+      activeAudioMode = 'synth';
+      trackTitle.textContent = 'Sovereign Formant Synth';
+      trackTime.textContent = 'SYNTH LOOP';
+      playPauseBtn.disabled = false;
+      playPauseBtn.textContent = '❚❚ Pause';
+      seekSlider.disabled = true;
+      setEngineStatus('Synth Vocal Beat Active → Driving Lips & 20 Daemons', 'active');
+
+      const formants = [[720, 1120], [520, 1850], [280, 2320], [560, 860], [310, 890]];
+      let step = 0;
+
+      const tick = () => {
+        if (activeAudioMode !== 'synth' || !audioCtx) return;
+        const now = audioCtx.currentTime;
+        if (step % 4 === 0) {
+          const kick = audioCtx.createOscillator();
+          const kGain = audioCtx.createGain();
+          kick.type = 'sine';
+          kick.frequency.setValueAtTime(135, now);
+          kick.frequency.exponentialRampToValueAtTime(42, now + 0.15);
+          kGain.gain.setValueAtTime(0.65, now);
+          kGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+          kick.connect(kGain); kGain.connect(masterGain);
+          kick.start(now); kick.stop(now + 0.26);
+        }
+        if (step % 2 === 0 || step % 7 === 0) {
+          const [f1, f2] = formants[Math.floor(step / 2) % formants.length];
+          const osc = audioCtx.createOscillator();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(110 + (step % 5) * 18, now);
+          const bp1 = audioCtx.createBiquadFilter(); bp1.type = 'bandpass'; bp1.frequency.setValueAtTime(f1, now); bp1.Q.value = 5.0;
+          const bp2 = audioCtx.createBiquadFilter(); bp2.type = 'bandpass'; bp2.frequency.setValueAtTime(f2, now); bp2.Q.value = 6.0;
+          const vGain = audioCtx.createGain();
+          vGain.gain.setValueAtTime(0.001, now);
+          vGain.gain.linearRampToValueAtTime(0.28, now + 0.025);
+          vGain.gain.exponentialRampToValueAtTime(0.001, now + 0.20);
+          osc.connect(bp1); osc.connect(bp2); bp1.connect(vGain); bp2.connect(vGain); vGain.connect(masterGain);
+          osc.start(now); osc.stop(now + 0.22);
+        }
+        step = (step + 1) % 16;
+      };
+      tick();
+      synthTimer = setInterval(tick, 125);
+    }
+
+    document.getElementById('mic-btn').addEventListener('click', async () => {
+      try {
+        ensureAudioContext();
+        stopAllAudioSources();
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        micSource = audioCtx.createMediaStreamSource(micStream);
+        micSource.connect(analyser);
+        activeAudioMode = 'mic';
+        trackTitle.textContent = 'Live Microphone';
+        trackTime.textContent = 'LIVE MIC';
+        playPauseBtn.disabled = true;
+        seekSlider.disabled = true;
+        setEngineStatus('Live Mic Active — Speak to Drive Lips Engine', 'active');
+      } catch (err) {
+        setEngineStatus(`Mic Error: ${err.message}`, 'error');
+      }
+    });
+
+    document.getElementById('synth-btn').addEventListener('click', startSynthVocalBeat);
+
+    playPauseBtn.addEventListener('click', () => {
+      if (activeAudioMode === 'video-element') {
+        if (mp4VideoEl.paused) { mp4VideoEl.play().catch(() => {}); playPauseBtn.textContent = '❚❚ Pause'; }
+        else { mp4VideoEl.pause(); playPauseBtn.textContent = '▶ Play'; }
+      } else if (activeAudioMode === 'file-element') {
+        if (htmlAudio.paused) { htmlAudio.play().catch(() => {}); playPauseBtn.textContent = '❚❚ Pause'; }
+        else { htmlAudio.pause(); playPauseBtn.textContent = '▶ Play'; }
+      } else if (activeAudioMode === 'file-buffer' && decodedAudioBuffer) {
+        if (isBufferPlaying) {
+          bufferOffset = Math.max(0, audioCtx.currentTime - bufferStartTime);
+          try { bufferSource.stop(); } catch (_) {}
+          isBufferPlaying = false;
+          playPauseBtn.textContent = '▶ Play';
+        } else {
+          startBufferPlayback(bufferOffset);
+        }
+      } else if (activeAudioMode === 'synth') {
+        if (synthTimer) { clearInterval(synthTimer); synthTimer = null; playPauseBtn.textContent = '▶ Play'; }
+        else { startSynthVocalBeat(); }
+      }
+    });
+
+    volumeSlider.addEventListener('input', () => {
+      const v = parseFloat(volumeSlider.value);
+      htmlAudio.volume = v;
+      mp4VideoEl.volume = v;
+      if (masterGain) masterGain.gain.value = v;
+    });
+
+    function fmtTime(sec) {
+      if (!isFinite(sec) || sec < 0) return '00:00';
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function updateTransportUI() {
+      if (activeAudioMode === 'video-element' && isFinite(mp4VideoEl.duration) && mp4VideoEl.duration > 0) {
+        seekSlider.value = String((mp4VideoEl.currentTime / mp4VideoEl.duration) * 100);
+        trackTime.textContent = `${fmtTime(mp4VideoEl.currentTime)} / ${fmtTime(mp4VideoEl.duration)}`;
+      } else if (activeAudioMode === 'file-element' && isFinite(htmlAudio.duration) && htmlAudio.duration > 0) {
+        seekSlider.value = String((htmlAudio.currentTime / htmlAudio.duration) * 100);
+        trackTime.textContent = `${fmtTime(htmlAudio.currentTime)} / ${fmtTime(htmlAudio.duration)}`;
+      } else if (activeAudioMode === 'file-buffer' && decodedAudioBuffer) {
+        const cur = isBufferPlaying
+          ? Math.min(decodedAudioBuffer.duration, Math.max(0, audioCtx.currentTime - bufferStartTime))
+          : bufferOffset;
+        seekSlider.value = String((cur / decodedAudioBuffer.duration) * 100);
+        trackTime.textContent = `${fmtTime(cur)} / ${fmtTime(decodedAudioBuffer.duration)}`;
+      }
+    }
+
+    seekSlider.addEventListener('input', () => {
+      const pct = parseFloat(seekSlider.value) / 100;
+      if (activeAudioMode === 'video-element' && isFinite(mp4VideoEl.duration) && mp4VideoEl.duration > 0) {
+        mp4VideoEl.currentTime = pct * mp4VideoEl.duration;
+      } else if (activeAudioMode === 'file-element' && isFinite(htmlAudio.duration) && htmlAudio.duration > 0) {
+        htmlAudio.currentTime = pct * htmlAudio.duration;
+      } else if (activeAudioMode === 'file-buffer' && decodedAudioBuffer) {
+        const targetSec = pct * decodedAudioBuffer.duration;
+        if (isBufferPlaying) startBufferPlayback(targetSec);
+        else bufferOffset = targetSec;
+      }
+    });
+
+    labDaemonsGridEl.addEventListener('click', (e) => {
+      const btn = e.target.closest('.daemon-card-btn');
+      if (!btn) return;
+      const idx = parseInt(btn.dataset.daemonIdx, 10);
+      if (isFinite(idx) && daemons[idx]) {
+        daemons[idx].enabled = !daemons[idx].enabled;
+        if (daemons[idx].enabled) daemons[idx].pulses++;
+      }
+    });
+
+    document.getElementById('lab-pulse-all-btn').addEventListener('click', () => {
+      for (let i = 0; i < daemons.length; i++) {
+        daemons[i].enabled = true;
+        daemons[i].pulses++;
+      }
+      for (let z = 0; z < 4; z++) {
+        const n = vectorNodes[z * 4];
+        n.impactForce += 1.25;
+        springVel[n.id] += 5.0;
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      const dprCap = ecoModeEnabled ? 1.0 : Math.min(window.devicePixelRatio || 1, 1.5);
+      if (camera && renderer) {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setPixelRatio(dprCap);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+      resizeFallback2dCanvas();
+      resizeOscilloscopeCanvas();
+    });
+
+    let lastFrameMs = performance.now();
+    let frameCount = 0;
+    let fpsAccum = 0;
+
+    function animate(nowMs = performance.now()) {
+      requestAnimationFrame(animate);
+
+      if (isDocumentHidden) {
+        lastFrameMs = nowMs;
+        return;
+      }
+
+      // Clamp frame delta time <= 0.05s to prevent OS spikes or runaway physics
+      const rawDt = (nowMs - lastFrameMs) / 1000;
+      lastFrameMs = nowMs;
+      const dt = Math.max(0.001, Math.min(0.05, rawDt));
+      elapsedSimTime += dt;
+
+      frameCount++;
+      fpsAccum += dt;
+      if (fpsAccum >= 0.6) {
+        fpsBadge.textContent = `${Math.min(60, Math.round(frameCount / fpsAccum))} FPS`;
+        frameCount = 0;
+        fpsAccum = 0;
+      }
+
+      extractVocalLipFeatures(elapsedSimTime);
+      updateTransportUI();
+      updateDaemonsAndObservations(dt, elapsedSimTime);
+      stepLipsAndVectorMatrix(dt, elapsedSimTime);
+      updateShockwaves(dt, elapsedSimTime);
+
+      zoomMultiplier += (targetZoomMultiplier - zoomMultiplier) * Math.min(1, dt * 10);
+
+      if (!faceOpsLocked) {
+        if (!isRotateDragging) {
+          targetYaw = Math.max(-1.57, Math.min(1.57, targetYaw + velYaw * dt * 10));
+          targetPitch = Math.max(-0.95, Math.min(0.95, targetPitch + velPitch * dt * 10));
+          velYaw *= Math.exp(-dt * 7.5);
+          velPitch *= Math.exp(-dt * 7.5);
+          if (Math.abs(velYaw) > 0.005 || Math.abs(velPitch) > 0.005) {
+            syncRotationSliders();
+          }
+        }
+        const orbitYaw = autoOrbitEnabled ? Math.sin(elapsedSimTime * 0.65) * 0.45 : 0;
+        const nodPitch = activeReaction === 'bassnod' ? Math.sin(elapsedSimTime * 9.0) * bassEnergy * 0.09 : 0;
+
+        curYaw += (targetYaw + orbitYaw - curYaw) * Math.min(1, dt * 10);
+        curPitch += (targetPitch + nodPitch - curPitch) * Math.min(1, dt * 10);
+        curRoll += (targetRoll - curRoll) * Math.min(1, dt * 10);
+      }
+
+      if (!ecoModeEnabled && webglAvailable && !webglContextLost && renderer && scene && camera && headMesh) {
+        const offsetDir = camera.position.clone().sub(controls.target);
+        if (offsetDir.lengthSq() < 0.0001) offsetDir.set(0, 0.08, BASE_CAMERA_DISTANCE);
+        const desiredDist = BASE_CAMERA_DISTANCE / Math.max(0.4, zoomMultiplier);
+        const curDist = offsetDir.length();
+        const nextDist = curDist + (desiredDist - curDist) * Math.min(1, dt * 10);
+        offsetDir.normalize().multiplyScalar(nextDist);
+        camera.position.copy(controls.target).add(offsetDir);
+
+        shaderUniforms.uTime.value = elapsedSimTime;
+        if (!isSculptDragging) {
+          shaderUniforms.uBrushActive.value *= Math.exp(-dt * 8.0);
+        }
+
+        headMesh.rotation.y = curYaw;
+        headMesh.rotation.x = curPitch;
+        headMesh.rotation.z = curRoll;
+        updateRealEyes(dt, elapsedSimTime);
+
+        if (starField) starField.rotation.y = elapsedSimTime * 0.02 * starDriftRate;
+        controls.update();
+        renderer.render(scene, camera);
+      } else {
+        render2dStudioStage(elapsedSimTime);
+      }
+
+      syncThrottledHud(nowMs, elapsedSimTime);
+    }
+
+    window.addEventListener('load', () => {
+      initWebGLScene();
+      resizeFallback2dCanvas();
+      resizeOscilloscopeCanvas();
+      if (webglAvailable && !ecoModeEnabled) {
+        setEngineStatus('OS-Safe AI Studio v12.0 Ready — Design Matrix, Ping, Rotate & 20 Daemons', 'ready');
+      }
+      lastFrameMs = performance.now();
+      requestAnimationFrame(animate);
+    });
+  </script>
+</body>
+</html>

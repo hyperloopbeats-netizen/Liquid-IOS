@@ -31,6 +31,7 @@ body,
 #root {
   width: 100%;
   height: 100%;
+  height: 100dvh;
   margin: 0;
   padding: 0;
   overflow: hidden;
@@ -39,17 +40,25 @@ body,
 
 .aether-wallpaper {
   background:
-    radial-gradient(60% 55% at 15% 18%, var(--syn-bg-a), transparent 70%),
-    radial-gradient(55% 50% at 85% 20%, var(--syn-bg-b), transparent 70%),
-    radial-gradient(60% 55% at 50% 88%, var(--syn-bg-c), transparent 72%),
-    linear-gradient(155deg, #04070f 0%, #070c18 52%, #050811 100%);
+    radial-gradient(62% 56% at 14% 16%, var(--syn-bg-a), transparent 72%),
+    radial-gradient(56% 52% at 86% 18%, var(--syn-bg-b), transparent 72%),
+    radial-gradient(64% 58% at 50% 88%, var(--syn-bg-c), transparent 74%),
+    radial-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(155deg, #03060d 0%, #070d19 52%, #040710 100%);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 28px 28px, 100% 100%;
   transition: background 0.6s ease;
 }
 
 .aether-glass {
   background: var(--syn-surface);
   border: 1px solid var(--syn-border);
-  box-shadow: 0 20px 50px -16px rgba(0, 0, 0, 0.75), 0 0 24px -8px var(--syn-glow);
+  box-shadow: 0 20px 50px -16px rgba(0, 0, 0, 0.78), 0 0 24px -8px var(--syn-glow);
+}
+
+.aether-spotlight-card {
+  background: linear-gradient(160deg, rgba(11, 18, 34, 0.88) 0%, rgba(6, 10, 22, 0.92) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 22px 48px -14px rgba(0, 0, 0, 0.85);
 }
 
 .aether-glass-bar {
@@ -93,6 +102,15 @@ body,
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.45);
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

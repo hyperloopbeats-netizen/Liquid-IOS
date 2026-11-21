@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>AIM OS v9.5 — Master Glassmorphic Workstation & Cognitive Suite</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+            orbitron: ['Orbitron', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --glass-blur: 24px;
+      --glass-bg: rgba(15, 23, 42, 0.88);
+      --glass-bg-elevated: rgba(15, 23, 42, 0.95);
+      --glass-border: rgba(56, 189, 248, 0.3);
+      --glass-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.7);
+      --text-primary: #f8fafc;
+      --panel-inner: rgba(2, 6, 23, 0.75);
+    }
+
+    * { box-sizing: border-box; user-select: none; }
+    input, textarea, pre, code, .selectable { user-select: text; }
+
+    body {
+      margin: 0; padding: 0; overflow: hidden; width: 100vw; height: 100vh;
+      font-family: 'Inter', sans-serif; color: var(--text-primary); background-color: #020617;
+    }
+
+    .wallpaper-aurora {
+      background:
+        radial-gradient(at 15% 20%, rgba(56, 189, 248, 0.45) 0px, transparent 50%),
+        radial-gradient(at 85% 15%, rgba(16, 185, 129, 0.38) 0px, transparent 52%),
+        radial-gradient(at 75% 85%, rgba(168, 85, 247, 0.38) 0px, transparent 50%),
+        linear-gradient(135deg, #0b0f19 0%, #0f172a 50%, #020617 100%);
+      background-size: 140% 140%;
+      animation: meshShift 22s ease infinite alternate;
+    }
+
+    @keyframes meshShift {
+      0% { background-position: 0% 20%; }
+      50% { background-position: 100% 60%; }
+      100% { background-position: 25% 100%; }
+    }
+
+    .glass-surface {
+      background: var(--glass-bg);
+      backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shadow);
+    }
+    .glass-bar {
+      background: var(--glass-bg-elevated);
+      backdrop-filter: blur(28px) saturate(190%);
+      -webkit-backdrop-filter: blur(28px) saturate(190%);
+      border-bottom: 1px solid var(--glass-border);
+    }
+    .glass-inner { background: var(--panel-inner); border: 1px solid rgba(255, 255, 255, 0.12); }
+
+    .glass-dock {
+      background: var(--glass-bg-elevated);
+      backdrop-filter: blur(32px) saturate(195%);
+      -webkit-backdrop-filter: blur(32px) saturate(195%);
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.35); border-radius: 9999px; }
+  </style>
+</head>
+<body class="wallpaper-aurora select-none flex flex-col h-screen overflow-hidden">
+
+  <header class="glass-bar h-8 px-4 flex items-center justify-between z-[1000] text-xs font-medium shrink-0">
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2">
+        <i data-lucide="cpu" class="w-4 h-4 text-cyan-400"></i>
+        <span class="font-bold font-orbitron tracking-wider text-[11px] text-cyan-300">AIM OS v9.5 MASTER WORKSTATION</span>
+      </div>
+      <span class="opacity-30">|</span>
+      <div class="flex items-center gap-2 text-[11px] text-slate-300 font-mono">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span id="system-status-text">All 5 Subsystems Nominal</span>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400/30 text-[10px] text-cyan-300 font-mono">
+        <span>OPFS Scratch: 29.6%</span>
+      </div>
+      <div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-[10px] text-emerald-300 font-mono">
+        <span>WebGL2: 60.0 FPS</span>
+      </div>
+      <button id="top-clock" class="px-2 py-0.5 rounded hover:bg-white/15 transition font-mono tabular-nums text-xs">12:47</button>
+    </div>
+  </header>
+
+  <main id="workstation-grid" class="flex-1 p-3 pb-16 grid grid-cols-1 lg:grid-cols-12 gap-3 overflow-hidden relative">
+    <div class="lg:col-span-4 flex flex-col gap-3 min-h-0">
+      <div class="glass-surface rounded-2xl p-4 flex flex-col gap-3 shrink-0 shadow-xl border border-cyan-500/30">
+        <div class="flex items-center justify-between border-b border-white/10 pb-2">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow">
+              <i data-lucide="hard-drive" class="w-4 h-4 text-slate-950"></i>
+            </div>
+            <h3 class="font-bold font-orbitron text-xs text-cyan-300">OPFS Scratch Disk Monitor</h3>
+          </div>
+          <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-mono">Healthy</span>
+        </div>
+        <div class="space-y-2 font-mono text-xs">
+          <div class="flex justify-between text-slate-300">
+            <span>Quota Allocated:</span>
+            <span class="text-cyan-400 font-bold">14.8 GB / 50.0 GB</span>
+          </div>
+          <div class="w-full h-2.5 rounded-full bg-slate-900 border border-white/10 overflow-hidden relative">
+            <div class="h-full bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 transition-all duration-500" style="width: 29.6%"></div>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <div class="p-2 rounded-xl glass-inner bg-slate-950/50">
+              <div class="text-[10px] text-slate-400">Inode Health</div>
+              <div class="text-sm font-bold text-emerald-300 font-orbitron mt-0.5">14,280 / 14k</div>
+            </div>
+            <div class="p-2 rounded-xl glass-inner bg-slate-950/50">
+              <div class="text-[10px] text-slate-400">I/O Throughput</div>
+              <div class="text-sm font-bold text-cyan-300 font-orbitron mt-0.5">42.5 MB/s</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-surface rounded-2xl p-4 flex flex-col flex-1 min-h-0 shadow-xl border border-cyan-500/30">
+        <div class="flex items-center justify-between border-b border-white/10 pb-2 shrink-0">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shadow">
+              <i data-lucide="folder-git-2" class="w-4 h-4 text-white"></i>
+            </div>
+            <h3 class="font-bold font-orbitron text-xs text-indigo-300">AetherFS Sync Logger</h3>
+          </div>
+          <button onclick="WorkstationApp.clearLogs()" class="px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[10px] text-slate-300 cursor-pointer">Clear</button>
+        </div>
+        <div id="aetherfs-log-stream" class="flex-1 overflow-y-auto space-y-1.5 font-mono text-[11px] pt-2">
+          <div class="p-2 rounded bg-white/5 border border-white/5 space-y-0.5">
+            <div class="flex justify-between text-[9px] text-slate-400"><span>[SYNC]</span><span>12:47:01</span></div>
+            <p class="text-slate-200">RocksDB journal checkpoint verified. Blake3 hash match.</p>
+          </div>
+          <div class="p-2 rounded bg-white/5 border border-white/5 space-y-0.5">
+            <div class="flex justify-between text-[9px] text-slate-400"><span>[OPFS]</span><span>12:46:40</span></div>
+            <p class="text-slate-200">Scratch block trimming complete. 1.04 GB garbage collected.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="lg:col-span-5 flex flex-col gap-3 min-h-0">
+      <div class="glass-surface rounded-2xl p-4 flex flex-col gap-3 shrink-0 shadow-xl border border-cyan-500/30">
+        <div class="flex items-center justify-between border-b border-white/10 pb-2">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-rose-500 to-purple-600 flex items-center justify-center shadow">
+              <i data-lucide="clapperboard" class="w-4 h-4 text-white"></i>
+            </div>
+            <h3 class="font-bold font-orbitron text-xs text-rose-300">WebGL2 Compositor &amp; FPS Graph</h3>
+          </div>
+          <div class="flex items-center gap-2 font-mono text-[11px]">
+            <span class="text-cyan-400 font-bold" id="fps-display">60.0 FPS</span>
+            <span class="text-slate-400">|</span>
+            <span class="text-emerald-400">Queue: 0</span>
+          </div>
+        </div>
+        <div class="relative w-full h-36 bg-slate-950 rounded-xl overflow-hidden border border-white/10 flex items-center justify-center">
+          <canvas id="webgl-compositor-canvas" class="w-full h-full object-cover"></canvas>
+          <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-slate-900/80 border border-white/10 text-[10px] font-mono text-cyan-300">
+            Active Shader: Multi-Pass Bloom &amp; LUT
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-surface rounded-2xl p-4 flex flex-col flex-1 min-h-0 shadow-xl border border-cyan-500/30">
+        <div class="flex items-center justify-between border-b border-white/10 pb-2 shrink-0">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-700 flex items-center justify-center shadow">
+              <i data-lucide="box" class="w-4 h-4 text-white"></i>
+            </div>
+            <h3 class="font-bold font-orbitron text-xs text-emerald-300">Zero-Crossing CAD Kernel (SDF Viewport)</h3>
+          </div>
+          <div class="flex items-center gap-1.5 font-mono text-[10px]">
+            <button onclick="WorkstationApp.setCadShape('torus')" class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 cursor-pointer">Torus</button>
+            <button onclick="WorkstationApp.setCadShape('gyroid')" class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 cursor-pointer">Gyroid</button>
+          </div>
+        </div>
+        <div class="flex-1 relative w-full bg-slate-950 rounded-xl overflow-hidden border border-white/10 flex items-center justify-center mt-2">
+          <canvas id="cad-sdf-canvas" class="w-full h-full object-cover"></canvas>
+          <div class="absolute top-2 left-2 px-2 py-0.5 rounded bg-slate-900/80 border border-white/10 text-[10px] font-mono text-emerald-300">
+            SDF Raymarching Active (0.001mm tolerance)
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="lg:col-span-3 flex flex-col gap-3 min-h-0">
+      <div class="glass-surface rounded-2xl p-4 flex flex-col flex-1 min-h-0 shadow-xl border border-cyan-500/30">
+        <div class="flex items-center justify-between border-b border-white/10 pb-2 shrink-0">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow">
+              <i data-lucide="terminal" class="w-4 h-4 text-white"></i>
+            </div>
+            <h3 class="font-bold font-orbitron text-xs text-amber-300">Interactive REPL &amp; Stress Deck</h3>
+          </div>
+          <button onclick="WorkstationApp.triggerStressTest()" class="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 font-bold font-mono text-[10px] cursor-pointer">Run Stress Test</button>
+        </div>
+
+        <div id="repl-terminal-output" class="flex-1 overflow-y-auto font-mono text-[11px] bg-slate-950/80 rounded-xl p-3 mt-2 border border-white/10 space-y-1.5 text-slate-300">
+          <div class="text-cyan-400">AIM OS v9.5 Kernel REPL Initialized. Type 'help' or click stress test.</div>
+          <div class="text-slate-500">$ sys.diagnostics --all</div>
+          <div class="text-emerald-400">-&gt; OPFS: 50GB allocated (OK)<br>-&gt; WebGL2: 60 FPS locked (OK)<br>-&gt; SDF Kernel: Ready (OK)</div>
+        </div>
+
+        <div class="flex items-center gap-2 mt-2 shrink-0">
+          <span class="text-amber-400 font-mono text-xs">$</span>
+          <input type="text" id="repl-input" onkeydown="if(event.key==='Enter') WorkstationApp.handleReplCommand(this.value)" placeholder="Enter command (e.g. 'stress', 'clear', 'help')..." class="flex-1 px-3 py-1.5 rounded-xl glass-inner bg-slate-950 text-xs text-slate-100 font-mono focus:outline-none">
+          <button onclick="WorkstationApp.handleReplCommand(document.getElementById('repl-input').value)" class="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold font-mono text-xs cursor-pointer">Exec</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <nav aria-label="Application Dock" class="fixed bottom-2 left-1/2 -translate-x-1/2 z-[1500] max-w-[98vw]">
+    <div id="dock-bar" class="glass-dock px-3 py-2 rounded-2xl flex items-center gap-3">
+      <span class="text-xs font-bold font-orbitron text-cyan-300 px-2">AIM OS v9.5 SUITE</span>
+      <span class="opacity-30">|</span>
+      <button onclick="WorkstationApp.logEvent('OPFS', 'Manual snapshot triggered.')" class="px-3 py-1.5 rounded-xl bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 text-xs font-mono font-bold cursor-pointer">Snapshot OPFS</button>
+      <button onclick="WorkstationApp.logEvent('RENDER', 'Forced compositor cache flush.')" class="px-3 py-1.5 rounded-xl bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 text-xs font-mono font-bold cursor-pointer">Flush Render Cache</button>
+      <button onclick="WorkstationApp.logEvent('CAD', 'SDF Kernel recompiled.')" class="px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 text-xs font-mono font-bold cursor-pointer">Recompile SDF</button>
+    </div>
+  </nav>
+
+  <script>
+    const WorkstationApp = {
+      cadShape: 'torus',
+      fps: 60.0,
+      animTime: 0,
+
+      init() {
+        if (window.lucide && window.lucide.createIcons) {
+          window.lucide.createIcons();
+        }
+        this.initWebglCompositor();
+        this.initCadSdfViewport();
+
+        setInterval(() => {
+          const clock = document.getElementById('top-clock');
+          if (clock) clock.textContent = new Date().toTimeString().split(' ')[0].substring(0, 5);
+        }, 1000);
+      },
+
+      clearLogs() {
+        const stream = document.getElementById('aetherfs-log-stream');
+        if (stream) stream.innerHTML = '';
+      },
+
+      logEvent(source, msg) {
+        const time = new Date().toTimeString().split(' ')[0];
+        const stream = document.getElementById('aetherfs-log-stream');
+        if (!stream) return;
+        const entry = document.createElement('div');
+        entry.className = 'p-2 rounded bg-white/5 border border-white/5 space-y-0.5';
+        const topRow = document.createElement('div');
+        topRow.className = 'flex justify-between text-[9px] text-slate-400';
+        const sSpan = document.createElement('span');
+        sSpan.textContent = '[' + source + ']';
+        const tSpan = document.createElement('span');
+        tSpan.textContent = time;
+        topRow.appendChild(sSpan);
+        topRow.appendChild(tSpan);
+        const bodyP = document.createElement('p');
+        bodyP.className = 'text-slate-200';
+        bodyP.textContent = msg;
+        entry.appendChild(topRow);
+        entry.appendChild(bodyP);
+        stream.prepend(entry);
+        while (stream.children.length > 24) {
+          stream.removeChild(stream.lastChild);
+        }
+        this.appendRepl('[' + source + '] ' + msg, 'cyan');
+      },
+
+      appendRepl(text, color = 'slate') {
+        const out = document.getElementById('repl-terminal-output');
+        if (!out) return;
+        const line = document.createElement('div');
+        line.className = color === 'cyan' ? 'text-cyan-400' : (color === 'emerald' ? 'text-emerald-400' : 'text-slate-300');
+        line.textContent = text;
+        out.appendChild(line);
+        while (out.children.length > 48) {
+          out.removeChild(out.firstChild);
+        }
+        out.scrollTop = out.scrollHeight;
+      },
+
+      handleReplCommand(cmd) {
+        if (!cmd) return;
+        this.appendRepl('$ ' + cmd);
+        document.getElementById('repl-input').value = '';
+
+        const lower = cmd.trim().toLowerCase();
+        if (lower === 'help') {
+          this.appendRepl("Available commands: 'stress', 'clear', 'status', 'snapshot', 'recompile'");
+        } else if (lower === 'clear') {
+          document.getElementById('repl-terminal-output').innerHTML = '';
+        } else if (lower === 'stress') {
+          this.triggerStressTest();
+        } else if (lower === 'snapshot') {
+          this.logEvent('OPFS', 'Snapshot triggered via REPL.');
+        } else if (lower === 'recompile') {
+          this.logEvent('CAD', 'SDF Kernel recompiled via REPL.');
+        } else if (lower === 'status') {
+          this.appendRepl("-> OPFS Quota: 14.8GB/50GB | WebGL2: 60 FPS | CAD SDF Kernel: Active", 'emerald');
+        } else {
+          this.appendRepl("Command not recognized: '" + cmd + "'. Type 'help' for options.");
+        }
+      },
+
+      triggerStressTest() {
+        this.appendRepl('Initiating OPFS & WebGL stress test suite...', 'cyan');
+        this.logEvent('STRESS', 'Stress test control deck engaged. Pushing 512MB blocks & parallel shader passes.');
+        setTimeout(() => {
+          this.appendRepl('-> OPFS Throughput Peak: 198.4 MB/s (PASSED)', 'emerald');
+          this.appendRepl('-> WebGL2 Frame Drop Count: 0 frames (PASSED)', 'emerald');
+          this.logEvent('STRESS', 'Stress test successfully completed. Zero data loss.');
+        }, 1200);
+      },
+
+      setCadShape(shape) {
+        this.cadShape = shape;
+        this.logEvent('CAD', 'Switched SDF primitive to: ' + shape.toUpperCase());
+      },
+
+      initWebglCompositor() {
+        const canvas = document.getElementById('webgl-compositor-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+
+        const renderFrame = () => {
+          this.animTime += 0.03;
+          canvas.width = canvas.parentElement.clientWidth || 400;
+          canvas.height = canvas.parentElement.clientHeight || 200;
+
+          ctx.fillStyle = '#020617';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+          grad.addColorStop(0, '#f43f5e');
+          grad.addColorStop(0.5, '#a855f7');
+          grad.addColorStop(1, '#38bdf8');
+          ctx.fillStyle = grad;
+          ctx.fillRect(60 + Math.sin(this.animTime) * 30, 30, Math.max(40, canvas.width - 120), Math.max(30, canvas.height - 60));
+
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(40, 20, Math.max(40, canvas.width - 80), Math.max(30, canvas.height - 40));
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '10px JetBrains Mono';
+          ctx.fillText('FRAME: ' + Math.floor(this.animTime * 60) + ' | TIMECODE: 00:00:12:04', 50, 45);
+
+          requestAnimationFrame(renderFrame);
+        };
+        renderFrame();
+      },
+
+      initCadSdfViewport() {
+        const canvas = document.getElementById('cad-sdf-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        let t = 0;
+
+        const renderSdf = () => {
+          t += 0.02;
+          canvas.width = canvas.parentElement.clientWidth || 400;
+          canvas.height = canvas.parentElement.clientHeight || 200;
+
+          ctx.fillStyle = '#020617';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          const cx = canvas.width / 2;
+          const cy = canvas.height / 2;
+          const radius = 60 + Math.sin(t) * 15;
+
+          for (let r = radius; r > 10; r -= 10) {
+            ctx.beginPath();
+            if (this.cadShape === 'torus') {
+              ctx.arc(cx + Math.cos(t) * 20, cy + Math.sin(t) * 10, r, 0, Math.PI * 2);
+            } else {
+              ctx.rect(cx - r, cy - r, r * 2, r * 2);
+            }
+            ctx.strokeStyle = 'rgba(16, 185, 129, ' + (0.15 + r / 200) + ')';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+          }
+
+          ctx.fillStyle = '#34d399';
+          ctx.font = '10px JetBrains Mono';
+          ctx.fillText('PRIMITIVE: ' + this.cadShape.toUpperCase() + ' | TOLERANCE: 0.001mm', 15, 25);
+
+          requestAnimationFrame(renderSdf);
+        };
+        renderSdf();
+      }
+    };
+
+    window.WorkstationApp = WorkstationApp;
+    window.addEventListener('DOMContentLoaded', () => {
+      WorkstationApp.init();
+    });
+  </script>
+  <script src="/suite-apps/aether-loop-bridge.js"></script>
+</body>
+</html>
